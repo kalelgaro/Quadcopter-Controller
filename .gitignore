@@ -1,0 +1,12 @@
+*.hex
+*.elf*
+*.bin
+*.expand
+*.swp
+*.cmd
+*.cfg
+*.cproject
+*.meta*
+*.project
+*.sublime*
+*.a
