@@ -70,7 +70,16 @@ float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], flo
 
 
 	//Matriz identidade utilizada para facilitar atualização das matrizes.
-	float I_f32[81] = {1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1};
+	float I_f32[81] = {1,0,0,0,0,0,0,0,0,
+					   0,1,0,0,0,0,0,0,0,
+					   0,0,1,0,0,0,0,0,0,
+					   0,0,0,1,0,0,0,0,0,
+					   0,0,0,0,1,0,0,0,0,
+					   0,0,0,0,0,1,0,0,0,
+					   0,0,0,0,0,0,1,0,0,
+					   0,0,0,0,0,0,0,1,0,
+					   0,0,0,0,0,0,0,0,1};
+
 	arm_mat_init_f32(&I, 9, 9, I_f32);
 
 	//Buffers que contém os valores em cada uma das matrizes.
@@ -85,7 +94,16 @@ float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], flo
 
 
 	//Matriz de atualização dos estados
-	float F_f32[81] = {1, (theta_z), -(theta_y), 0, 0, 0, 0, 0, 0, -(theta_z), 1, (theta_x), 0, 0, 0, 0, 0, 0, (theta_y), -(theta_x), 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (theta_z), -(theta_y), 0, 0, 0, 0, 0, 0, -(theta_z), 1, (theta_x), 0, 0, 0, 0, 0, 0, (theta_y), -(theta_x), 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+	float F_f32[81] = {1, (theta_z), -(theta_y), 0, 0, 0, 0, 0, 0,
+					   -(theta_z), 1, (theta_x), 0, 0, 0, 0, 0, 0,
+					   (theta_y), -(theta_x), 1, 0, 0, 0, 0, 0, 0,
+					   0, 0, 0, 1, (theta_z), -(theta_y), 0, 0, 0,
+					   0, 0, 0, -(theta_z), 1, (theta_x), 0, 0, 0,
+					   0, 0, 0, (theta_y), -(theta_x), 1, 0, 0, 0,
+					   0, 0, 0, 0, 0, 0, 1, 0, 0,
+					   0, 0, 0, 0, 0, 0, 0, 1, 0,
+					   0, 0, 0, 0, 0, 0, 0, 0, 1};
+
 	arm_mat_init_f32(&F, 9, 9, F_f32);
 
 
@@ -100,7 +118,16 @@ float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], flo
 	float Qmag = (buffer_filtro->Q_mag)*(buffer_filtro->dt);
 	float Qbias = (buffer_filtro->Q_bias)*(buffer_filtro->dt);
 
-	float Qrdt_f32[81] = {(Qacel), 0, 0, 0, 0, 0, 0, 0, 0, 0, (Qacel), 0, 0, 0, 0, 0, 0, 0, 0, 0, (Qacel), 0, 0, 0, 0, 0, 0, 0, 0, 0, (Qmag), 0, 0, 0, 0, 0, 0, 0, 0, 0, (Qmag), 0, 0, 0, 0, 0, 0, 0, 0, 0, (Qmag), 0, 0, 0, 0, 0, 0, 0, 0, 0, (Qbias), 0, 0, 0, 0, 0, 0, 0, 0, 0, (Qbias), 0, 0, 0, 0, 0, 0, 0, 0, 0, (Qbias)};
+	float Qrdt_f32[81] = {(Qacel), 0, 0, 0, 0, 0, 0, 0, 0,
+	 					  0, (Qacel), 0, 0, 0, 0, 0, 0, 0,
+	 					  0, 0, (Qacel), 0, 0, 0, 0, 0, 0,
+	 					  0, 0, 0, (Qmag), 0, 0, 0, 0, 0,
+	 					  0, 0, 0, 0, (Qmag), 0, 0, 0, 0,
+	 					  0, 0, 0, 0, 0, (Qmag), 0, 0, 0,
+	 					  0, 0, 0, 0, 0, 0, (Qbias), 0, 0,
+	 					  0, 0, 0, 0, 0, 0, 0, (Qbias), 0,
+	 					  0, 0, 0, 0, 0, 0, 0, 0, (Qbias)};
+
 	arm_mat_init_f32(&Qrdt, 9, 9, Qrdt_f32);
 
 
@@ -108,7 +135,13 @@ float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], flo
 	float Racel = buffer_filtro->R_acel;
 	float Rmag = buffer_filtro->R_mag;
 	
-	float R_f32[36] = {(Racel), 0, 0, 0, 0, 0, 0, (Racel), 0, 0, 0, 0, 0, 0, (Racel), 0, 0, 0, 0, 0, 0, (Rmag), 0, 0, 0, 0, 0, 0, (Rmag), 0, 0, 0, 0, 0, 0, (Rmag)};
+	float R_f32[36] = {(Racel), 0, 0, 0, 0, 0,
+					   0, (Racel), 0, 0, 0, 0,
+					   0, 0, (Racel), 0, 0, 0,
+					   0, 0, 0, (Rmag), 0, 0,
+					   0, 0, 0, 0, (Rmag), 0,
+					   0, 0, 0, 0, 0, (Rmag)};
+
 	arm_mat_init_f32(&R, 6, 6, R_f32);
 
 
@@ -122,11 +155,26 @@ float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], flo
 	arm_mat_init_f32(&z, 6, 1, z_f32);
 
 	//Matriz de mapeamento dos estados - H
-	float H_f32[54] = {1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0};
+	float H_f32[54] = {1,0,0,0,0,0,0,0,0,
+					   0,1,0,0,0,0,0,0,0,
+					   0,0,1,0,0,0,0,0,0,
+					   0,0,0,1,0,0,0,0,0,
+					   0,0,0,0,1,0,0,0,0,
+					   0,0,0,0,0,1,0,0,0};
+
 	arm_mat_init_f32(&H, 6, 9, H_f32);
 
 	//Matriz de mapeamento dos estados transposta - Ht
-	float Ht_f32[54] = {1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; 
+	float Ht_f32[54] = {1,0,0,0,0,0,
+						0,1,0,0,0,0,
+						0,0,1,0,0,0,
+						0,0,0,1,0,0,
+						0,0,0,0,1,0,
+						0,0,0,0,0,1,
+						0,0,0,0,0,0,
+						0,0,0,0,0,0,
+						0,0,0,0,0,0}; 
+						
 	arm_mat_init_f32(&Ht, 9, 6, Ht_f32);
 
 	//Matriz S...
