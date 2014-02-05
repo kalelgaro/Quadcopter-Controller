@@ -1,4 +1,4 @@
-#define ARM_MATH_CM4
+﻿#define ARM_MATH_CM4
   
 #ifndef __FPU_USED
   #define __FPU_USED 1
@@ -95,8 +95,7 @@ float yaw_pos_filtro;
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state K_acelerometro = {{0,0,1}, {100, 0, 0, 0, 100, 0, 0, 0, 100}, 0.0035, 3, 0.00125};
-kalman_filter_state K_magnetometro = {{0,0,0}, {100, 0, 0, 0, 100, 0, 0, 0, 100}, 0.005, 5, 0.00125};
+kalman_filter_state K_acelerometro = {{0,0,1,0,0,0,0,0,0}, {100,0,0,0,0,0,0,0,0,0,100,0,0,0,0,0,0,0,0,0,100,0,0,0,0,0,0,0,0,0,100,0,0,0,0,0,0,0,0,0,100,0,0,0,0,0,0,0,0,0,100,0,0,0,0,0,0,0,0,0,100,0,0,0,0,0,0,0,0,0,100,0,0,0,0,0,0,0,0,0,100}, 0.004, 0.005, 0.003, 3, 5, 0.00125};
 
 //Erros utilizados nos controladores PID
 
@@ -274,9 +273,9 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Giroscopio[1] = saida_gyro_dps_pf[1];
 	Giroscopio[2] = saida_gyro_dps_pf[2];
 
-	Magnetometro[0] = K_magnetometro.ultimo_estado[0];
-	Magnetometro[1] = K_magnetometro.ultimo_estado[1];
-	Magnetometro[2] = K_magnetometro.ultimo_estado[2];
+	Magnetometro[0] = K_acelerometro.ultimo_estado[3];
+	Magnetometro[1] = K_acelerometro.ultimo_estado[4];
+	Magnetometro[2] = K_acelerometro.ultimo_estado[5];
 }
 
 
@@ -333,12 +332,12 @@ void processo_controle()
 
     //Insere os valores da leituras dentro do filtro de Kalman.
 
-    kalman_filter(&K_acelerometro, saida_gyro_dps_pf, acelerometro_adxl345);
-    kalman_filter(&K_magnetometro, saida_gyro_dps_pf, magnetometro);
+	kalman_filter(&K_acelerometro, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro);
 
     //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)
     
     //Roll e Pitch
+	
 	acel_2_angulos(K_acelerometro.ultimo_estado[acel_x], K_acelerometro.ultimo_estado[acel_y], K_acelerometro.ultimo_estado[acel_z], angulos_inclinacao);
 	
 	//Offset angular observado na telemetria.
@@ -346,7 +345,7 @@ void processo_controle()
 	angulos_inclinacao[roll] -= 0.3;
 	
 	//Yaw
-	orientacao = calcular_orientacao(K_magnetometro.ultimo_estado, angulos_inclinacao[pitch], angulos_inclinacao[roll]);
+	orientacao = calcular_orientacao((K_acelerometro.ultimo_estado)+3, angulos_inclinacao[pitch], -angulos_inclinacao[roll]);
 
 	/*Ajuste de sentidos dos angulos*/
 	angulos_inclinacao[roll] = -angulos_inclinacao[roll];
