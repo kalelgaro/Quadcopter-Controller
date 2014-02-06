@@ -96,6 +96,7 @@ float yaw_pos_filtro;
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
 kalman_filter_state K_acelerometro = {{0,0,1,0,0,0,0,0,0}, 
+
 									  {100,0,0,0,0,0,0,0,0,
 									   0,100,0,0,0,0,0,0,0,
 									   0,0,100,0,0,0,0,0,0,
@@ -107,7 +108,7 @@ kalman_filter_state K_acelerometro = {{0,0,1,0,0,0,0,0,0},
 									   0,0,0,0,0,0,0,0,100}, 0.004, 0.005, 0.003, 3, 5, 0.00125};
 
 //Erros utilizados nos controladores PID
-
+									   
 float erro_pitch ,erro_roll ,erro_yaw;
 
 //Vetor de testes

@@ -28,7 +28,7 @@
 //Bruno f. M. Callegaro - 20/12/2013
 
 
-float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[])
+void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[])
 {
 	//Instancias das matrizes utilizadas para o cálculo
 	arm_matrix_instance_f32 X;			//Matriz de estados. [9,1]
@@ -253,7 +253,7 @@ float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], flo
 	//Sinv = inv(S);
 	arm_mat_inverse_f32(&S, &Sinv);
 
-	//Kk = P*H*S^(-1)
+	//Kk = P*Ht*S^(-1)
 	arm_mat_mult_f32(&P, &Ht, &temp_calc_960);
 	arm_mat_mult_f32(&temp_calc_960, &Sinv, &K);
 
@@ -270,7 +270,6 @@ float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], flo
 	arm_mat_mult_f32(&temp_calc_993, &P, &temp_calc_992);
 
 	arm_copy_f32(X_f32, buffer_filtro->ultimo_estado, 9);
-	arm_copy_f32(temp_calc_992_f32, buffer_filtro->P, 81);
-	return 0;
+	arm_copy_f32(temp_calc_993_f32, buffer_filtro->P, 81);
 
 }
