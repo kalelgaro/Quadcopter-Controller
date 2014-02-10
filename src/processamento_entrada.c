@@ -2,7 +2,7 @@
 #include <stm32f4xx_conf.h>
 #include <processamento_entrada.h>
 
-
+#define REF_ANGULAR_MAX
 
 void configurar_timers_PWM_I(void)
 {
