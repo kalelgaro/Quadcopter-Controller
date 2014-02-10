@@ -2,7 +2,11 @@
 #include <stm32f4xx_conf.h>
 #include <processamento_entrada.h>
 
-#define REF_ANGULAR_MAX
+//Constante -> Deslocamento angular absoluto máximo de 15 graus
+#define REF_ANGULAR_MAX 15
+
+//Constante -> Valor máximo inserido na rotaçaõ constante
+#define MAX_ROT_CONSTANTE 2150
 
 void configurar_timers_PWM_I(void)
 {
@@ -126,4 +130,39 @@ void configurar_timers_PWM_I(void)
   TIM_ITConfig(TIM5, TIM_IT_CC2, ENABLE);
   TIM_ITConfig(TIM9, TIM_IT_CC2, ENABLE);
   	
+}
+
+void tratar_referencias(canais_entrada entradas, referencias *saida_referencias) {
+
+
+  if(entradas.ch2 >= -1.1 && entradas.ch2 <= 1.1)
+    saida_referencias->Ref_pitch = (entradas.ch2*REF_ANGULAR_MAX);
+  else
+    saida_referencias->Ref_pitch = 0;
+
+  if(entradas.ch1 >= -1.1 && entradas.ch1 <= 1.1)
+    saida_referencias->Ref_roll =  (entradas.ch1*REF_ANGULAR_MAX);
+  else
+    saida_referencias->Ref_roll = 0;
+
+  if(entradas.ch4 >= -1.1 && entradas.ch4 <= 1.1)
+    saida_referencias->Ref_yaw = (entradas.ch4 *REF_ANGULAR_MAX);
+  else
+    saida_referencias->Ref_yaw = 0;
+  
+
+  //Checa a posição da alavanca de aceleração -> 
+    //Entre 0 e 0.15 e o controlador esta desligado -> Mantém o controlador desligado -> Segurança de inicialização.
+    //Entre 0.15 e 2.2 - Controlador ligado e insere o valor mulitplicado por 850 no motor
+
+
+  if(entradas.ch3 < 0.15)
+  {
+    saida_referencias->Rotacao_constante = 0;
+
+  }else if((entradas.ch3 > 0.15) && (entradas.ch3 <= 2.2))
+  {
+    saida_referencias->Rotacao_constante = (entradas.ch3*(MAX_ROT_CONSTANTE/2)); //Insere o valor de rotação dos motores entre 146,25 e 2145
+
+  }
 }

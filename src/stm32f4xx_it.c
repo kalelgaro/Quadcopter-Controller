@@ -5,9 +5,10 @@
 #include "array_functions.h"
 #include "funcoes_spi.h"
 #include "string.h"
+#include "tratamento_sinal.h"
+#include "processamento_entrada.h"
 #include "processo_controle.h"
 #include "stm32f4xx_it.h"
-#include "tratamento_sinal.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -15,28 +16,33 @@
 
 /* - Defines para facilitar indexação dos vetores de dados - */
 
-#define medias_controle 14
+#define MEDIAS_CONTROLE 14
 
 /* Private variables ---------------------------------------------------------*/
 
 uint16_t variavel_delay_100ms = 100;
 
+//Leituras pontuais do PWM Input [-1; +1]
 float dc_ch_1;
 float dc_ch_2;
 float dc_ch_3;
 float dc_ch_4;
 
-float medio_ch1 = 0.0;
-float medio_ch2 = 0.0;
-float medio_ch3 = 0.0;
-float medio_ch4 = 0.0;
 
+//Buffers para realização da média rotativa dos canais do PWM Input
+float buffer_ch1[MEDIAS_CONTROLE];
+float buffer_ch2[MEDIAS_CONTROLE];
+float buffer_ch3[MEDIAS_CONTROLE];
+float buffer_ch4[MEDIAS_CONTROLE];
 
-float buffer_ch1[medias_controle];
-float buffer_ch2[medias_controle];
-float buffer_ch3[medias_controle];
-float buffer_ch4[medias_controle];
+//Estruturas para cálculos das referências do controlador
+  //Estrtura armazena os valores provenientes das médias rotativas, ques serão utilizados para cáculo das referências angulares.
+canais_entrada entradas;
 
+  //Referência à estrutura utilizada para armazenar os valores calculados e será utilizada para inserção destas no controlador.
+referencias ref_calculadas;
+
+//Valores finais inseridos como referência [-Ang_max; +Ang_max]
 /* Private function prototypes -----------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
@@ -172,7 +178,7 @@ void TIM5_IRQHandler(void)
   		
   		dc_ch_1 = ((float)(((float)TIM_GetCapture1(TIM5))-1480)/570);
 
-      medio_ch1 = media_rotativa(dc_ch_1, buffer_ch1, medias_controle);
+      entradas.ch1 = media_rotativa(dc_ch_1, buffer_ch1, MEDIAS_CONTROLE);
   	}
   	/* Clear TIM5 Capture compare interrupt pending bit */
 	TIM_ClearITPendingBit(TIM5, TIM_IT_CC2);
@@ -186,7 +192,7 @@ void TIM3_IRQHandler(void)
   	{
   		dc_ch_2 = ((float)(((float)TIM_GetCapture1(TIM3))-1480)/570);
 
-      medio_ch2 = media_rotativa(dc_ch_2, buffer_ch2, medias_controle);
+      entradas.ch2 = media_rotativa(dc_ch_2, buffer_ch2, MEDIAS_CONTROLE);
   	}
   	/* Clear TIM5 Capture compare interrupt pending bit */
   	TIM_ClearITPendingBit(TIM3, TIM_IT_CC2);
@@ -200,7 +206,7 @@ void TIM1_BRK_TIM9_IRQHandler(void)
   	{
       dc_ch_3 = ((float)(((float)TIM_GetCapture1(TIM9))-1480)/570+1);
 
-      medio_ch3 = media_rotativa(dc_ch_3, buffer_ch3, medias_controle);
+      entradas.ch3 = media_rotativa(dc_ch_3, buffer_ch3, MEDIAS_CONTROLE);
   	}
   	/* Clear TIM5 Capture compare interrupt pending bit */
 	TIM_ClearITPendingBit(TIM9, TIM_IT_CC2);
@@ -214,7 +220,7 @@ void TIM2_IRQHandler(void)
   	{
   		dc_ch_4 = ((float)(((float)TIM_GetCapture2(TIM2))-1480)/570);
 
-      medio_ch4 = media_rotativa(dc_ch_4, buffer_ch4, medias_controle);
+      entradas.ch4 = media_rotativa(dc_ch_4, buffer_ch4, MEDIAS_CONTROLE);
   	}
   	/* Clear TIM5 Capture compare interrupt pending bit */
   	TIM_ClearITPendingBit(TIM2, TIM_IT_CC1);
@@ -231,9 +237,11 @@ void TIM6_DAC_IRQHandler(void)
     TIM_ClearITPendingBit(TIM6, TIM_IT_Update);		//clear interrupt and start counting again to get precise freq
 
     //Setar referência dos controladores (Pitch, Roll e Yaw) e da rotação constante do motor, respectivamente.
-    setar_referencia(medio_ch2, medio_ch1, medio_ch4, medio_ch3);
+    tratar_referencias(entradas, &ref_calculadas);
+    setar_referencia(&ref_calculadas);
 
     //Aquisição,processamento e controle utilizando os sensores.
+
     processo_controle();              
 
   }

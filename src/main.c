@@ -52,8 +52,8 @@
 #include "tratamento_sinal.h"
 #include "stdlib.h"
 #include "kalman_filter.h"
-#include "processo_controle.h"
 #include "processamento_entrada.h"
+#include "processo_controle.h"
 
 /** @addtogroup STM32F4_Discovery_Peripheral_Examples
   * @{

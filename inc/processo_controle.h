@@ -1,7 +1,7 @@
 #ifndef _processo_controle_
 #define _processo_controle_
 
-	void setar_referencia(float Ref_pith, float Ref_roll, float Ref_yaw, float W_cte);
+	void setar_referencia(referencias*);
 	void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_yaw, float Kd_yaw);
 	void setar_parametros_Kalman(float Q_angle, float Q_bias, float R);
 	void setar_offset_acel(float offset[3]);

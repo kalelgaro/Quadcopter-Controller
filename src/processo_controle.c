@@ -17,8 +17,9 @@
 
 #include "arm_math.h"
 #include "kalman_filter.h"
-#include "processo_controle.h"
 #include "tratamento_sinal.h"
+#include "processamento_entrada.h"
+#include "processo_controle.h"
 
 #define yaw 2
 #define pitch 1
@@ -112,43 +113,21 @@ float zeros[3] = {0, 0, 0};
 //Altera os valores de referência utilizados no controlador PID.
 	//Os angulos de referência - Pitch,Roll e Yaw vão de -1 a 1
 	//O valor da rotação constante - W_cte - Vai de 0 até 2.
-void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_yaw, float W_cte)
+void setar_referencia(referencias *ref_entrada)
 {
 	//Altera a referência dos controladores
 		//A constante de 10 define que a excursão dos ângulos vai de - 10 até 10 graus.
 		//As condições abaixo checam se os valores inseridos são validos.
+	ref_pitch = ref_entrada->Ref_pitch;
+	ref_roll = ref_entrada->Ref_roll;
+	ref_yaw = ref_entrada->Ref_yaw;
+	rotacao_constante = ref_entrada->Rotacao_constante;
 
-	if((Ref_pitch >= -1.1) && (Ref_pitch <= 1.1))
-		ref_pitch = (Ref_pitch*15);
-	else
-		ref_pitch = 0;
-
-	if((Ref_roll >= -1.1) && (Ref_roll <= 1.1))
-		ref_roll =  (Ref_roll*15);
-	else
-		ref_roll = 0;
-
-	if((Ref_yaw >= -1.1) && (Ref_yaw <= 1.1))
-		ref_yaw = (Ref_yaw*15);
-	else
-		ref_yaw = 0;
-	
-
-	//Checa a posição da alavanca de aceleração -> 
-		//Entre 0 e 0.15 e o controlador esta desligado -> Mantém o controlador desligado -> Segurança de inicialização.
-		//Entre 0.15 e 2.2 - Controlador ligado e insere o valor mulitplicado por 850 no motor
-
-
-	if(W_cte < 0.15)
-	{
-		rotacao_constante = 0;
+	//Se a rotação constante aplicada aos motores é zero -> Operador deseja que este permaneça no chão, logo desliga o controlador.
+	if(rotacao_constante == 0)
 		controlador_ligado = 0;
-
-	}else if((W_cte > 0.15) && (W_cte <= 2.2))
-	{
+	else 
 		controlador_ligado = 1;
-		rotacao_constante = (W_cte*975); //Insere o valor de rotação dos motores entre 146,25 e 2145
-	}
 }
 
 //Altera as contastes do controlador PID. - Roll, Pitch e Yaw.
