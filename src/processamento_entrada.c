@@ -27,6 +27,7 @@ void configurar_timers_PWM_I(void)
 
   /*Configuração de temporização básica do timer*/
 
+  //Configurações dos timers de 32 bits - TIM5 e TIM2 - Clock do barramento de 84 MHz
   TIM_TimeBaseStructure.TIM_Period = 0xFFFFFFFF;									
   TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
@@ -36,9 +37,11 @@ void configurar_timers_PWM_I(void)
   	
   TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
 
+  //Configurações do timer de 16 bits - TIM3 - Clock do barramento de 84 MHz
 	TIM_TimeBaseStructure.TIM_Period = 0xFFFF;	
   TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
 
+  //Configurações do timer de 16bits - TIM9 - Clock do barramento de 168 MHz
 	PrescalerValue = (uint16_t) ((SystemCoreClock) / 1000000)- 1;
 	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
 	TIM_TimeBaseInit(TIM9, &TIM_TimeBaseStructure);  	
@@ -46,10 +49,10 @@ void configurar_timers_PWM_I(void)
   /*Configuração do pino utilizado como entrada para a leitura do PWM.*/
 
  	GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_1 | GPIO_Pin_3 | GPIO_Pin_0 | GPIO_Pin_7;				//PA1 ->Tim5_Ch2, PA0 -> Tim2_Ch2, PA7-> Tim3_Ch2, PA2 -> Tim9_Ch1
-	GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP ;
+	GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;        //Pinos no modo de Função alternativa.
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;   //Pinos com velocidade de 100 MHz.
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;       //Configuração de saída -> Push Pull
+	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP ;       //Pino com pull Up.
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
   	
 	/*ATiva a função alternativa do pino*/
@@ -61,7 +64,11 @@ void configurar_timers_PWM_I(void)
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_TIM9);
 
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_TIM3);
-  	
+  
+  //Configurações dos pinos 2 e 6  	
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_6;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN; //Pinos no modo de entrada.
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
 
   /*Configuração do interrupção.*/
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
