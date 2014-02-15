@@ -568,6 +568,7 @@ void iniciar_RF()
   	buffer_dados_tx[0] = 0x70;
   	escrever_registrador(SPI2, 0x07, buffer_dados_tx, 1);
 
+  	//Delay de 1mS
   	delay(10);
 
   	//Coloca a placa em modo de recepção.

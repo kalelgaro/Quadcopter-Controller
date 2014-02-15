@@ -85,10 +85,10 @@ void configurar_PWM() //Controle de velocidade do ESC.
 	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
 	TIM_ARRPreloadConfig(TIM4, ENABLE);
 
-	TIM4->CCR1 = 100;				//Pwm tem 1mS de pulso baixo
-	TIM4->CCR2 = 100;
-	TIM4->CCR3 = 100;
-	TIM4->CCR4 = 100;
+	TIM4->CCR1 = 400;				//Pwm tem 1mS de pulso baixo -> 500 - 400 = 100*1/(100e3Hz)
+	TIM4->CCR2 = 400;
+	TIM4->CCR3 = 400;
+	TIM4->CCR4 = 400;
 	/* TIM3 enable counter */
 	TIM_Cmd(TIM4, ENABLE);
 }
@@ -103,17 +103,18 @@ void ajustar_velocidade(uint8_t motor, uint16_t velocidade) {
 	if(velocidade > 100)
 		velocidade = 100;
 
+	//Saída no pwm é invertida, buffer com mosfet source comum, logo pulso é invertido.
 	if((motor&0x01) != 0)
-		TIM4->CCR1 = 100+velocidade;
+		TIM4->CCR1 = 400-velocidade;
 
 	if((motor&0x02) != 0)
-		TIM4->CCR2 = 100+velocidade;
+		TIM4->CCR2 = 400-velocidade;
 
 	if((motor&0x04) != 0)
-		TIM4->CCR3 = 100+velocidade;
+		TIM4->CCR3 = 400-velocidade;
 
 	if((motor&0x08) != 0)
-		TIM4->CCR4 = 100+velocidade;
+		TIM4->CCR4 = 400-velocidade;
 }
 
 
