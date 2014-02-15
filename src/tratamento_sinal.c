@@ -206,10 +206,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	velocidade_m4 = sqrt(velocidade_m4);
 
 	//Ajuste da velocidae dos motores calculadas acima.
-	ajustar_velocidade(8, (uint16_t)round((velocidade_m1)));
-	ajustar_velocidade(1, (uint16_t)round((velocidade_m2)));
-	ajustar_velocidade(2, (uint16_t)round((velocidade_m3)));
-	ajustar_velocidade(4, (uint16_t)round((velocidade_m4)));
+	ajustar_velocidade(4, (uint16_t)round((velocidade_m1)));
+	ajustar_velocidade(8, (uint16_t)round((velocidade_m2)));
+	ajustar_velocidade(1, (uint16_t)round((velocidade_m3)));
+	ajustar_velocidade(2, (uint16_t)round((velocidade_m4)));
 }
 
 float filtro_fir(float leitura, float buffer_leitura[], uint16_t numero_coeficientes, float buffer_coeficientes[])
