@@ -108,7 +108,7 @@ float kp,ki,kd, kp_yaw, ki_yaw, kd_yaw;
 
 //Variávies para armazenar os valores das constantes do FK para telemetria.
 
-float32_t Q_angle_set, Q_bias_set, R_medidas_set;	
+float32_t Q_acelerometro, R_acelerometro, Q_magnetometro, R_magnetometro;
 
 //extern float32_t variancia_roll;
 //extern float32_t variancia_pitch;
@@ -154,9 +154,9 @@ int main(void)
 {
 	iniciar_leds_debug();
 
-	setar_parametros_PID(60, 20, 7.85, 10, 0.5, 3);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(52, 10, 7.95, 20, 0.5, 4);							//Ajusta as constantes do PID para Roll e Pitch.
 
-	setar_parametros_Kalman(0.003, 0.001, 1.85);								//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(0.001, 3.4, 0.005, 5);								//Ajusta as covariâncias do filtro de Kalman.
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -316,18 +316,21 @@ int main(void)
 
 							limpar_buffer(buffer_dados_tx,33);
 
-							retornar_parametros_Kalman(&Q_angle_set, &Q_bias_set, &R_medidas_set);
+							retornar_parametros_Kalman(&Q_acelerometro, &R_acelerometro, &Q_magnetometro, &R_magnetometro);
 
 							buffer_dados_tx[0] = '^';
 
-							conversor.flutuante_entrada = Q_angle_set;
+							conversor.flutuante_entrada = Q_acelerometro;
 							copy_to(buffer_dados_tx, conversor.bytes, 1, 4);
 
-							conversor.flutuante_entrada = Q_bias_set;
+							conversor.flutuante_entrada = R_acelerometro;
 							copy_to(buffer_dados_tx, conversor.bytes, 5, 4);
 
-							conversor.flutuante_entrada = R_medidas_set;
+							conversor.flutuante_entrada = Q_magnetometro;
 							copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
+
+							conversor.flutuante_entrada = R_magnetometro;
+							copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 							escrita_dados(SPI2, buffer_dados_tx, 32);
 
@@ -392,23 +395,30 @@ int main(void)
 							conversor.bytes[2] = buffer_dados_rx[3];
 							conversor.bytes[3] = buffer_dados_rx[4];
 
-							Q_angle_set = arredondar_float(conversor.flutuante_entrada,8);
+							Q_acelerometro = arredondar_float(conversor.flutuante_entrada,6);
 
 							conversor.bytes[0] = buffer_dados_rx[5];
 							conversor.bytes[1] = buffer_dados_rx[6];
 							conversor.bytes[2] = buffer_dados_rx[7];
 							conversor.bytes[3] = buffer_dados_rx[8];
 
-							Q_bias_set = arredondar_float(conversor.flutuante_entrada,6);
+							R_acelerometro = arredondar_float(conversor.flutuante_entrada,6);
 
 							conversor.bytes[0] = buffer_dados_rx[9];
 							conversor.bytes[1] = buffer_dados_rx[10];
 							conversor.bytes[2] = buffer_dados_rx[11];
 							conversor.bytes[3] = buffer_dados_rx[12];
 
-							R_medidas_set = arredondar_float(conversor.flutuante_entrada,6);
+							Q_magnetometro = arredondar_float(conversor.flutuante_entrada,6);
 
-							setar_parametros_Kalman(Q_angle_set, Q_bias_set, R_medidas_set); //Insere os parametros no processo de controle.
+							conversor.bytes[0] = buffer_dados_rx[13];
+							conversor.bytes[1] = buffer_dados_rx[14];
+							conversor.bytes[2] = buffer_dados_rx[15];
+							conversor.bytes[3] = buffer_dados_rx[16];
+
+							R_magnetometro = arredondar_float(conversor.flutuante_entrada,6);
+
+							setar_parametros_Kalman(Q_acelerometro, R_acelerometro, Q_magnetometro, R_magnetometro); //Insere os parametros no processo de controle.
 
 						break;
 
@@ -493,19 +503,19 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
+			conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[1];
+			conversor.flutuante_entrada = telemetria_giroscopio[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[2];
+			conversor.flutuante_entrada = telemetria_giroscopio[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[0];
+			conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -609,7 +619,7 @@ void configurar_acelerometro()
 
   	configuracao_inicial.Power_Mode = Measure;							//Coloca a placa em modo de aquisição contínua.
   	configuracao_inicial.bandwidth = Rate_D3 | Rate_D2 | Rate_D0;		//Aquisição da placa em 800 Hz.
-  	configuracao_inicial.Full_Scale = 0;								//Fundo de escala em 2G
+  	configuracao_inicial.Full_Scale = Range_D1;								//Fundo de escala em 2G
   	configuracao_inicial.Resolution = 0;								//Resolução da placa em 10 bits.
   	configuracao_inicial.Self_Test = 0;									//Desliga o "self-test"
 

@@ -39,8 +39,6 @@ float kp,ki,kd; //Constantes que serão utilizadas no controle PID de Pitch e Ro
 
 float kp_yaw,ki_yaw,kd_yaw; //Constantes que serão utilizadas no controle PID do Yaw;
 
-float32_t Q_angle_set, Q_bias_set, R_medidas_set;
-
 /*----Flags para controle do processo de controle----*/
 uint8_t controlador_ligado = 0;
 
@@ -166,11 +164,14 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
 
-void setar_parametros_Kalman(float32_t Q_angle, float32_t Q_bias, float32_t R)
+void setar_parametros_Kalman(float32_t Q_acelerometro, float32_t R_acelerometro, float32_t Q_magnetometro, float32_t R_magnetometro)
 {
-	Q_angle_set = Q_angle;
-	Q_bias_set = Q_bias;
-	R_medidas_set = R;
+	K_acelerometro.Q = Q_acelerometro;
+	K_acelerometro.R = R_acelerometro;
+	
+	K_magnetometro.Q = Q_magnetometro;
+	K_magnetometro.R = R_magnetometro;
+
 }
 
 //Retorna o offset que foi obtido para o acelerometro
@@ -192,11 +193,13 @@ void retornar_parametros_pid(float *Kp, float *Ki, float *Kd)
 
 //Retrona os parametros utilizados no Filtro de Kalman (Telemetria)
 
-void retornar_parametros_Kalman(float32_t *Q_angle, float32_t *Q_bias, float32_t *R)
+void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *R_acelerometro, float32_t *Q_magnetometro, float32_t *R_magnetometro)
 {
-	*Q_angle = Q_angle_set;
-	*Q_bias = Q_bias_set;
-	*R = R_medidas_set;
+	*Q_acelerometro = K_acelerometro.Q;
+	*R_acelerometro = K_acelerometro.R;
+
+	*Q_magnetometro = K_magnetometro.Q;
+	*R_magnetometro = K_magnetometro.R;
 }
 
 //Altera o valor de offset do acelerômetro (Zero G Level).
@@ -270,9 +273,9 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[1] = K_acelerometro.ultimo_estado[1];
 	Acelerometro[2] = K_acelerometro.ultimo_estado[2];
 
-	Giroscopio[0] = saida_gyro_dps_pf[0];
-	Giroscopio[1] = saida_gyro_dps_pf[1];
-	Giroscopio[2] = saida_gyro_dps_pf[2];
+	Giroscopio[0] = acelerometro_adxl345[0];
+	Giroscopio[1] = acelerometro_adxl345[1];
+	Giroscopio[2] = acelerometro_adxl345[2];
 
 	Magnetometro[0] = K_magnetometro.ultimo_estado[0];
 	Magnetometro[1] = K_magnetometro.ultimo_estado[1];

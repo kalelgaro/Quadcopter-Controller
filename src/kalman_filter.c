@@ -78,7 +78,10 @@ float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], flo
 
 
 	//Matriz de atualização dos estados
-	float F_f32[9] = {1, (theta_z), (-theta_y), (-theta_z), 1, (theta_x), (theta_y), (-theta_x), 1};
+	float F_f32[9] = {1, (theta_z), (-theta_y), 
+					  (-theta_z), 1, (theta_x), 
+					  (theta_y), (-theta_x), 1};
+					  
 	arm_mat_init_f32(&F, 3, 3, F_f32);
 
 
