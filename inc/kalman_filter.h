@@ -13,19 +13,25 @@
 
 	typedef struct
 	{
-		float ultimo_estado[3]; 				//Salva o estado da ultima iteração do filtro Xk-1|k-1
+		float ultimo_estado[9]; 				//Salva o estado da ultima iteração do filtro Xk-1|k-1
 
-		float P[9];							//Matriz de Covariância do erro da ultima iterção (Pk|k-1)
+		float P[81];							//Matriz de Covariância do erro da ultima iterção (Pk|k-1)
 
-		float Q;
+		float Q_acel;
 
-		float R;
+		float Q_mag;
+
+		float Q_bias;
+
+		float R_acel;
+
+		float R_mag;
 
 		float dt;
 
 	} kalman_filter_state;
 
 
-	float kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[]);
+	void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[]);
 
 #endif /* KALMAN_FILTER_H_ */
