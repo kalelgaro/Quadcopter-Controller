@@ -41,7 +41,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	arm_matrix_instance_f32 Ht;			//Matriz de mapeamento do estado para o erro transposta. [9x6]
 	arm_matrix_instance_f32 Q;		//Matriz de covariância multiplicada por dt; [9,9]
 	arm_matrix_instance_f32 R;			//Matriz de variância [6,6]
-	arm_matrix_instance_f32 z;			//Matriz com as medidas 
 	arm_matrix_instance_f32 y;			//Matriz de erro entre medidas e estado estimado. [6,1]
 	arm_matrix_instance_f32 S;			//Matriz .... [6,6]
 	arm_matrix_instance_f32 Sinv;		//Matriz F inversa.
@@ -105,12 +104,12 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	arm_mat_init_f32(&Pdot, 9, 9, Pdot_f32);
 
 	//Matriz de atualização dos estados
-	float FJ_f32[81] = {0,		(wz), 	-(wy), 	0,		0, 		0, 		0, 		0, 		0,
-					   	-(wz),	0, 		(wx), 	0, 		0, 		0, 		0, 		0, 		0,
-					   	(wy), 	-(wx), 	0, 		0, 		0, 		0, 		0, 		0, 		0,
-					   	0,		0,		0,		0, 		(wz),	-(wy), 	0, 		0, 		0,
-					   	0, 		0, 		0,		-(wz), 	0, 		(wx),	0, 		0,		0,
-					   	0, 		0, 		0,		(wy),	-(wx), 	0, 		0, 		0, 		0,
+	float FJ_f32[81] = {0,		(wz), 	-(wy), 	0,		0, 		0, 		0, 		acel_z,	-acel_y,
+					   	-(wz),	0, 		(wx), 	0, 		0, 		0, 		-acel_z,0, 		acel_x,
+					   	(wy), 	-(wx), 	0, 		0, 		0, 		0, 		acel_y, -acel_x,0,
+					   	0,		0,		0,		0, 		(wz),	-(wy), 	0, 		mag_z,  -mag_y,
+					   	0, 		0, 		0,		-(wz), 	0, 		(wx),	-mag_z, 0,		mag_x,
+					   	0, 		0, 		0,		(wy),	-(wx), 	0, 		mag_y, 	-mag_x, 0,
 					   	0, 		0, 		0,		0, 		0, 		0, 		0, 		0, 		0,
 					   	0, 		0, 		0, 		0, 		0, 		0, 		0, 		0, 		0,
 					   	0, 		0, 		0, 		0, 		0, 		0, 		0, 		0, 		0};
@@ -125,9 +124,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 					   	0,		0,		0,		0, 		-(wz),	(wy), 	0, 		0, 		0,
 					   	0, 		0, 		0,		(wz), 	0, 		-(wx),	0, 		0,		0,
 					   	0, 		0, 		0,		-(wy),	(wx), 	0, 		0, 		0, 		0,
-					   	0, 		0, 		0,		0, 		0, 		0, 		0, 		0, 		0,
-					   	0, 		0, 		0, 		0, 		0, 		0, 		0, 		0, 		0,
-					   	0, 		0, 		0, 		0, 		0, 		0, 		0, 		0, 		0};
+					   	0, 		-acel_z,acel_y, 0, 		-mag_z,	mag_y, 	0, 		0, 		0,
+					   	acel_z,	0, 		-acel_x,mag_z,  0, 		-mag_x, 0, 		0, 		0,
+					   	-acel_y,acel_x,	0, 		-mag_y,	mag_x,	0, 		0, 		0, 		0};
 
 	arm_mat_init_f32(&FJt, 9, 9, FJt_f32);
 
@@ -166,11 +165,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	//Matriz de erro entre medida e estado estimado
 	float y_f32[6];
 	arm_mat_init_f32(&y, 6, 1, y_f32);
-
-
-	//Matriz que contém as medidas do acelerômetro e magnetometro.
-	float z_f32[6] = {medida_accel[0], medida_accel[1], medida_accel[2], medida_mag[0], medida_mag[1], medida_mag[2]};
-	arm_mat_init_f32(&z, 6, 1, z_f32);
 
 	//Matriz de mapeamento dos estados - H
 	float H_f32[54] = {1,0,0,0,0,0,0,0,0,

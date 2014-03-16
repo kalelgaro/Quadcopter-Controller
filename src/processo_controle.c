@@ -105,7 +105,7 @@ kalman_filter_state K_acelerometro = {{0,0,1,0,0,0,0,0,0},
 									   0,0,0,0,0,100,0,0,0,
 									   0,0,0,0,0,0,100,0,0,
 									   0,0,0,0,0,0,0,100,0,
-									   0,0,0,0,0,0,0,0,100}, 0.0011, 0.0034, 0.01, 3.3, 5, 0.00125};
+									   0,0,0,0,0,0,0,0,100}, 1e-9, 5e-7, 5e-4, 1e2, 7.5e1, 0.00125};
 
 //Erros utilizados nos controladores PID
 									   
@@ -279,9 +279,9 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[1] = K_acelerometro.ultimo_estado[1];
 	Acelerometro[2] = K_acelerometro.ultimo_estado[2];
 
-	Giroscopio[0] = saida_gyro_dps_pf[0];
-	Giroscopio[1] = saida_gyro_dps_pf[1];
-	Giroscopio[2] = saida_gyro_dps_pf[2];
+	Giroscopio[0] = acelerometro_adxl345[0];
+	Giroscopio[1] = acelerometro_adxl345[1];
+	Giroscopio[2] = acelerometro_adxl345[2];
 
 	Magnetometro[0] = K_acelerometro.ultimo_estado[3];
 	Magnetometro[1] = K_acelerometro.ultimo_estado[4];
@@ -351,8 +351,8 @@ void processo_controle()
 	acel_2_angulos(K_acelerometro.ultimo_estado[acel_x], K_acelerometro.ultimo_estado[acel_y], K_acelerometro.ultimo_estado[acel_z], angulos_inclinacao);
 	
 	//Offset angular observado na telemetria.
-	angulos_inclinacao[pitch] -= -0.3;
-	angulos_inclinacao[roll] -= 0.3;
+	//angulos_inclinacao[pitch] -= -0.3;
+	//angulos_inclinacao[roll] -= 0.3;
 	
 	//Yaw
 	orientacao = calcular_orientacao((K_acelerometro.ultimo_estado)+3, angulos_inclinacao[pitch], -angulos_inclinacao[roll]);
