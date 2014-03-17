@@ -63,6 +63,9 @@ float angulos_inclinacao[2];
 float magnetometro[3];
 float orientacao;
 
+float orientacao_inicial = 0.0;
+float temp_orientacao;
+
 //Buffers de estado dos controles PID para pitch e roll.
 
 double buffer_pid_pitch[4] = {0, 0, 0, 0};
@@ -103,7 +106,7 @@ kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0},
 									   0,0,0,0,0,100,0,0,0,
 									   0,0,0,0,0,0,100,0,0,
 									   0,0,0,0,0,0,0,100,0,
-									   0,0,0,0,0,0,0,0,100}, 1e-8, 1e-1, 1e-5, 2e2, 2e3, 0.0025};
+									   0,0,0,0,0,0,0,0,100}, 1e-8, 1e-1, 1e-5, 2e2, 5e2, 0.0025};
 
 //Erros utilizados nos controladores PID
 									   
@@ -246,7 +249,7 @@ void processar_magnetometro()
 	//Chega no registrador de status se há leituras prontas no magnetômetro.
 	if((status&0x01)==0x01)
 	{
-		orientacao = HMC5883L_Read_Data(I2C3, magnetometro);
+		HMC5883L_Read_Data(I2C3, magnetometro);
 	}
 }
 
@@ -266,7 +269,7 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 {
 	estado_KF[roll] =  angulos_inclinacao[roll];
 	estado_KF[pitch] = angulos_inclinacao[pitch];
-	estado_KF[yaw] =   orientacao;
+	estado_KF[yaw] =   orientacao - orientacao_inicial;
 
 	// estado_KF[roll] =  ref_roll;
 	// estado_KF[pitch] = ref_pitch;
@@ -369,7 +372,7 @@ void processo_controle()
 		/* Cálcula o erro  bufferque será utilizado no PID -> Referência - Feedback */
 		erro_pitch = (ref_pitch - angulos_inclinacao[pitch]);
 		erro_roll =  (ref_roll - angulos_inclinacao[roll]);
-		erro_yaw =   (ref_yaw - orientacao);
+		erro_yaw =   (ref_yaw - (orientacao - orientacao_inicial));
 
 		/* Cálculo do PID */
 			//Pitch & Roll
@@ -402,14 +405,19 @@ void processo_controle()
 		inserir_ajuster_motores(0, 0, 0, 0);
 
 		if(flag_inicializacao == 0)
+		{
 			contador_ativacao++;
+			orientacao_inicial = orientacao_inicial + orientacao/2000;
+		}
 			
-		if(contador_ativacao == 4000)
+		if(contador_ativacao == 2000)
 		{
 			GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
 			flag_inicializacao = 1;
 		}
+			
+		
 	}
 	//Salva valores de interesse nas estrutura que é enviada para telemetria.
 

@@ -776,23 +776,23 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
-void teste_filtro_de_kalman(void)
-{
-	kalman_filter_state estado_teste = {{5,2,1,6,3,4,10,20,30}, 
+// void teste_filtro_de_kalman(void)
+// {
+// 	kalman_filter_state estado_teste = {{5,2,1,6,3,4,10,20,30}, 
 
-                						{100,0,0,0,0,0,0,0,0,
- 									   	 0,100,0,0,0,0,0,0,0,
-									   	 0,0,100,0,0,0,0,0,0,
-									   	 0,0,0,100,0,0,0,0,0,
-									     0,0,0,0,100,0,0,0,0,
-									     0,0,0,0,0,100,0,0,0,
-									     0,0,0,0,0,0,100,0,0,
-									     0,0,0,0,0,0,0,100,0,
-									     0,0,0,0,0,0,0,0,100}, 0.004, 0.005, 0.003, 3, 5, 0.00125};
+//                 						{100,0,0,0,0,0,0,0,0,
+//  									   	 0,100,0,0,0,0,0,0,0,
+// 									   	 0,0,100,0,0,0,0,0,0,
+// 									   	 0,0,0,100,0,0,0,0,0,
+// 									     0,0,0,0,100,0,0,0,0,
+// 									     0,0,0,0,0,100,0,0,0,
+// 									     0,0,0,0,0,0,100,0,0,
+// 									     0,0,0,0,0,0,0,100,0,
+// 									     0,0,0,0,0,0,0,0,100}, 0.004, 0.005, 0.003, 3, 5, 0.00125};
 
-	float teste_medida_gyro[3] = {20, 10, 45};
-	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
-	float teste_medida_mag[3] = {1.3, 1, -0.3};
+// 	float teste_medida_gyro[3] = {20, 10, 45};
+// 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
+// 	float teste_medida_mag[3] = {1.3, 1, -0.3};
 
-	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag);
-}
+// 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag);
+// }
