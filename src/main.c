@@ -516,19 +516,19 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[0];
+			conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[1];
+			conversor.flutuante_entrada = telemetria_magnetometro[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[2];
+			conversor.flutuante_entrada = telemetria_magnetometro[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
+			conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -682,9 +682,7 @@ void configurar_bussola()
 	configuracao_inicial.Mode = Countinuous;
 	configuracao_inicial.HS_I2C = 0;
 	
-	GPIO_SetBits(GPIOD,GPIO_Pin_14);
 	HMC5883L_Init(I2C3, &configuracao_inicial);
-	GPIO_ResetBits(GPIOD,GPIO_Pin_14);
 }
 
 //Inicia o timer principal utilizado na aquisição de dados (TIM6)
@@ -776,23 +774,27 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
-// void teste_filtro_de_kalman(void)
-// {
-// 	kalman_filter_state estado_teste = {{5,2,1,6,3,4,10,20,30}, 
+ // void teste_filtro_de_kalman(void)
+ // {
+ // 	kalman_filter_state estado_teste = {{5,2,1,6,3,4,10,20,30, 3, 4, 5},
 
-//                 						{100,0,0,0,0,0,0,0,0,
-//  									   	 0,100,0,0,0,0,0,0,0,
-// 									   	 0,0,100,0,0,0,0,0,0,
-// 									   	 0,0,0,100,0,0,0,0,0,
-// 									     0,0,0,0,100,0,0,0,0,
-// 									     0,0,0,0,0,100,0,0,0,
-// 									     0,0,0,0,0,0,100,0,0,
-// 									     0,0,0,0,0,0,0,100,0,
-// 									     0,0,0,0,0,0,0,0,100}, 0.004, 0.005, 0.003, 3, 5, 0.00125};
+ //                 						{100,0,0,0,0,0,0,0,0,0,0,0,
+ //  									   	 0,100,0,0,0,0,0,0,0,0,0,0,
+ // 									   	 0,0,100,0,0,0,0,0,0,0,0,0,
+ // 									   	 0,0,0,100,0,0,0,0,0,0,0,0,
+ // 									     0,0,0,0,100,0,0,0,0,0,0,0,
+ // 									     0,0,0,0,0,100,0,0,0,0,0,0,
+ // 									     0,0,0,0,0,0,100,0,0,0,0,0,
+ // 									     0,0,0,0,0,0,0,100,0,0,0,0,
+ // 									     0,0,0,0,0,0,0,0,100,0,0,0,
+ // 									     0,0,0,0,0,0,0,0,0,100,0,0,
+ // 									     0,0,0,0,0,0,0,0,0,0,100,0,
+ // 									     0,0,0,0,0,0,0,0,0,0,0,100},
+ // 									     0.004, 0.005, 0.003, 0.002, 3, 5, 0.0025};
 
-// 	float teste_medida_gyro[3] = {20, 10, 45};
-// 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
-// 	float teste_medida_mag[3] = {1.3, 1, -0.3};
+ // 	float teste_medida_gyro[3] = {20, 10, 45};
+ // 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
+ // 	float teste_medida_mag[3] = {1.3, 1, -0.3};
 
-// 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag);
-// }
+ // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag);
+ // }

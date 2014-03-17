@@ -96,17 +96,22 @@ float yaw_pos_filtro;
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0}, 
+kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0,0,0,0}, 
 
-									  {100,0,0,0,0,0,0,0,0,
-									   0,100,0,0,0,0,0,0,0,
-									   0,0,100,0,0,0,0,0,0,
-									   0,0,0,100,0,0,0,0,0,
-									   0,0,0,0,100,0,0,0,0,
-									   0,0,0,0,0,100,0,0,0,
-									   0,0,0,0,0,0,100,0,0,
-									   0,0,0,0,0,0,0,100,0,
-									   0,0,0,0,0,0,0,0,100}, 1e-8, 1e-1, 1e-5, 2e2, 5e2, 0.0025};
+									  {100,0,0,0,0,0,0,0,0,0,0,0,
+									   0,100,0,0,0,0,0,0,0,0,0,0,
+									   0,0,100,0,0,0,0,0,0,0,0,0,
+									   0,0,0,100,0,0,0,0,0,0,0,0,
+									   0,0,0,0,100,0,0,0,0,0,0,0,
+									   0,0,0,0,0,100,0,0,0,0,0,0,
+									   0,0,0,0,0,0,100,0,0,0,0,0,
+									   0,0,0,0,0,0,0,100,0,0,0,0,
+									   0,0,0,0,0,0,0,0,100,0,0,0,
+									   0,0,0,0,0,0,0,0,0,100,0,0,
+								       0,0,0,0,0,0,0,0,0,0,100,0,
+							           0,0,0,0,0,0,0,0,0,0,0,100}, 
+
+							           1.0, 0.9, 5e-2, 1e-4, 1e2, 1e3, 0.0025};
 
 //Erros utilizados nos controladores PID
 									   
@@ -304,13 +309,13 @@ float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
 	//Phi -> Roll
 
 	/*Valores de offset obtidos através do sphereFIT no matlab*/
-	float Vx = -0.1610 ;
-	float Vy = -0.0581;
-	float Vz = 0.0872;
+	//float Vx = -0.1610 ;
+	//float Vy = -0.0581;
+	//float Vz = 0.0872;
 
-	float MagX = leituras_mag[0]-Vx;
-	float MagY = leituras_mag[1]-Vy;
-	float MagZ = leituras_mag[2]-Vz;	
+	float MagX = leituras_mag[0];
+	float MagY = leituras_mag[1];
+	float MagZ = leituras_mag[2];	
 
 	//Conversão de graus para radianos.
 	Pitch = (Pitch/57.3);
