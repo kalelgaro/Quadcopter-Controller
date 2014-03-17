@@ -104,34 +104,28 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	arm_mat_init_f32(&Pdot, 9, 9, Pdot_f32);
 
 	//Matriz de atualização dos estados
-<<<<<<< .mine	float F_f32[9] = {1, (theta_z), (-theta_y), 
-					  (-theta_z), 1, (theta_x), 
-					  (theta_y), (-theta_x), 1};
-					  
-	arm_mat_init_f32(&F, 3, 3, F_f32);
-=======	float FJ_f32[81] = {0,		(wz), 	-(wy), 	0,		0, 		0, 		0, 		acel_z,	-acel_y,
-					   	-(wz),	0, 		(wx), 	0, 		0, 		0, 		-acel_z,0, 		acel_x,
-					   	(wy), 	-(wx), 	0, 		0, 		0, 		0, 		acel_y, -acel_x,0,
-					   	0,		0,		0,		0, 		(wz),	-(wy), 	0, 		mag_z,  -mag_y,
-					   	0, 		0, 		0,		-(wz), 	0, 		(wx),	-mag_z, 0,		mag_x,
-					   	0, 		0, 		0,		(wy),	-(wx), 	0, 		mag_y, 	-mag_x, 0,
-					   	0, 		0, 		0,		0, 		0, 		0, 		0, 		0, 		0,
-					   	0, 		0, 		0, 		0, 		0, 		0, 		0, 		0, 		0,
-					   	0, 		0, 		0, 		0, 		0, 		0, 		0, 		0, 		0};
->>>>>>> .theirs
+	float FJ_f32[81] = {0,		(wz), 	-(wy), 	0,		0, 		0, 		0, 		 acel_z,	-acel_y,
+					   	-(wz),	0, 		(wx), 	0, 		0, 		0, 		-acel_z, 0, 		acel_x,
+					   	(wy), 	-(wx), 	0, 		0, 		0, 		0, 		acel_y,  -acel_x,	0,
+					   	0,		0,		0,		0, 		(wz),	-(wy), 	0, 		 mag_z,  	-mag_y,
+					   	0, 		0, 		0,		-(wz), 	0, 		(wx),	-mag_z,  0,			mag_x,
+					   	0, 		0, 		0,		(wy),	-(wx), 	0, 		mag_y, 	 -mag_x,  	0,
+					   	0, 		0, 		0,		0, 		0, 		0, 		0, 		 0, 	  	0,
+					   	0, 		0, 		0, 		0, 		0, 		0, 		0, 		 0, 		0,
+					   	0, 		0, 		0, 		0, 		0, 		0, 		0, 		 0, 		0};
+	
 	arm_mat_init_f32(&FJ, 9, 9, FJ_f32);
 
-
 	//Matriz de atualização dos estados transposta
-	float FJt_f32[81]= {0,		-(wz), 	(wy), 	0,		0, 		0, 		0, 		0, 		0,
-					   	(wz),	0, 		-(wx), 	0, 		0, 		0, 		0, 		0, 		0,
-					   	-(wy), 	(wx), 	0, 		0, 		0, 		0, 		0, 		0, 		0,
-					   	0,		0,		0,		0, 		-(wz),	(wy), 	0, 		0, 		0,
-					   	0, 		0, 		0,		(wz), 	0, 		-(wx),	0, 		0,		0,
-					   	0, 		0, 		0,		-(wy),	(wx), 	0, 		0, 		0, 		0,
-					   	0, 		-acel_z,acel_y, 0, 		-mag_z,	mag_y, 	0, 		0, 		0,
-					   	acel_z,	0, 		-acel_x,mag_z,  0, 		-mag_x, 0, 		0, 		0,
-					   	-acel_y,acel_x,	0, 		-mag_y,	mag_x,	0, 		0, 		0, 		0};
+	float FJt_f32[81]= {0,			-(wz), 		(wy), 		0,		0, 		0, 		0, 		0, 		0,
+					   	(wz),		0, 			-(wx), 		0, 		0, 		0, 		0, 		0, 		0,
+					   	-(wy), 		(wx), 		0, 			0, 		0, 		0, 		0, 		0, 		0,
+					   	0,			0,			0,			0, 		-(wz),	(wy), 	0, 		0, 		0,
+					   	0, 			0, 			0,			(wz), 	0, 		-(wx),	0, 		0,		0,
+					   	0, 			0, 			0,			-(wy),	(wx), 	0, 		0, 		0, 		0,
+					   	0, 			-acel_z,	acel_y, 	0, 		-mag_z,	mag_y, 	0, 		0, 		0,
+					   	acel_z,		0, 			-acel_x,	mag_z,  0, 		-mag_x, 0, 		0, 		0,
+					   	-acel_y,	acel_x,		0, 			-mag_y,	mag_x,	0, 		0, 		0, 		0};
 
 	arm_mat_init_f32(&FJt, 9, 9, FJt_f32);
 
@@ -165,7 +159,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 					   0, 0, 0, 0, 0, (Rmag)};
 
 	arm_mat_init_f32(&R, 6, 6, R_f32);
-
 
 	//Matriz de erro entre medida e estado estimado
 	float y_f32[6];
@@ -227,29 +220,22 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
 	//Matrizes de 6linhas e 1 coluna
 	float temp_calc_610_f32[6];
-
 	arm_mat_init_f32(&temp_calc_610, 6, 1, temp_calc_610_f32);
 
 	//Matrizes de 6 linhas e 6 colunas
 	float temp_calc_660_f32[36];
-
 	arm_mat_init_f32(&temp_calc_660, 6, 6, temp_calc_660_f32);
 
 	//Matrizes de 6 linhas e 9 colunas
 	float temp_calc_690_f32[54];
-
 	arm_mat_init_f32(&temp_calc_690, 6, 9, temp_calc_690_f32);
 
 	//Matrizes de calculos de 9 linhas e 6 colunas
 	float temp_calc_960_f32[54];
-
 	arm_mat_init_f32(&temp_calc_960, 9, 6, temp_calc_960_f32);
 
 
 	//Cálculos do filtro de Kalman
-	//Etapas de predição - "A Priori"
-	//X = F*X
-		//arm_mat_mult_f32(&F, &X, &temp_calc_910);
 
 	//Fase de update -> Estimativa do novo estado com base no estado anterior
 
@@ -347,7 +333,62 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	arm_mat_inverse_f32(&S, &Sinv);
 
 	//Kk = P*Ht*S^(-1)
-	arm_mat_mult_f32(&P, &Ht, &temp_calc_960);
+		//P*Ht
+	temp_calc_960_f32[0] = P_f32[0];
+	temp_calc_960_f32[1] = P_f32[1];
+	temp_calc_960_f32[2] = P_f32[2];
+	temp_calc_960_f32[3] = P_f32[3];
+	temp_calc_960_f32[4] = P_f32[4];
+	temp_calc_960_f32[5] = P_f32[5];
+	temp_calc_960_f32[6] = P_f32[9];
+	temp_calc_960_f32[7] = P_f32[10];
+	temp_calc_960_f32[8] = P_f32[11];
+	temp_calc_960_f32[9] = P_f32[12];
+	temp_calc_960_f32[10] = P_f32[13];
+	temp_calc_960_f32[11] = P_f32[14];
+	temp_calc_960_f32[12] = P_f32[18];
+	temp_calc_960_f32[13] = P_f32[19];
+	temp_calc_960_f32[14] = P_f32[20];
+	temp_calc_960_f32[15] = P_f32[21];
+	temp_calc_960_f32[16] = P_f32[22];
+	temp_calc_960_f32[17] = P_f32[23];
+	temp_calc_960_f32[18] = P_f32[27];
+	temp_calc_960_f32[19] = P_f32[28];
+	temp_calc_960_f32[20] = P_f32[29];
+	temp_calc_960_f32[21] = P_f32[30];
+	temp_calc_960_f32[22] = P_f32[31];
+	temp_calc_960_f32[23] = P_f32[32];
+	temp_calc_960_f32[24] = P_f32[36];
+	temp_calc_960_f32[25] = P_f32[37];
+	temp_calc_960_f32[26] = P_f32[38];
+	temp_calc_960_f32[27] = P_f32[39];
+	temp_calc_960_f32[28] = P_f32[40];
+	temp_calc_960_f32[29] = P_f32[41];
+	temp_calc_960_f32[30] = P_f32[45];
+	temp_calc_960_f32[31] = P_f32[46];
+	temp_calc_960_f32[32] = P_f32[47];
+	temp_calc_960_f32[33] = P_f32[48];
+	temp_calc_960_f32[34] = P_f32[49];
+	temp_calc_960_f32[35] = P_f32[50];
+	temp_calc_960_f32[36] = P_f32[54];
+	temp_calc_960_f32[37] = P_f32[55];
+	temp_calc_960_f32[38] = P_f32[56];
+	temp_calc_960_f32[39] = P_f32[57];
+	temp_calc_960_f32[40] = P_f32[58];
+	temp_calc_960_f32[41] = P_f32[59];
+	temp_calc_960_f32[42] = P_f32[63];
+	temp_calc_960_f32[43] = P_f32[64];
+	temp_calc_960_f32[44] = P_f32[65];
+	temp_calc_960_f32[45] = P_f32[66];
+	temp_calc_960_f32[46] = P_f32[67];
+	temp_calc_960_f32[47] = P_f32[68];
+	temp_calc_960_f32[48] = P_f32[72];
+	temp_calc_960_f32[49] = P_f32[73];
+	temp_calc_960_f32[50] = P_f32[74];
+	temp_calc_960_f32[51] = P_f32[75];
+	temp_calc_960_f32[52] = P_f32[76];
+	temp_calc_960_f32[53] = P_f32[77];
+
 	arm_mat_mult_f32(&temp_calc_960, &Sinv, &K);
 
 	//temp_calc_911 = Kk*y
@@ -357,7 +398,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	arm_mat_add_f32(&X, &temp_calc_911, &temp_calc_910);
 	arm_copy_f32(temp_calc_910_f32, X_f32, 9);
 
-	//P = (I-K*H)P
+	//P = (I-K*H)*P
 	arm_mat_mult_f32(&K, &H, &temp_calc_992);
 	arm_mat_sub_f32(&I, &temp_calc_992, &temp_calc_993);
 

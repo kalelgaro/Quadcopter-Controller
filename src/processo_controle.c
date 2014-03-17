@@ -93,7 +93,7 @@ float yaw_pos_filtro;
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state K_acelerometro = {{0,0,1,0,0,0,0,0,0}, 
+kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0}, 
 
 									  {100,0,0,0,0,0,0,0,0,
 									   0,100,0,0,0,0,0,0,0,
@@ -103,7 +103,7 @@ kalman_filter_state K_acelerometro = {{0,0,1,0,0,0,0,0,0},
 									   0,0,0,0,0,100,0,0,0,
 									   0,0,0,0,0,0,100,0,0,
 									   0,0,0,0,0,0,0,100,0,
-									   0,0,0,0,0,0,0,0,100}, 1e-9, 5e-7, 5e-4, 1e2, 7.5e1, 0.00125};
+									   0,0,0,0,0,0,0,0,100}, 1e-8, 1e-1, 1e-5, 2e2, 2e3, 0.0025};
 
 //Erros utilizados nos controladores PID
 									   
@@ -173,14 +173,14 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
 
-void setar_parametros_Kalman(float32_t Q_acelerometro, float32_t R_acelerometro, float32_t Q_magnetometro, float32_t R_magnetometro)
+void setar_parametros_Kalman(float32_t Q_acelerometro, float32_t Q_magnetometro, float32_t Q_bias, float32_t R_acelerometro, float32_t R_magnetometro)
 {
-	K_acelerometro.Q = Q_acelerometro;
-	K_acelerometro.R = R_acelerometro;
+	EstadoFiltroKalman.Q_acel = Q_acelerometro;
+	EstadoFiltroKalman.Q_mag = Q_magnetometro;
+	EstadoFiltroKalman.Q_bias = Q_bias;
 	
-	K_magnetometro.Q = Q_magnetometro;
-	K_magnetometro.R = R_magnetometro;
-
+	EstadoFiltroKalman.R_acel = R_acelerometro;
+	EstadoFiltroKalman.R_mag = R_magnetometro;
 }
 
 //Retorna o offset que foi obtido para o acelerometro
@@ -202,13 +202,14 @@ void retornar_parametros_pid(float *Kp, float *Ki, float *Kd)
 
 //Retrona os parametros utilizados no Filtro de Kalman (Telemetria)
 
-void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *R_acelerometro, float32_t *Q_magnetometro, float32_t *R_magnetometro)
+void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *Q_magnetometro, float32_t *Q_bias, float32_t *R_acelerometro, float32_t *R_magnetometro)
 {
-	*Q_acelerometro = K_acelerometro.Q;
-	*R_acelerometro = K_acelerometro.R;
+	*Q_acelerometro = EstadoFiltroKalman.Q_acel;
+	*Q_magnetometro = EstadoFiltroKalman.Q_mag;
+	*Q_bias = EstadoFiltroKalman.Q_bias;
 
-	*Q_magnetometro = K_magnetometro.Q;
-	*R_magnetometro = K_magnetometro.R;
+	*R_acelerometro = EstadoFiltroKalman.R_acel;
+	*R_magnetometro = EstadoFiltroKalman.R_mag;
 }
 
 //Altera o valor de offset do acelerômetro (Zero G Level).
@@ -278,17 +279,17 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = K_acelerometro.ultimo_estado[0];
-	Acelerometro[1] = K_acelerometro.ultimo_estado[1];
-	Acelerometro[2] = K_acelerometro.ultimo_estado[2];
+	Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[0];
+	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[1];
+	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[2];
 
 	Giroscopio[0] = acelerometro_adxl345[0];
 	Giroscopio[1] = acelerometro_adxl345[1];
 	Giroscopio[2] = acelerometro_adxl345[2];
 
-	Magnetometro[0] = K_acelerometro.ultimo_estado[3];
-	Magnetometro[1] = K_acelerometro.ultimo_estado[4];
-	Magnetometro[2] = K_acelerometro.ultimo_estado[5];
+	Magnetometro[0] = EstadoFiltroKalman.ultimo_estado[3];
+	Magnetometro[1] = EstadoFiltroKalman.ultimo_estado[4];
+	Magnetometro[2] = EstadoFiltroKalman.ultimo_estado[5];
 }
 
 
@@ -329,11 +330,11 @@ float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
 //Procedimento de controle principal executado no overflow no Timer 3 à cada 1,25mS (800 Hz)
 void processo_controle()
 {
+	GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
+
 	static uint16_t contador_ativacao = 0;
 
 	static uint8_t flag_inicializacao = 0;
-
-	GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
 
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
 
@@ -344,21 +345,19 @@ void processo_controle()
     processar_magnetometro();
 
     //Insere os valores da leituras dentro do filtro de Kalman.
+	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro);
 
-	kalman_filter(&K_acelerometro, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro);
 
-    //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)
-    
+    //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)   
     //Roll e Pitch
-	
-	acel_2_angulos(K_acelerometro.ultimo_estado[acel_x], K_acelerometro.ultimo_estado[acel_y], K_acelerometro.ultimo_estado[acel_z], angulos_inclinacao);
+	acel_2_angulos(EstadoFiltroKalman.ultimo_estado[acel_x], EstadoFiltroKalman.ultimo_estado[acel_y], EstadoFiltroKalman.ultimo_estado[acel_z], angulos_inclinacao);
 	
 	//Offset angular observado na telemetria.
 	//angulos_inclinacao[pitch] -= -0.3;
 	//angulos_inclinacao[roll] -= 0.3;
 	
 	//Yaw
-	orientacao = calcular_orientacao((K_acelerometro.ultimo_estado)+3, angulos_inclinacao[pitch], -angulos_inclinacao[roll]);
+	orientacao = calcular_orientacao((EstadoFiltroKalman.ultimo_estado)+3, angulos_inclinacao[pitch], -angulos_inclinacao[roll]);
 
 	/*Ajuste de sentidos dos angulos*/
 	angulos_inclinacao[roll] = -angulos_inclinacao[roll];
@@ -374,11 +373,11 @@ void processo_controle()
 
 		/* Cálculo do PID */
 			//Pitch & Roll
-		saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, 0.00125); //Controlador PI para cada eixo.
+		saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, 0.0025); //Controlador PI para cada eixo.
 		saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  0.00125);
 		
 			//Yaw
-		saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   0.00125);
+		saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   0.0025);
 
 		
 		//Realiza média rotativa dos últimos n processos de cálculo do PID.
@@ -414,5 +413,5 @@ void processo_controle()
 	}
 	//Salva valores de interesse nas estrutura que é enviada para telemetria.
 
-  	GPIO_ResetBits(GPIOD, GPIO_Pin_12); 
+	GPIO_ResetBits(GPIOD, GPIO_Pin_12); 
 }

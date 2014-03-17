@@ -108,7 +108,7 @@ float kp,ki,kd, kp_yaw, ki_yaw, kd_yaw;
 
 //Variávies para armazenar os valores das constantes do FK para telemetria.
 
-float32_t Q_acelerometro, R_acelerometro, Q_magnetometro, R_magnetometro;
+float32_t Q_acelerometro, Q_magnetometro, Q_bias, R_acelerometro, R_magnetometro;
 
 //extern float32_t variancia_roll;
 //extern float32_t variancia_pitch;
@@ -155,9 +155,11 @@ int main(void)
 {
 	iniciar_leds_debug();
 
-	setar_parametros_PID(52, 10, 7.95, 20, 0.5, 4);							//Ajusta as constantes do PID para Roll e Pitch.
+	//teste_filtro_de_kalman();
 
-	setar_parametros_Kalman(0.001, 3.4, 0.005, 5);								//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_PID(52, 10, 7.95, 20, 0.5, 4);								//Ajusta as constantes do PID para Roll e Pitch.
+
+	setar_parametros_Kalman(1e-8, 1e-1, 1e-5, 2e2, 2e3);						//Ajusta as covariâncias do filtro de Kalman.
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -205,9 +207,7 @@ int main(void)
 
 	configurar_timers_PWM_I();													//Configura os timers utilizados para PWMinput do controle.
 
-	iniciar_timer_processamento();												//Iniciar o timer responsável pelo controle do PID -> TIM6.		
-
-	teste_filtro_de_kalman();
+	iniciar_timer_processamento();												//Iniciar o timer responsável pelo controle do PID -> TIM6.
 
 	while (1)																	//Processo contínuo de checagem do transmissor RF.
 	{
@@ -319,21 +319,24 @@ int main(void)
 
 							limpar_buffer(buffer_dados_tx,33);
 
-							retornar_parametros_Kalman(&Q_acelerometro, &R_acelerometro, &Q_magnetometro, &R_magnetometro);
+							retornar_parametros_Kalman(&Q_acelerometro, &Q_magnetometro, &Q_bias, &R_acelerometro, &R_magnetometro);
 
 							buffer_dados_tx[0] = '^';
 
 							conversor.flutuante_entrada = Q_acelerometro;
 							copy_to(buffer_dados_tx, conversor.bytes, 1, 4);
 
-							conversor.flutuante_entrada = R_acelerometro;
+							conversor.flutuante_entrada = Q_magnetometro;
 							copy_to(buffer_dados_tx, conversor.bytes, 5, 4);
 
-							conversor.flutuante_entrada = Q_magnetometro;
+							conversor.flutuante_entrada = Q_bias;
 							copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
-							conversor.flutuante_entrada = R_magnetometro;
+							conversor.flutuante_entrada = R_acelerometro;
 							copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
+
+							conversor.flutuante_entrada = R_magnetometro;
+							copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 							escrita_dados(SPI2, buffer_dados_tx, 32);
 
@@ -405,23 +408,30 @@ int main(void)
 							conversor.bytes[2] = buffer_dados_rx[7];
 							conversor.bytes[3] = buffer_dados_rx[8];
 
-							R_acelerometro = arredondar_float(conversor.flutuante_entrada,6);
+							Q_magnetometro = arredondar_float(conversor.flutuante_entrada,6);
 
 							conversor.bytes[0] = buffer_dados_rx[9];
 							conversor.bytes[1] = buffer_dados_rx[10];
 							conversor.bytes[2] = buffer_dados_rx[11];
 							conversor.bytes[3] = buffer_dados_rx[12];
 
-							Q_magnetometro = arredondar_float(conversor.flutuante_entrada,6);
+							Q_bias = arredondar_float(conversor.flutuante_entrada,6);
 
 							conversor.bytes[0] = buffer_dados_rx[13];
 							conversor.bytes[1] = buffer_dados_rx[14];
 							conversor.bytes[2] = buffer_dados_rx[15];
 							conversor.bytes[3] = buffer_dados_rx[16];
 
-							R_magnetometro = arredondar_float(conversor.flutuante_entrada,6);
+							R_acelerometro = arredondar_float(conversor.flutuante_entrada,6);
 
-							setar_parametros_Kalman(Q_acelerometro, R_acelerometro, Q_magnetometro, R_magnetometro); //Insere os parametros no processo de controle.
+							conversor.bytes[0] = buffer_dados_rx[17];
+							conversor.bytes[1] = buffer_dados_rx[18];
+							conversor.bytes[2] = buffer_dados_rx[19];
+							conversor.bytes[3] = buffer_dados_rx[20];
+
+							R_magnetometro = arredondar_float(conversor.flutuante_entrada,6);							
+
+							setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, Q_bias, R_acelerometro, R_magnetometro); //Insere os parametros no processo de controle.
 
 						break;
 
@@ -688,7 +698,7 @@ void iniciar_timer_processamento()
 
   	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;		//100.000 Contagens por segundo
 
-  	TIM_TimeBaseStructure.TIM_Period = 125;											//(1/100.000)*125 segundos por "overflow" -> 0.00125 segundos por overflow
+  	TIM_TimeBaseStructure.TIM_Period = 250;											//(1/100.000)*125 segundos por "overflow" -> 0.00125 segundos por overflow
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
