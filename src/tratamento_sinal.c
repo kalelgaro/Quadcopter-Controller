@@ -243,7 +243,7 @@ float arredondar_float(float entrada, uint8_t numero_entrada)
 {
 	uint8_t i,j = 0;
 
-	double temp_calc = entrada*10000000;
+	double temp_calc = entrada*1000000000;
 
 	for(i = 8-numero_entrada; i > 0; i--, j++)
 	{

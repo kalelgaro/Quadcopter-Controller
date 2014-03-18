@@ -265,9 +265,14 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	X_f32[1] = acel_y + acel_y_dot*buffer_filtro->dt;
 	X_f32[2] = acel_z + acel_z_dot*buffer_filtro->dt;
 
-	X_f32[3] = mag_x + mag_x_dot*buffer_filtro->dt;
-	X_f32[4] = mag_y + mag_y_dot*buffer_filtro->dt;
-	X_f32[5] = mag_z + mag_z_dot*buffer_filtro->dt;
+
+	//mag_x = buffer_filtro->ultimo_estado[3]-buffer_filtro->ultimo_estado[9];
+	//mag_y = buffer_filtro->ultimo_estado[4]-buffer_filtro->ultimo_estado[10];
+	//mag_z = buffer_filtro->ultimo_estado[5]-buffer_filtro->ultimo_estado[11];
+
+	X_f32[3] = (mag_x) + mag_x_dot*buffer_filtro->dt;
+	X_f32[4] = (mag_y) + mag_y_dot*buffer_filtro->dt;
+	X_f32[5] = (mag_z) + mag_z_dot*buffer_filtro->dt;
 
 	X_f32[6] = X_f32[6];
 	X_f32[7] = X_f32[7];

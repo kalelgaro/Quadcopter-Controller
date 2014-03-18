@@ -108,7 +108,7 @@ float kp,ki,kd, kp_yaw, ki_yaw, kd_yaw;
 
 //Variávies para armazenar os valores das constantes do FK para telemetria.
 
-float32_t Q_acelerometro, Q_magnetometro, Q_bias, R_acelerometro, R_magnetometro;
+float32_t Q_acelerometro, Q_magnetometro, Q_bias, Q_bias_mag, R_acelerometro, R_magnetometro;
 
 //extern float32_t variancia_roll;
 //extern float32_t variancia_pitch;
@@ -159,7 +159,7 @@ int main(void)
 
 	setar_parametros_PID(52, 10, 7.95, 20, 0.5, 4);								//Ajusta as constantes do PID para Roll e Pitch.
 
-	setar_parametros_Kalman(1e-8, 1e-1, 1e-5, 2e2, 2e3);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(0.01, 0.0034, 0.75, 1 ,3, 50);						//Ajusta as covariâncias do filtro de Kalman.
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -319,7 +319,7 @@ int main(void)
 
 							limpar_buffer(buffer_dados_tx,33);
 
-							retornar_parametros_Kalman(&Q_acelerometro, &Q_magnetometro, &Q_bias, &R_acelerometro, &R_magnetometro);
+							retornar_parametros_Kalman(&Q_acelerometro, &Q_magnetometro, &Q_bias, &Q_bias_mag, &R_acelerometro, &R_magnetometro);
 
 							buffer_dados_tx[0] = '^';
 
@@ -332,11 +332,14 @@ int main(void)
 							conversor.flutuante_entrada = Q_bias;
 							copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
-							conversor.flutuante_entrada = R_acelerometro;
+							conversor.flutuante_entrada = Q_bias_mag;
 							copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
-							conversor.flutuante_entrada = R_magnetometro;
+							conversor.flutuante_entrada = R_acelerometro;
 							copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
+
+							conversor.flutuante_entrada = R_magnetometro;
+							copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 							escrita_dados(SPI2, buffer_dados_tx, 32);
 
@@ -351,42 +354,42 @@ int main(void)
 							conversor.bytes[2] = buffer_dados_rx[3];
 							conversor.bytes[3] = buffer_dados_rx[4];
 
-							kp = arredondar_float(conversor.flutuante_entrada,6);
+							kp = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[5];
 							conversor.bytes[1] = buffer_dados_rx[6];
 							conversor.bytes[2] = buffer_dados_rx[7];
 							conversor.bytes[3] = buffer_dados_rx[8];
 
-							kd = arredondar_float(conversor.flutuante_entrada,6);
+							kd = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[9];
 							conversor.bytes[1] = buffer_dados_rx[10];
 							conversor.bytes[2] = buffer_dados_rx[11];
 							conversor.bytes[3] = buffer_dados_rx[12];
 
-							ki = arredondar_float(conversor.flutuante_entrada,6);
+							ki = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[13];
 							conversor.bytes[1] = buffer_dados_rx[14];
 							conversor.bytes[2] = buffer_dados_rx[15];
 							conversor.bytes[3] = buffer_dados_rx[16];
 
-							kp_yaw = arredondar_float(conversor.flutuante_entrada,6);
+							kp_yaw = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[17];
 							conversor.bytes[1] = buffer_dados_rx[18];
 							conversor.bytes[2] = buffer_dados_rx[19];
 							conversor.bytes[3] = buffer_dados_rx[20];
 
-							kd_yaw = arredondar_float(conversor.flutuante_entrada,6);
+							kd_yaw = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[21];
 							conversor.bytes[1] = buffer_dados_rx[22];
 							conversor.bytes[2] = buffer_dados_rx[23];
 							conversor.bytes[3] = buffer_dados_rx[24];
 
-							ki_yaw = arredondar_float(conversor.flutuante_entrada,6);
+							ki_yaw = conversor.flutuante_entrada;
 
 							setar_parametros_PID(kp,ki,kd, kp_yaw, ki_yaw, kd_yaw); //Insere os parametros no processo de controle.
 
@@ -401,37 +404,44 @@ int main(void)
 							conversor.bytes[2] = buffer_dados_rx[3];
 							conversor.bytes[3] = buffer_dados_rx[4];
 
-							Q_acelerometro = arredondar_float(conversor.flutuante_entrada,6);
+							Q_acelerometro = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[5];
 							conversor.bytes[1] = buffer_dados_rx[6];
 							conversor.bytes[2] = buffer_dados_rx[7];
 							conversor.bytes[3] = buffer_dados_rx[8];
 
-							Q_magnetometro = arredondar_float(conversor.flutuante_entrada,6);
+							Q_magnetometro = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[9];
 							conversor.bytes[1] = buffer_dados_rx[10];
 							conversor.bytes[2] = buffer_dados_rx[11];
 							conversor.bytes[3] = buffer_dados_rx[12];
 
-							Q_bias = arredondar_float(conversor.flutuante_entrada,6);
+							Q_bias = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[13];
 							conversor.bytes[1] = buffer_dados_rx[14];
 							conversor.bytes[2] = buffer_dados_rx[15];
 							conversor.bytes[3] = buffer_dados_rx[16];
 
-							R_acelerometro = arredondar_float(conversor.flutuante_entrada,6);
+							Q_bias_mag = conversor.flutuante_entrada;
 
 							conversor.bytes[0] = buffer_dados_rx[17];
 							conversor.bytes[1] = buffer_dados_rx[18];
 							conversor.bytes[2] = buffer_dados_rx[19];
 							conversor.bytes[3] = buffer_dados_rx[20];
 
-							R_magnetometro = arredondar_float(conversor.flutuante_entrada,6);							
+							R_acelerometro = conversor.flutuante_entrada;
 
-							setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, Q_bias, R_acelerometro, R_magnetometro); //Insere os parametros no processo de controle.
+							conversor.bytes[0] = buffer_dados_rx[21];
+							conversor.bytes[1] = buffer_dados_rx[22];
+							conversor.bytes[2] = buffer_dados_rx[23];
+							conversor.bytes[3] = buffer_dados_rx[24];
+
+							R_magnetometro = conversor.flutuante_entrada;							
+
+							setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, Q_bias, Q_bias_mag, R_acelerometro, R_magnetometro); //Insere os parametros no processo de controle.
 
 						break;
 
@@ -774,27 +784,29 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
- // void teste_filtro_de_kalman(void)
- // {
- // 	kalman_filter_state estado_teste = {{5,2,1,6,3,4,10,20,30, 3, 4, 5},
+  // void teste_filtro_de_kalman(void)
+  // {
+  // 	kalman_filter_state estado_teste = {{5,2,1,6,3,4,10,20,30, 3, 4, 5},
 
- //                 						{100,0,0,0,0,0,0,0,0,0,0,0,
- //  									   	 0,100,0,0,0,0,0,0,0,0,0,0,
- // 									   	 0,0,100,0,0,0,0,0,0,0,0,0,
- // 									   	 0,0,0,100,0,0,0,0,0,0,0,0,
- // 									     0,0,0,0,100,0,0,0,0,0,0,0,
- // 									     0,0,0,0,0,100,0,0,0,0,0,0,
- // 									     0,0,0,0,0,0,100,0,0,0,0,0,
- // 									     0,0,0,0,0,0,0,100,0,0,0,0,
- // 									     0,0,0,0,0,0,0,0,100,0,0,0,
- // 									     0,0,0,0,0,0,0,0,0,100,0,0,
- // 									     0,0,0,0,0,0,0,0,0,0,100,0,
- // 									     0,0,0,0,0,0,0,0,0,0,0,100},
- // 									     0.004, 0.005, 0.003, 0.002, 3, 5, 0.0025};
+  //                 						{100,0,0,0,0,0,0,0,0,0,0,0,
+  //  									   	 0,100,0,0,0,0,0,0,0,0,0,0,
+  // 									   	 0,0,100,0,0,0,0,0,0,0,0,0,
+  // 									   	 0,0,0,100,0,0,0,0,0,0,0,0,
+  // 									     0,0,0,0,100,0,0,0,0,0,0,0,
+  // 									     0,0,0,0,0,100,0,0,0,0,0,0,
+  // 									     0,0,0,0,0,0,100,0,0,0,0,0,
+  // 									     0,0,0,0,0,0,0,100,0,0,0,0,
+  // 									     0,0,0,0,0,0,0,0,100,0,0,0,
+  // 									     0,0,0,0,0,0,0,0,0,100,0,0,
+  // 									     0,0,0,0,0,0,0,0,0,0,100,0,
+  // 									     0,0,0,0,0,0,0,0,0,0,0,100},
+  // 									     0.004, 0.005, 0.003, 0.002, 3, 5, 0.0025};
 
- // 	float teste_medida_gyro[3] = {20, 10, 45};
- // 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
- // 	float teste_medida_mag[3] = {1.3, 1, -0.3};
+  // 	float teste_medida_gyro[3] = {20, 10, 45};
+  // 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
+  // 	float teste_medida_mag[3] = {1.3, 1, -0.3};
 
- // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag);
- // }
+  // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag);
+
+  // 	float teste = 4.5;
+  // }

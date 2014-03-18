@@ -111,7 +111,7 @@ kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0,0,0,0},
 								       0,0,0,0,0,0,0,0,0,0,100,0,
 							           0,0,0,0,0,0,0,0,0,0,0,100}, 
 
-							           1.0, 0.9, 5e-2, 1e-4, 1e2, 1e3, 0.0025};
+							           5e-7, 1e-4, 1e-5, 5e-2, 2e1, 4e1, 0.0025};
 
 //Erros utilizados nos controladores PID
 									   
@@ -181,11 +181,12 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
 
-void setar_parametros_Kalman(float32_t Q_acelerometro, float32_t Q_magnetometro, float32_t Q_bias, float32_t R_acelerometro, float32_t R_magnetometro)
+void setar_parametros_Kalman(float32_t Q_acelerometro, float32_t Q_magnetometro, float32_t Q_bias, float32_t Q_bias_mag, float32_t R_acelerometro, float32_t R_magnetometro)
 {
 	EstadoFiltroKalman.Q_acel = Q_acelerometro;
 	EstadoFiltroKalman.Q_mag = Q_magnetometro;
 	EstadoFiltroKalman.Q_bias = Q_bias;
+	EstadoFiltroKalman.Qbias_mag = Q_bias_mag;
 	
 	EstadoFiltroKalman.R_acel = R_acelerometro;
 	EstadoFiltroKalman.R_mag = R_magnetometro;
@@ -210,11 +211,12 @@ void retornar_parametros_pid(float *Kp, float *Ki, float *Kd)
 
 //Retrona os parametros utilizados no Filtro de Kalman (Telemetria)
 
-void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *Q_magnetometro, float32_t *Q_bias, float32_t *R_acelerometro, float32_t *R_magnetometro)
+void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *Q_magnetometro, float32_t *Q_bias, float32_t *Q_bias_mag ,float32_t *R_acelerometro, float32_t *R_magnetometro)
 {
 	*Q_acelerometro = EstadoFiltroKalman.Q_acel;
 	*Q_magnetometro = EstadoFiltroKalman.Q_mag;
 	*Q_bias = EstadoFiltroKalman.Q_bias;
+	*Q_bias_mag = EstadoFiltroKalman.Qbias_mag;
 
 	*R_acelerometro = EstadoFiltroKalman.R_acel;
 	*R_magnetometro = EstadoFiltroKalman.R_mag;
