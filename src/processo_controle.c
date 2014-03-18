@@ -30,7 +30,7 @@
 #define acel_z 2
 
 /* ----------------------------------------------------------  */
-#define numero_medias_PID 4
+#define numero_medias_PID 1
 
 
 /*-------Variáveis globais que serão utilizadas no processo-------*/
@@ -93,8 +93,8 @@ float yaw_pos_filtro;
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state K_acelerometro = {{0,0,1}, {100, 0, 0, 0, 100, 0, 0, 0, 100}, 0.0035, 3, 0.00125};
-kalman_filter_state K_magnetometro = {{0,0,0}, {100, 0, 0, 0, 100, 0, 0, 0, 100}, 0.005, 5, 0.00125};
+kalman_filter_state K_acelerometro = {{0,0,1}, {100, 0, 0, 0, 100, 0, 0, 0, 100}, 0.0035, 3, 0.0025};
+kalman_filter_state K_magnetometro = {{0,0,0}, {100, 0, 0, 0, 100, 0, 0, 0, 100}, 0.005, 5, 0.0025};
 
 //Erros utilizados nos controladores PID
 
@@ -365,11 +365,11 @@ void processo_controle()
 
 		/* Cálculo do PID */
 			//Pitch & Roll
-		saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, 0.00125); //Controlador PI para cada eixo.
-		saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  0.00125);
+		saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, 0.0025); //Controlador PI para cada eixo.
+		saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  0.0025);
 		
 			//Yaw
-		saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   0.00125);
+		saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   0.0025);
 
 		
 		//Realiza média rotativa dos últimos n processos de cálculo do PID.
@@ -396,7 +396,7 @@ void processo_controle()
 		if(flag_inicializacao == 0)
 			contador_ativacao++;
 			
-		if(contador_ativacao == 4000)
+		if(contador_ativacao == 2000)
 		{
 			GPIO_SetBits(GPIOD, GPIO_Pin_14);
 

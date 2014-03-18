@@ -685,7 +685,7 @@ void iniciar_timer_processamento()
 
   	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;		//100.000 Contagens por segundo
 
-  	TIM_TimeBaseStructure.TIM_Period = 125;											//(1/100.000)*125 segundos por "overflow" -> 0.00125 segundos por overflow
+  	TIM_TimeBaseStructure.TIM_Period = 250;											//(1/100.000)*125 segundos por "overflow" -> 0.00125 segundos por overflow
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
