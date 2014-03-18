@@ -62,6 +62,8 @@ float angulos_inclinacao[2];
 
 float magnetometro[3];
 float orientacao;
+float orientacao_inicial = 0.0;
+float offset_heading;
 
 //Buffers de estado dos controles PID para pitch e roll.
 
@@ -345,11 +347,11 @@ void processo_controle()
 	acel_2_angulos(K_acelerometro.ultimo_estado[acel_x], K_acelerometro.ultimo_estado[acel_y], K_acelerometro.ultimo_estado[acel_z], angulos_inclinacao);
 	
 	//Offset angular observado na telemetria.
-	angulos_inclinacao[pitch] -= -0.3;
-	angulos_inclinacao[roll] -= 0.3;
+	angulos_inclinacao[pitch] -= -0.85;
+	angulos_inclinacao[roll] -= +0.54;
 	
 	//Yaw
-	orientacao = calcular_orientacao(K_magnetometro.ultimo_estado, angulos_inclinacao[pitch], angulos_inclinacao[roll]);
+	orientacao = calcular_orientacao(K_magnetometro.ultimo_estado, angulos_inclinacao[pitch], angulos_inclinacao[roll]) - offset_heading;
 
 	/*Ajuste de sentidos dos angulos*/
 	angulos_inclinacao[roll] = -angulos_inclinacao[roll];
@@ -394,13 +396,18 @@ void processo_controle()
 		inserir_ajuster_motores(0, 0, 0, 0);
 
 		if(flag_inicializacao == 0)
+		{
 			contador_ativacao++;
+			orientacao_inicial = orientacao_inicial + orientacao/2000;
+		}
 			
 		if(contador_ativacao == 2000)
 		{
 			GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
 			flag_inicializacao = 1;
+
+			offset_heading = orientacao_inicial;
 		}
 	}
 	//Salva valores de interesse nas estrutura que é enviada para telemetria.
