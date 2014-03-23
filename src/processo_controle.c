@@ -271,13 +271,13 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = K_acelerometro.ultimo_estado[0];
-	Acelerometro[1] = K_acelerometro.ultimo_estado[1];
-	Acelerometro[2] = K_acelerometro.ultimo_estado[2];
+	Acelerometro[0] = K_magnetometro.ultimo_estado[0];
+	Acelerometro[1] = K_magnetometro.ultimo_estado[1];
+	Acelerometro[2] = K_magnetometro.ultimo_estado[2];
 
-	Giroscopio[0] = acelerometro_adxl345[0];
-	Giroscopio[1] = acelerometro_adxl345[1];
-	Giroscopio[2] = acelerometro_adxl345[2];
+	Giroscopio[0] = magnetometro[0];
+	Giroscopio[1] = magnetometro[1];
+	Giroscopio[2] = magnetometro[2];
 
 	Magnetometro[0] = K_magnetometro.ultimo_estado[0];
 	Magnetometro[1] = K_magnetometro.ultimo_estado[1];
