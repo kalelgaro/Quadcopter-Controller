@@ -294,9 +294,9 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[0];
-	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[1];
-	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[2];
+	Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[3];
+	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[4];
+	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[5];
 
 	Giroscopio[0] = magnetometro[0];
 	Giroscopio[1] = magnetometro[1];
@@ -316,13 +316,13 @@ float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
 	//Phi -> Roll
 
 	/*Valores de offset obtidos através do sphereFIT no matlab*/
-	//float Vx = -0.1610 ;
-	//float Vy = -0.0581;
-	//float Vz = 0.0872;
+	float Vx = -0.1610 ;
+	float Vy = -0.0581;
+	float Vz = 0.0872;
 
-	float MagX = leituras_mag[0];
-	float MagY = leituras_mag[1];
-	float MagZ = leituras_mag[2];	
+	float MagX = leituras_mag[0]-Vx;
+	float MagY = leituras_mag[1]-Vy;
+	float MagZ = leituras_mag[2]-Vz;	
 
 	//Conversão de graus para radianos.
 	Pitch = (Pitch/57.3);
@@ -337,7 +337,7 @@ float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
 	temp1 = MagZ*sin(Roll) - MagY*cos(Roll);
 	temp2 = MagX*cos(Pitch) + MagY*sin(Roll)*sin(Pitch) + MagZ*sin(Pitch)*cos(Roll); 
 
-	heading = 57.3*atan2(temp2,temp1);
+	heading = 57.3*atan2(temp1,temp2);
 
 	return heading;
 }
@@ -374,7 +374,7 @@ void processo_controle()
 	acel_2_angulos(EstadoFiltroKalman.ultimo_estado[acel_x], EstadoFiltroKalman.ultimo_estado[acel_y], EstadoFiltroKalman.ultimo_estado[acel_z], angulos_inclinacao);
 	
 	//Yaw
-	orientacao = -calcular_orientacao(mag_pos_filtro, angulos_inclinacao[pitch], -angulos_inclinacao[roll]);
+	orientacao = calcular_orientacao(mag_pos_filtro, angulos_inclinacao[pitch], angulos_inclinacao[roll]);
 
 	/*Ajuste de sentidos dos angulos*/
 	angulos_inclinacao[roll] = -angulos_inclinacao[roll];

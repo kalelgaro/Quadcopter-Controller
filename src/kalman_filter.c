@@ -84,9 +84,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	// float bgy = buffer_filtro->ultimo_estado[7];
 	// float bgz = buffer_filtro->ultimo_estado[8];
 
-	float bias_mag_x = buffer_filtro->ultimo_estado[9];
-	float bias_mag_y = buffer_filtro->ultimo_estado[10];
-	float bias_mag_z = buffer_filtro->ultimo_estado[11];
+	float bias_mag_x = buffer_filtro->ultimo_estado[9]*dt;
+	float bias_mag_y = buffer_filtro->ultimo_estado[10]*dt;
+	float bias_mag_z = buffer_filtro->ultimo_estado[11]*dt;
 
 	//mag_x = mag_x - bias_mag_x;
 	//mag_y = mag_y - bias_mag_y;
@@ -125,9 +125,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 						0,		0,		0,		0,		0,		0,		1,			0,			0,			0,		0,		0,
 						0,		0,		0,		0,		0,		0,		0,			1,			0,			0,		0,		0,
 						0,		0,		0,		0,		0,		0,		0,			0,			1,			0,		0,		0,
-						0,		0,		0,		0,		0,		0,		0,			0,			0,			1,		wz,		-wy,
-						0,		0,		0,		0,		0,		0,		0,			0,			0,			-wz,	1,		wx,
-						0,		0,		0,		0,		0,		0,		0,			0,			0,			wy,		-wx,	1};
+						0,		0,		0,		0,		0,		0,		0,			0,			0,			1,		0,		0,
+						0,		0,		0,		0,		0,		0,		0,			0,			0,			0,		1,		0,
+						0,		0,		0,		0,		0,		0,		0,			0,			0,			0,		0,		1};
 
 
 	arm_mat_init_f32(&F, 12, 12, F_f32);
@@ -142,9 +142,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 						0,			-acel_z,	acel_y,		0,		-mag_z,	mag_y,	1,		0,		0,		0,		0,		0,
 						acel_z,		0,			-acel_x,	mag_z,	0,		-mag_x,	0,		1,		0,		0,		0,		0,
 						-acel_y,	acel_x,		0,			-mag_y,	mag_x,	0,		0,		0,		1,		0,		0,		0,
-						0,			0,			0,			0,		0,		0,		0,		0,		0,		1,		-wz,	wy,
-						0,			0,			0,			0,		0,		0,		0,		0,		0,		wz,		1,		-wx,
-						0,			0,			0,			0,		0,		0,		0,		0,		0,		-wy,	wx,		1};
+						0,			0,			0,			0,		0,		0,		0,		0,		0,		1,		0,		0,
+						0,			0,			0,			0,		0,		0,		0,		0,		0,		0,		1,		0,
+						0,			0,			0,			0,		0,		0,		0,		0,		0,		0,		0,		1};
 
 
 	arm_mat_init_f32(&Ft, 12, 12, Ft_f32);
@@ -335,8 +335,8 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
 	arm_mat_mult_f32(&temp_calc_12123, &P, &temp_calc_12122);
 
-	normalizar_vetor_R3(X_f32);
-	normalizar_vetor_R3(X_f32+3);
+	//normalizar_vetor_R3(X_f32);
+	//normalizar_vetor_R3(X_f32+3);
 
 	arm_copy_f32(X_f32, buffer_filtro->ultimo_estado, 12);
 	arm_copy_f32(temp_calc_12122_f32, buffer_filtro->P, 144);
