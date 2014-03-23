@@ -155,11 +155,11 @@ int main(void)
 {
 	iniciar_leds_debug();
 
-	//teste_filtro_de_kalman();
+	teste_filtro_de_kalman();
 
 	setar_parametros_PID(52, 10, 7.95, 20, 0.5, 4);								//Ajusta as constantes do PID para Roll e Pitch.
 
-	setar_parametros_Kalman(0.01, 0.0034, 0.75, 1 ,3, 50);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(1e-8, 1e-2, 1e-3, 1e-2, 6, 1000);						//Ajusta as covariâncias do filtro de Kalman.
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -526,19 +526,19 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
+			conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[1];
+			conversor.flutuante_entrada = telemetria_giroscopio[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[2];
+			conversor.flutuante_entrada = telemetria_giroscopio[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[0];
+			conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -706,7 +706,7 @@ void iniciar_timer_processamento()
 
   	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;		//100.000 Contagens por segundo
 
-  	TIM_TimeBaseStructure.TIM_Period = 250;											//(1/100.000)*125 segundos por "overflow" -> 0.00125 segundos por overflow
+  	TIM_TimeBaseStructure.TIM_Period = 250;											//(1/100.000)*125 segundos por "overflow" -> 0.0025 segundos por overflow
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -784,29 +784,29 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
-  // void teste_filtro_de_kalman(void)
-  // {
-  // 	kalman_filter_state estado_teste = {{5,2,1,6,3,4,10,20,30, 3, 4, 5},
+  void teste_filtro_de_kalman(void)
+  {
+  	kalman_filter_state estado_teste = {{5,2,1,6,3,4,10,20,30, 3, 4, 5},
 
-  //                 						{100,0,0,0,0,0,0,0,0,0,0,0,
-  //  									   	 0,100,0,0,0,0,0,0,0,0,0,0,
-  // 									   	 0,0,100,0,0,0,0,0,0,0,0,0,
-  // 									   	 0,0,0,100,0,0,0,0,0,0,0,0,
-  // 									     0,0,0,0,100,0,0,0,0,0,0,0,
-  // 									     0,0,0,0,0,100,0,0,0,0,0,0,
-  // 									     0,0,0,0,0,0,100,0,0,0,0,0,
-  // 									     0,0,0,0,0,0,0,100,0,0,0,0,
-  // 									     0,0,0,0,0,0,0,0,100,0,0,0,
-  // 									     0,0,0,0,0,0,0,0,0,100,0,0,
-  // 									     0,0,0,0,0,0,0,0,0,0,100,0,
-  // 									     0,0,0,0,0,0,0,0,0,0,0,100},
-  // 									     0.004, 0.005, 0.003, 0.002, 3, 5, 0.0025};
+                  						{100,0,0,0,0,0,0,0,0,0,0,0,
+   									   	 0,100,0,0,0,0,0,0,0,0,0,0,
+  									   	 0,0,100,0,0,0,0,0,0,0,0,0,
+  									   	 0,0,0,100,0,0,0,0,0,0,0,0,
+  									     0,0,0,0,100,0,0,0,0,0,0,0,
+  									     0,0,0,0,0,100,0,0,0,0,0,0,
+  									     0,0,0,0,0,0,100,0,0,0,0,0,
+  									     0,0,0,0,0,0,0,100,0,0,0,0,
+  									     0,0,0,0,0,0,0,0,100,0,0,0,
+  									     0,0,0,0,0,0,0,0,0,100,0,0,
+  									     0,0,0,0,0,0,0,0,0,0,100,0,
+  									     0,0,0,0,0,0,0,0,0,0,0,100},
+  									     0.004, 0.005, 0.003, 0.002, 3, 5, 0.0025};
 
-  // 	float teste_medida_gyro[3] = {20, 10, 45};
-  // 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
-  // 	float teste_medida_mag[3] = {1.3, 1, -0.3};
+  	float teste_medida_gyro[3] = {20, 10, 45};
+  	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
+  	float teste_medida_mag[3] = {1.3, 1, -0.3};
 
-  // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag);
+  	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag);
 
-  // 	float teste = 4.5;
-  // }
+  	float teste = 4.5;
+  }

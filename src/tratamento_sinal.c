@@ -255,3 +255,11 @@ float arredondar_float(float entrada, uint8_t numero_entrada)
 
 	return temp_calc;
 }
+
+void normalizar_vetor_R3(float vetor[3])
+{
+	float modulo = pow(vetor[0],2) + pow(vetor[1],2) + pow(vetor[2],2);
+	vetor[0] = vetor[0]/modulo;
+	vetor[1] = vetor[1]/modulo;
+	vetor[2] = vetor[2]/modulo;
+}

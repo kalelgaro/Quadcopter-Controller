@@ -90,6 +90,10 @@ float saida_yaw_pid_final =   0;
 
 //Variáveis utilizadas para armazenar o resultado do filtro de Kalman.
 
+float acel_pos_filtro[3];
+float mag_pos_filtro[3];
+float bias_mag[3];
+
 float roll_pos_filtro;
 float pitch_pos_filtro;
 float yaw_pos_filtro;
@@ -257,6 +261,7 @@ void processar_magnetometro()
 	if((status&0x01)==0x01)
 	{
 		HMC5883L_Read_Data(I2C3, magnetometro);
+		//normalizar_vetor_R3(magnetometro);
 	}
 }
 
@@ -293,13 +298,13 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[1];
 	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[2];
 
-	Giroscopio[0] = acelerometro_adxl345[0];
-	Giroscopio[1] = acelerometro_adxl345[1];
-	Giroscopio[2] = acelerometro_adxl345[2];
+	Giroscopio[0] = magnetometro[0];
+	Giroscopio[1] = magnetometro[1];
+	Giroscopio[2] = magnetometro[2];
 
-	Magnetometro[0] = EstadoFiltroKalman.ultimo_estado[3];
-	Magnetometro[1] = EstadoFiltroKalman.ultimo_estado[4];
-	Magnetometro[2] = EstadoFiltroKalman.ultimo_estado[5];
+	Magnetometro[0] = magnetometro[3];
+	Magnetometro[1] = magnetometro[4];
+	Magnetometro[2] = magnetometro[5];
 }
 
 
@@ -332,7 +337,7 @@ float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
 	temp1 = MagZ*sin(Roll) - MagY*cos(Roll);
 	temp2 = MagX*cos(Pitch) + MagY*sin(Roll)*sin(Pitch) + MagZ*sin(Pitch)*cos(Roll); 
 
-	heading = 57.3*atan2(temp1,temp2);
+	heading = 57.3*atan2(temp2,temp1);
 
 	return heading;
 }
@@ -356,18 +361,20 @@ void processo_controle()
 
     //Insere os valores da leituras dentro do filtro de Kalman.
 	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro);
+	bias_mag[0] = EstadoFiltroKalman.ultimo_estado[9]; 
+	bias_mag[1] = EstadoFiltroKalman.ultimo_estado[10];
+	bias_mag[2] = EstadoFiltroKalman.ultimo_estado[11];
 
+	mag_pos_filtro[0] = EstadoFiltroKalman.ultimo_estado[3] - bias_mag[0];
+	mag_pos_filtro[1] = EstadoFiltroKalman.ultimo_estado[4] - bias_mag[1];
+	mag_pos_filtro[2] = EstadoFiltroKalman.ultimo_estado[5] - bias_mag[2];
 
     //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)   
     //Roll e Pitch
 	acel_2_angulos(EstadoFiltroKalman.ultimo_estado[acel_x], EstadoFiltroKalman.ultimo_estado[acel_y], EstadoFiltroKalman.ultimo_estado[acel_z], angulos_inclinacao);
 	
-	//Offset angular observado na telemetria.
-	//angulos_inclinacao[pitch] -= -0.3;
-	//angulos_inclinacao[roll] -= 0.3;
-	
 	//Yaw
-	orientacao = calcular_orientacao((EstadoFiltroKalman.ultimo_estado)+3, angulos_inclinacao[pitch], -angulos_inclinacao[roll]);
+	orientacao = -calcular_orientacao(mag_pos_filtro, angulos_inclinacao[pitch], -angulos_inclinacao[roll]);
 
 	/*Ajuste de sentidos dos angulos*/
 	angulos_inclinacao[roll] = -angulos_inclinacao[roll];
