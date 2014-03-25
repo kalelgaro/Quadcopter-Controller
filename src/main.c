@@ -159,7 +159,7 @@ int main(void)
 
 	setar_parametros_PID(52, 10, 7.95, 20, 0.5, 4);								//Ajusta as constantes do PID para Roll e Pitch.
 
-	setar_parametros_Kalman(1e-12, 1e-12, 1e-4, 1e-4, 15, 2000);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(1e-12, 1e-1, 1e-8, 1e-3, 15, 1500);						//Ajusta as covariâncias do filtro de Kalman.
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
