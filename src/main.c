@@ -159,7 +159,7 @@ int main(void)
 
 	setar_parametros_PID(52, 10, 7.95, 20, 0.5, 4);								//Ajusta as constantes do PID para Roll e Pitch.
 
-	setar_parametros_Kalman(1e-12, 1e-1, 1e-8, 1e-3, 15, 1500);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(1e-9, 1e-1, 1e-4, 1e-4, 5, 300);						//Ajusta as covariâncias do filtro de Kalman.
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -620,7 +620,7 @@ void iniciar_giroscopio()
   	Configuracao_gyro.Output_DataRate = DR1 | DR0;    	//DR = 800 Hz
   	Configuracao_gyro.bandwidth = 0;        			//Frequeciencia de corte = 30 Hz
   	Configuracao_gyro.Self_Test = ST_NORMAL;
-  	Configuracao_gyro.Full_Scale = FS500DPS;			//Fundo de escala de 500 graus por segundo
+  	Configuracao_gyro.Full_Scale = FS2000DPS;			//Fundo de escala de 500 graus por segundo
 
   	L3G4200D_Init(I2C3, &Configuracao_gyro);
 }

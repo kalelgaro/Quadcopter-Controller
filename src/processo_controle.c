@@ -298,9 +298,9 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[4];
 	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[5];
 
-	Giroscopio[0] = magnetometro[0];
-	Giroscopio[1] = magnetometro[1];
-	Giroscopio[2] = magnetometro[2];
+	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[9];
+	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[10];
+	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[11];
 
 	Magnetometro[0] = magnetometro[3];
 	Magnetometro[1] = magnetometro[4];
