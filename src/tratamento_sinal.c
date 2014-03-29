@@ -263,3 +263,9 @@ void normalizar_vetor_R3(float vetor[3])
 	vetor[1] = vetor[1]/modulo;
 	vetor[2] = vetor[2]/modulo;
 }
+
+float calcular_norma_R3(float vetor[3]) {
+
+	 return sqrt(pow(vetor[0],2) + pow(vetor[1],2) + pow(vetor[2],2));
+
+}

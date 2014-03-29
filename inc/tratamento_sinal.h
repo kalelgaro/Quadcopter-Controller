@@ -18,6 +18,7 @@
 	float media_rotativa(float nova_leitura, float buffer_leituras[], uint16_t numero_pontos);
 	float arredondar_float(float entrada, uint8_t numero_entrada);
 	void normalizar_vetor_R3(float vetor[3]);
+	float calcular_norma_R3(float vetor[3]);
 
 	typedef struct 
 	{

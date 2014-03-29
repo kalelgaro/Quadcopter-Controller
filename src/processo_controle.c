@@ -30,7 +30,7 @@
 #define acel_z 2
 
 /* ----------------------------------------------------------  */
-#define numero_medias_PID 4
+#define numero_medias_PID 2
 
 
 /*-------Variáveis globais que serão utilizadas no processo-------*/
@@ -90,32 +90,25 @@ float saida_yaw_pid_final =   0;
 
 //Variáveis utilizadas para armazenar o resultado do filtro de Kalman.
 
-float acel_pos_filtro[3];
-float mag_pos_filtro[3];
-float bias_mag[3];
-
 float roll_pos_filtro;
 float pitch_pos_filtro;
 float yaw_pos_filtro;
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0,0,0,0}, 
+kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0}, 
 
-									  {100,0,0,0,0,0,0,0,0,0,0,0,
-									   0,100,0,0,0,0,0,0,0,0,0,0,
-									   0,0,100,0,0,0,0,0,0,0,0,0,
-									   0,0,0,100,0,0,0,0,0,0,0,0,
-									   0,0,0,0,100,0,0,0,0,0,0,0,
-									   0,0,0,0,0,100,0,0,0,0,0,0,
-									   0,0,0,0,0,0,100,0,0,0,0,0,
-									   0,0,0,0,0,0,0,100,0,0,0,0,
-									   0,0,0,0,0,0,0,0,100,0,0,0,
-									   0,0,0,0,0,0,0,0,0,100,0,0,
-								       0,0,0,0,0,0,0,0,0,0,100,0,
-							           0,0,0,0,0,0,0,0,0,0,0,100}, 
+									  {100,0,0,0,0,0,0,0,0,
+									   0,100,0,0,0,0,0,0,0,
+									   0,0,100,0,0,0,0,0,0,
+									   0,0,0,100,0,0,0,0,0,
+									   0,0,0,0,100,0,0,0,0,
+									   0,0,0,0,0,100,0,0,0,
+									   0,0,0,0,0,0,100,0,0,
+									   0,0,0,0,0,0,0,100,0,
+									   0,0,0,0,0,0,0,0,100}, 
 
-							           5e-7, 1e-4, 1e-5, 5e-2, 2e1, 4e1, 0.0025};
+							           1e-7, 1e-4, 1e-5, 2e1, 4e1, 0.0025};
 
 //Erros utilizados nos controladores PID
 									   
@@ -185,12 +178,11 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
 
-void setar_parametros_Kalman(float32_t Q_acelerometro, float32_t Q_magnetometro, float32_t Q_bias, float32_t Q_bias_mag, float32_t R_acelerometro, float32_t R_magnetometro)
+void setar_parametros_Kalman(float32_t Q_acelerometro, float32_t Q_magnetometro, float32_t Q_bias, float32_t R_acelerometro, float32_t R_magnetometro)
 {
 	EstadoFiltroKalman.Q_acel = Q_acelerometro;
 	EstadoFiltroKalman.Q_mag = Q_magnetometro;
 	EstadoFiltroKalman.Q_bias = Q_bias;
-	EstadoFiltroKalman.Qbias_mag = Q_bias_mag;
 	
 	EstadoFiltroKalman.R_acel = R_acelerometro;
 	EstadoFiltroKalman.R_mag = R_magnetometro;
@@ -215,12 +207,11 @@ void retornar_parametros_pid(float *Kp, float *Ki, float *Kd)
 
 //Retrona os parametros utilizados no Filtro de Kalman (Telemetria)
 
-void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *Q_magnetometro, float32_t *Q_bias, float32_t *Q_bias_mag ,float32_t *R_acelerometro, float32_t *R_magnetometro)
+void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *Q_magnetometro, float32_t *Q_bias, float32_t *R_acelerometro, float32_t *R_magnetometro)
 {
 	*Q_acelerometro = EstadoFiltroKalman.Q_acel;
 	*Q_magnetometro = EstadoFiltroKalman.Q_mag;
 	*Q_bias = EstadoFiltroKalman.Q_bias;
-	*Q_bias_mag = EstadoFiltroKalman.Qbias_mag;
 
 	*R_acelerometro = EstadoFiltroKalman.R_acel;
 	*R_magnetometro = EstadoFiltroKalman.R_mag;
@@ -294,13 +285,13 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[3];
-	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[4];
-	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[5];
+	Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[0];
+	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[1];
+	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[2];
 
-	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[9];
-	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[10];
-	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[11];
+	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3];
+	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[4];
+	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[5];
 
 	Magnetometro[0] = magnetometro[3];
 	Magnetometro[1] = magnetometro[4];
@@ -361,20 +352,13 @@ void processo_controle()
 
     //Insere os valores da leituras dentro do filtro de Kalman.
 	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro);
-	bias_mag[0] = EstadoFiltroKalman.ultimo_estado[9]; 
-	bias_mag[1] = EstadoFiltroKalman.ultimo_estado[10];
-	bias_mag[2] = EstadoFiltroKalman.ultimo_estado[11];
-
-	mag_pos_filtro[0] = EstadoFiltroKalman.ultimo_estado[3] - bias_mag[0];
-	mag_pos_filtro[1] = EstadoFiltroKalman.ultimo_estado[4] - bias_mag[1];
-	mag_pos_filtro[2] = EstadoFiltroKalman.ultimo_estado[5] - bias_mag[2];
 
     //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)   
     //Roll e Pitch
 	acel_2_angulos(EstadoFiltroKalman.ultimo_estado[acel_x], EstadoFiltroKalman.ultimo_estado[acel_y], EstadoFiltroKalman.ultimo_estado[acel_z], angulos_inclinacao);
 	
 	//Yaw
-	orientacao = calcular_orientacao(mag_pos_filtro, angulos_inclinacao[pitch], angulos_inclinacao[roll]);
+	orientacao = calcular_orientacao(EstadoFiltroKalman.ultimo_estado+3, angulos_inclinacao[pitch], angulos_inclinacao[roll]);
 
 	/*Ajuste de sentidos dos angulos*/
 	angulos_inclinacao[roll] = -angulos_inclinacao[roll];
@@ -391,7 +375,7 @@ void processo_controle()
 		/* Cálculo do PID */
 			//Pitch & Roll
 		saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, 0.0025); //Controlador PI para cada eixo.
-		saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  0.00125);
+		saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  0.0025);
 		
 			//Yaw
 		saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   0.0025);
