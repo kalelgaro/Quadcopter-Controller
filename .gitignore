@@ -9,3 +9,6 @@
 *.meta*
 *.project
 *.sublime*
+lib/*.o
+lib/libstm32f4.a
+*.map
