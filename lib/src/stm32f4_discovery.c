@@ -23,9 +23,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4_discovery.h"
 
-// for some stupid reason, ST doesn't include this file even though it is needed. uh...
-#include "stm32f4xx_conf.h"
-
 /** @addtogroup Utilities
   * @{
   */ 

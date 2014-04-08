@@ -20,22 +20,17 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
-#ifndef ARM_MATH_CM4
-	#define ARM_MATH_CM4
-#endif
+#define ARM_MATH_CM4 1
 
-#define ARM_MATH_MATRIX_CHECK
+#define ARM_MATH_MATRIX_CHECK 1
 
-#ifndef __FPU_USED
-  	#define __FPU_USED 1
-#endif
+#define __FPU_USED 1
 
-#ifndef __FPU_PRESENT
-  	#define __FPU_PRESENT 1
-#endif
+#define USE_STDPERIPH_DRIVER 1
+
 
 #include "stm32f4xx.h"
-#include "stm32f4xx_conf.h" // again, added because ST didn't put it here ?
+//#include "stm32f4xx_conf.h" // again, added because ST didn't put it here ?
 #include "stm32f4_discovery.h"
 
 #include "arm_math.h"
@@ -166,7 +161,7 @@ int main(void)
 
 	uint8_t status_RF = 0;														//Variável que aloca o estado do link RF.
 
-	SysTick_Config(SystemCoreClock/10000); 										//Frequência de 100uS no systick.
+	SysTick_Config(168e6/10000); 										//Frequência de 100uS no systick.
 
 	iniciar_ESC();																//Inicia PWM para controle dos ESCS.
 
@@ -176,35 +171,35 @@ int main(void)
 
 	iniciar_RF();																//Inicar a placa nRF24L01p
 
-	delay(100);																	//Delay de 100*100us = 10mS
+	//delay(100);																	//Delay de 100*100us = 10mS
 
 	configurar_I2C();															//Configurar o periférico I²C da placa.
 
-	delay(1000);																//Delay de 10*100us = 100mS
+	//delay(1000);																//Delay de 10*100us = 100mS
 
 	iniciar_giroscopio();														//Iniciar o Giroscópio.
 
-	delay(100);																	//Delay de 100*100us = 10mS
+	//delay(100);																	//Delay de 100*100us = 10mS
 
 	configurar_acelerometro();													//Iniciar o acelerômetro.
 
-	delay(100);																	//Delay de 10mS
+	//delay(100);																	//Delay de 10mS
 	
 	configurar_bussola();														//Inicia o magnetômetro.
 	
-	delay(100);																	//Delay de 10mS
+	//delay(100);																	//Delay de 10mS
 
 	//iniciar_timer_controle();													//Timer responsável por checar se houve recepção de controel nos últimos 2 segundos.
 
-	delay(100);																	//Delay de 100*100us = 10mS
+	//delay(100);																	//Delay de 100*100us = 10mS
 
 	escrita_dados(SPI2, (uint8_t *)"Iniciado.", 32);							//Mensagem que informa que o procimento de inicialização foi concluído.
 
-	delay(100);																	//Delay de 100*100us = 10mS
+	//delay(100);																	//Delay de 100*100us = 10mS
 
 	modo_rx(SPI2);																//Habilita recepção de novas mensagens.
 
-	delay(100);																	//Delay de 100*100us = 10mS
+	//delay(100);																	//Delay de 100*100us = 10mS
 
 	configurar_timers_PWM_I();													//Configura os timers utilizados para PWMinput do controle.
 

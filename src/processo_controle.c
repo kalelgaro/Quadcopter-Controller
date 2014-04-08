@@ -333,23 +333,22 @@ float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
 //Procedimento de controle principal executado no overflow no Timer 3 à cada 1,25mS (800 Hz)
 void processo_controle()
 {
-	GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
-
 	static uint16_t contador_ativacao = 0;
 
 	static uint8_t flag_inicializacao = 0;
 
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
 
+	GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
     processar_giroscopio();
 
     processar_acelerometro();
 
     processar_magnetometro();
+    GPIO_ResetBits(GPIOD, GPIO_Pin_12); 
 
     //Insere os valores da leituras dentro do filtro de Kalman.
-	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);
-
+	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);	
     //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)   
     //Roll e Pitch
 	acel_2_angulos(EstadoFiltroKalman.ultimo_estado[acel_x], EstadoFiltroKalman.ultimo_estado[acel_y], EstadoFiltroKalman.ultimo_estado[acel_z], angulos_inclinacao);
@@ -416,5 +415,5 @@ void processo_controle()
 	}
 	//Salva valores de interesse nas estrutura que é enviada para telemetria.
 
-	GPIO_ResetBits(GPIOD, GPIO_Pin_12); 
+	
 }
