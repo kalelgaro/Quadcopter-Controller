@@ -269,3 +269,43 @@ float calcular_norma_R3(float vetor[3]) {
 	 return sqrt(pow(vetor[0],2) + pow(vetor[1],2) + pow(vetor[2],2));
 
 }
+
+void Rotate3dVector(float vector[3], float roll, float pitch, float yaw, float Retorno[3])
+{
+	roll = roll/57.3;
+	pitch = pitch/57.3;
+	yaw = yaw/57.3;
+
+	float A = roll;
+	float B = pitch;
+	float C = yaw;
+
+	float cosA, sinA;
+	float cosB, sinB;
+	float cosC, sinC;
+
+	cosA = arm_cos_f32(A);
+	sinA = arm_sin_f32(A);
+
+	cosB = arm_cos_f32(B);
+	sinB = arm_sin_f32(B);
+
+	cosC = arm_cos_f32(C);
+	sinC = arm_sin_f32(C);
+
+	float RotationMatrix_f32[9] = 	{cosB*cosC, cosC*sinA*sinB-cosA*sinC, cosA*cosC*sinB+sinA*sinC,
+									cosB*sinC, cosA*cosC+sinA*sinB*sinC, -cosC*sinA+cosA*sinB*sinC,
+									-sinB, cosB*cosA, cosA*cosB};
+	
+	arm_matrix_instance_f32 RotationMatrix;
+	arm_mat_init_f32(&RotationMatrix, 3, 3, RotationMatrix_f32);
+
+	arm_matrix_instance_f32 InVector;
+	arm_mat_init_f32(&InVector, 3, 1, vector);
+
+	arm_matrix_instance_f32 OutVector;
+	arm_mat_init_f32(&OutVector, 3, 1, Retorno);
+
+	arm_mat_mult_f32(&RotationMatrix, &InVector, &OutVector);
+
+}

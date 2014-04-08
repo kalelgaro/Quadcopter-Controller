@@ -19,6 +19,7 @@
 	float arredondar_float(float entrada, uint8_t numero_entrada);
 	void normalizar_vetor_R3(float vetor[3]);
 	float calcular_norma_R3(float vetor[3]);
+	void Rotate3dVector(float vector[3], float roll, float pitch, float yaw, float Retorno[3]);
 
 	typedef struct 
 	{

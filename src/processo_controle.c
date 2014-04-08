@@ -61,6 +61,7 @@ float acelerometro_adxl345[3];
 float angulos_inclinacao[2];
 
 float magnetometro[3];
+float magOriginal[3];
 float orientacao;
 
 float orientacao_inicial = 0.0;
@@ -113,10 +114,6 @@ kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0},
 //Erros utilizados nos controladores PID
 									   
 float erro_pitch ,erro_roll ,erro_yaw;
-
-//Vetor de testes
-
-float zeros[3] = {0, 0, 0};
 
 //--------------------------------------------------------------------//
 
@@ -351,7 +348,7 @@ void processo_controle()
     processar_magnetometro();
 
     //Insere os valores da leituras dentro do filtro de Kalman.
-	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro);
+	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);
 
     //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)   
     //Roll e Pitch

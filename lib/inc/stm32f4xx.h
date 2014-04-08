@@ -6990,6 +6990,7 @@ typedef struct
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
+
 #define assert_param(expr) ((void)0)
 #endif /* __STM32F4xx_H */
 

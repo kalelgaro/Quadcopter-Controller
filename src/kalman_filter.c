@@ -29,7 +29,7 @@
 //Bruno f. M. Callegaro - 20/12/2013
 
 
-void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[])
+void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], uint16_t estado_motores)
 {
 	//Instancias das matrizes utilizadas para o cálculo
 	arm_matrix_instance_f32 X;			//Matriz de estados. [9,1]
@@ -155,10 +155,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
 	//Matriz de variâncias
 	float Racel = buffer_filtro->R_acel;
-	float Rmag = buffer_filtro->R_mag;
-	
-	float norma_mag = calcular_norma_R3(medida_mag);
-	if(norma_mag > 1.5)
+	float Rmag = buffer_filtro->R_mag; //Variância inicial do magnetômetro.
+
+	if(estado_motores > 0)
 		Rmag = 1e7;
 
 	float R_f32[36] = {(Racel), 0, 0, 0, 0, 0,
@@ -309,9 +308,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	arm_mat_sub_f32(&I, &temp_calc_992, &temp_calc_993);
 
 	arm_mat_mult_f32(&temp_calc_993, &P, &temp_calc_992);
-
-	//normalizar_vetor_R3(X_f32);
-	//normalizar_vetor_R3(X_f32+3);
 
 	arm_copy_f32(X_f32, buffer_filtro->ultimo_estado, 9);
 	arm_copy_f32(temp_calc_992_f32, buffer_filtro->P, 81);

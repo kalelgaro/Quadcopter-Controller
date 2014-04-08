@@ -15,7 +15,7 @@
 
 /* - Defines para facilitar indexação dos vetores de dados - */
 
-#define medias_controle 14
+#define medias_controle 2
 
 /* Private variables ---------------------------------------------------------*/
 

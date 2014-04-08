@@ -32,6 +32,6 @@
 	} kalman_filter_state;
 
 
-	void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[]);
+	void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], uint16_t estado_motores);
 
 #endif /* KALMAN_FILTER_H_ */

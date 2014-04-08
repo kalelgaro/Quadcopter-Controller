@@ -24,6 +24,7 @@ CFLAGS  = -g -Wall -Tstm32_flash.ld
 CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 CFLAGS += -ffunction-sections -fdata-sections -O0 -g -Wall  #Retirada do compilador TrueStudio
+CFLAGS += -Wl,-Map,a.map #mapa de memória
 
 
 ###################################################
