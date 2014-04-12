@@ -4,7 +4,7 @@
  *  Created on: Feb 22, 2013
  *      Author: Bruno
  */
-#include <stm32f4xx_conf.h>
+#include "stm32f4_discovery.h"
 
 #include "funcoes_spi.h"
 

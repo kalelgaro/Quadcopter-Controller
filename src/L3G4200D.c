@@ -1,19 +1,13 @@
-#define ARM_MATH_CM4
- 
-#ifndef __FPU_PRESENT
-  #define __FPU_PRESENT 1
-#endif
-
 /*
  * L3G4200D.c
  *
  *  Created on: May 28, 2013
  *      Author: Bruno
  */
+#include "stm32f4_discovery.h"
 
 #include "L3G4200D.h"
 #include "aquisicao_IMU.h"
-#include "stm32f4xx_conf.h" 
 #include "arm_math.h"
 
 uint16_t full_scale;

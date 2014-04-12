@@ -1,13 +1,3 @@
-#define ARM_MATH_CM4
-  
-#ifndef __FPU_USED
-  #define __FPU_USED 1
-#endif
-
-#ifndef __FPU_PRESENT
-  #define __FPU_PRESENT 1
-#endif
-
 /*
  * tratamento_sinal.c
  *
@@ -15,7 +5,8 @@
  *      Author: Bruno
  */
 
-#include <stm32f4xx_conf.h>
+#include "stm32f4_discovery.h"
+
 #include "arm_math.h"
 #include "controle_motores.h"
 #include "math.h"

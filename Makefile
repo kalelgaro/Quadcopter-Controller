@@ -20,7 +20,10 @@ STLINK_WIN = "C:\Program Files (x86)\STMicroelectronics\STM32 ST-LINK Utility\ST
 CC=arm-none-eabi-gcc
 OBJCOPY=arm-none-eabi-objcopy
 
-CFLAGS  = -g -Wall -Tstm32_flash.ld 
+CFLAGS = -DHSE_VALUE=8000000
+CFLAGS += -DARM_MATH_CM4=1 -DARM_MATH_MATRIX_CHECK=1 -D__FPU_USED=1 -DUSE_STDPERIPH_DRIVER=1
+
+CFLAGS += -g -Wall -Tstm32_flash.ld 
 CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 CFLAGS += -ffunction-sections -fdata-sections -O0  #Retirada do compilador TrueStudio

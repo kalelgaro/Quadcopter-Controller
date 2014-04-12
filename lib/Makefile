@@ -5,7 +5,11 @@ AR=arm-none-eabi-ar
 
 vpath %.c src src/peripherals
 
-CFLAGS  = -g -O2 -Wall
+
+CFLAGS = -DHSE_VALUE=8000000
+CFLAGS += -DARM_MATH_CM4=1 -DARM_MATH_MATRIX_CHECK=1 -D__FPU_USED=1 #-DUSE_STDPERIPH_DRIVER=1
+
+CFLAGS += -g -O2 -Wall
 CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 CFLAGS += -ffreestanding -nostdlib

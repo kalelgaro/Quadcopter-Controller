@@ -1,4 +1,5 @@
-#include <stm32f4xx_conf.h>
+#include "stm32f4_discovery.h"
+
 #include "stm32f4xx_i2c.h"
 #include "aquisicao_IMU.h"
 

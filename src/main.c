@@ -20,17 +20,6 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
-#define ARM_MATH_CM4 1
-
-#define ARM_MATH_MATRIX_CHECK 1
-
-#define __FPU_USED 1
-
-#define USE_STDPERIPH_DRIVER 1
-
-
-#include "stm32f4xx.h"
-//#include "stm32f4xx_conf.h" // again, added because ST didn't put it here ?
 #include "stm32f4_discovery.h"
 
 #include "arm_math.h"

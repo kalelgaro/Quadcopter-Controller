@@ -1,5 +1,5 @@
-#include "stm32f4xx.h"
-#include <stm32f4xx_conf.h>
+#include "stm32f4_discovery.h"
+
 #include <processamento_entrada.h>
 
 #define REF_ANGULAR_MAX

@@ -1,9 +1,8 @@
-#include <stm32f4xx_conf.h>
-//#include "arm_math.h"
+#include "stm32f4_discovery.h"
+
+
 #include "array_functions.h"
-
 #include "nRF24l01.h"
-
 #include "funcoes_spi.h"
 
 

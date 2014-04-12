@@ -1,21 +1,12 @@
-#define ARM_MATH_CM4
-  
-#ifndef __FPU_USED
-  #define __FPU_USED 1
-#endif
-
-#ifndef __FPU_PRESENT
-  #define __FPU_PRESENT 1
-#endif
-
 /*
  * controle_motores.c
  *
  *  Created on: Apr 26, 2013
  *      Author: Bruno
  */
+#include "stm32f4_discovery.h"
 #include "stm32f4xx_it.h"
-#include <stm32f4xx_conf.h>
+
 #include "controle_motores.h"
 #include "arm_math.h"
 
