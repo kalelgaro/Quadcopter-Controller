@@ -146,7 +146,8 @@ void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_yaw, float W_ct
 	}else if((W_cte > 0.15) && (W_cte <= 2.2))
 	{
 		controlador_ligado = 1;
-		rotacao_constante = (W_cte*975); //Insere o valor de rotação dos motores entre 146,25 e 2145
+		W_cte -= 0.15;
+		rotacao_constante = (W_cte*2500); //Insere o valor de rotação dos motores entre 146,25 e 2145
 	}
 }
 
@@ -265,9 +266,9 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 	// estado_KF[pitch] = ref_pitch;
 	// estado_KF[yaw] =   ref_yaw;
 
-	estado_PID[roll] =  saida_pitch_pid_final;
-	estado_PID[pitch] = saida_roll_pid_final;
-	estado_PID[yaw] =   saida_yaw_pid_final;
+	estado_PID[roll] =  ref_roll;
+	estado_PID[pitch] = ref_pitch;
+	estado_PID[yaw] =   ref_yaw;
 }
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
@@ -276,13 +277,20 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[1];
 	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[2];
 
+
+	Giroscopio[0] = acelerometro_adxl345[acel_x];
+	Giroscopio[1] = acelerometro_adxl345[acel_y];
+	Giroscopio[2] = acelerometro_adxl345[acel_z];
+
+	/*
 	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3];
 	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[4];
 	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[5];
+	*/
 
-	Magnetometro[0] = magnetometro[3];
-	Magnetometro[1] = magnetometro[4];
-	Magnetometro[2] = magnetometro[5];
+	Magnetometro[0] = magnetometro[0];
+	Magnetometro[1] = magnetometro[1];
+	Magnetometro[2] = magnetometro[2];
 }
 
 
@@ -323,22 +331,22 @@ float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
 //Procedimento de controle principal executado no overflow no Timer 3 à cada 1,25mS (800 Hz)
 void processo_controle()
 {
+	GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
+
 	static uint16_t contador_ativacao = 0;
 
 	static uint8_t flag_inicializacao = 0;
 
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
-
-	GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
     processar_giroscopio();
 
     processar_acelerometro();
 
     processar_magnetometro();
-    GPIO_ResetBits(GPIOD, GPIO_Pin_12); 
-
+       
     //Insere os valores da leituras dentro do filtro de Kalman.
 	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);	
+
     //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)   
     //Roll e Pitch
 	acel_2_angulos(EstadoFiltroKalman.ultimo_estado[acel_x], EstadoFiltroKalman.ultimo_estado[acel_y], EstadoFiltroKalman.ultimo_estado[acel_z], angulos_inclinacao);
@@ -347,13 +355,14 @@ void processo_controle()
 	orientacao = calcular_orientacao(EstadoFiltroKalman.ultimo_estado+3, angulos_inclinacao[pitch], angulos_inclinacao[roll]);
 
 	/*Ajuste de sentidos dos angulos*/
-	angulos_inclinacao[roll] = -angulos_inclinacao[roll];
 
 	if(flag_inicializacao == 1 && controlador_ligado == 1)
 	{
 		//Controlador PID com o resultado do filtro de Kalman
 
 		/* Cálcula o erro  bufferque será utilizado no PID -> Referência - Feedback */
+		ref_roll = -ref_roll;
+
 		erro_pitch = (ref_pitch - angulos_inclinacao[pitch]);
 		erro_roll =  (ref_roll - angulos_inclinacao[roll]);
 		erro_yaw =   (ref_yaw - (orientacao - orientacao_inicial));
@@ -405,5 +414,5 @@ void processo_controle()
 	}
 	//Salva valores de interesse nas estrutura que é enviada para telemetria.
 
-	
+	GPIO_ResetBits(GPIOD, GPIO_Pin_12); 
 }

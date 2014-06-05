@@ -144,7 +144,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	float Rmag = buffer_filtro->R_mag; //Variância inicial do magnetômetro.
 
 	if(estado_motores > 0)
-		Rmag = 1e7;
+		Rmag = 650;
 
 	float R_f32[36] = {(Racel), 0, 0, 0, 0, 0,
 					   0, (Racel), 0, 0, 0, 0,
@@ -253,7 +253,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	arm_mat_mult_f32(&F, &X, &temp_calc_910);
 
 	arm_copy_f32(temp_calc_910_f32, X_f32, 9);
-
 
 	//temp_calc_990 = F*P
 	arm_mat_mult_f32(&F, &P, &temp_calc_990);

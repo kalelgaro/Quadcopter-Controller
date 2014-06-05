@@ -33,12 +33,12 @@ void configurar_I2C(void)
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource8, GPIO_AF_I2C3);					//SCL I2C
 	GPIO_PinAFConfig(GPIOC, GPIO_PinSource9, GPIO_AF_I2C3);					//SDA I2C
 
-	I2C_InitStruct.I2C_ClockSpeed = 600000; 								// 400kHz
+	I2C_InitStruct.I2C_ClockSpeed = 400000; 								// 400kHz
 	I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;									// I2C mode
 	I2C_InitStruct.I2C_DutyCycle = I2C_DutyCycle_2;							// 50% duty cycle --> standard
-	I2C_InitStruct.I2C_OwnAddress1 = 0xFF;									// own address, not relevant in master mode
+	I2C_InitStruct.I2C_OwnAddress1 = 0xFF;									// Endereço próprio - Não é relevante uma vez que este é utilizado como MASTER.
 	I2C_InitStruct.I2C_Ack = I2C_Ack_Disable;								// disable acknowledge when reading (can be changed later on)
-	I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit; 	// set address length to 7 bit addresses
+	I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit; 	// Endereços de 7 bits.
 
 	I2C_Init(I2C3, &I2C_InitStruct);										// init I2C1
 	// enable I2C1

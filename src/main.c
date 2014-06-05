@@ -141,9 +141,9 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(52, 10, 7.95, 20, 0.5, 4);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(52, 60, 20, 60, 0.5, 20);								//Ajusta as constantes do PID para Roll e Pitch.
 
-	setar_parametros_Kalman(1e-6, 1e-6, 1e-4, 12, 45);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(1e-5, 1e-6, 5e-4, 4, 45);						//Ajusta as covariâncias do filtro de Kalman.
 	//Melhores parametreos testados até o momento - 1e-6 1e-6 1e-4 12 45
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
@@ -444,7 +444,6 @@ int main(void)
 
 		if(variavel_delay_100ms == 0 && start_logging_final == 1)
 		{
-
 			buffer_dados_tx[0] = 'L';
 
 			retornar_estado(telemetria_kalman, telemetria_pid);
@@ -484,7 +483,6 @@ int main(void)
 
 		}else if(variavel_delay_100ms == 0 && start_logging_sensores == 1 && start_logging_final == 0)
 		{
-			
 			buffer_dados_tx[0] = 'S';
 
 			retornar_estado_sensores(telemetria_acelerometro, telemetria_giroscopio, telemetria_magnetometro);
@@ -590,12 +588,12 @@ void iniciar_giroscopio()
 { 
   	L3G4200D_InitTypeDef Configuracao_gyro;
 
-  	Configuracao_gyro.Axes_Enable = XYZ_EN;
-  	Configuracao_gyro.Power_Mode = NORMAL_MODE;
+  	Configuracao_gyro.Axes_Enable = XYZ_EN;				//Ativação dos três eixos
+  	Configuracao_gyro.Power_Mode = NORMAL_MODE;			//Modo de operação normal
   	Configuracao_gyro.Output_DataRate = DR1 | DR0;    	//DR = 800 Hz
-  	Configuracao_gyro.bandwidth = 0;        			//Frequeciencia de corte = 30 Hz
-  	Configuracao_gyro.Self_Test = ST_NORMAL;
-  	Configuracao_gyro.Full_Scale = FS2000DPS;			//Fundo de escala de 500 graus por segundo
+  	Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 30 Hz
+  	Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
+  	Configuracao_gyro.Full_Scale = FS2000DPS;			//Fundo de escala de 2000 graus por segundo
 
   	L3G4200D_Init(I2C3, &Configuracao_gyro);
 }
@@ -617,7 +615,7 @@ void configurar_acelerometro()
 
   	configuracao_inicial.Power_Mode = Measure;							//Coloca a placa em modo de aquisição contínua.
   	configuracao_inicial.bandwidth = Rate_D3 | Rate_D2 | Rate_D0;		//Aquisição da placa em 800 Hz.
-  	configuracao_inicial.Full_Scale = Range_D1;								//Fundo de escala em 2G
+  	configuracao_inicial.Full_Scale = Range_D1;							//Fundo de escala em 8G
   	configuracao_inicial.Resolution = 0;								//Resolução da placa em 10 bits.
   	configuracao_inicial.Self_Test = 0;									//Desliga o "self-test"
 

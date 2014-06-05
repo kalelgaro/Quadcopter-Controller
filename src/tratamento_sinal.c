@@ -12,6 +12,10 @@
 #include "math.h"
 #include "tratamento_sinal.h"
 
+#define YAW 2
+#define PITCH 1
+#define ROLL 0
+
 #define fator_correcao 0.35							//1/(2*sqrt(2)) -> para correção do valor aplicado aos motores -> Motor equivalente.
 
 uint16_t buffer_velocidade_motores[4] = {0, 0, 0, 0};
@@ -61,14 +65,18 @@ void acel_2_angulos(float acel_x, float acel_y, float acel_z, float angulos[2])
 	//Conversão de inclinação com base no artigo
 		/*Implementing a Tilt-Compensated eCompass using Accelerometer and Magnetometer Sensors*/
 	float32_t temp;
-	angulos[0] = (float)atan2(acel_y,acel_z);
 
-	temp = acel_y*sin(angulos[0])+acel_z*cos(angulos[0]); 					
+	float Roll;
+	float Pitch;
+
+	Roll = (float)atan2(acel_y,acel_z);
+
+	temp = acel_y*sin(Roll)+acel_z*cos(Roll); 					
 	
-	angulos[1] = (float)(atan(-acel_x/temp));
+	Pitch = (float)(atan(-acel_x/temp));
 
-	angulos[1] = angulos[1]*57.3;					//180/pi ~= 57.3 -> Conversão rad p/ graus. (57.295 (180/pi))
-	angulos[0] = angulos[0]*57.3;					//180/pi ~= 57.3 -> Conversão rad p/ graus. (57.295 (180/pi))
+	angulos[ROLL] = Roll*57.3;					//180/pi ~= 57.3 -> Conversão rad p/ graus. (57.295 (180/pi))
+	angulos[PITCH] = Pitch*57.3;					//180/pi ~= 57.3 -> Conversão rad p/ graus. (57.295 (180/pi))
 }
 
 ///*Função que calcula o PID discreto para o sinal de erro */
@@ -116,6 +124,9 @@ double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_
 	// //entrada -> x[n]
 	
 	float temp;
+
+	if(entrada > 4)
+		ki = ki/10;
 
 	kd = kd/dt;
 	ki = ki*dt/2;
@@ -169,10 +180,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	float delta_m3 = 0;
 	float delta_m4 = 0;
 
-	delta_m1 = (fator_correcao*(+pitch_pid - roll_pid));
-	delta_m2 = (fator_correcao*(+pitch_pid + roll_pid));
-	delta_m3 = (fator_correcao*(-pitch_pid + roll_pid));
-	delta_m4 = (fator_correcao*(-pitch_pid - roll_pid));
+	delta_m1 = (fator_correcao*(+pitch_pid + roll_pid));
+	delta_m2 = (fator_correcao*(+pitch_pid - roll_pid));
+	delta_m3 = (fator_correcao*(-pitch_pid - roll_pid));
+	delta_m4 = (fator_correcao*(-pitch_pid + roll_pid));
 
 	velocidade_m1 = rotacao_constante + delta_m1 - yaw_pid;
 	velocidade_m2 = rotacao_constante + delta_m2 + yaw_pid;
