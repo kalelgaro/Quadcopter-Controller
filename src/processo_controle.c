@@ -21,7 +21,7 @@
 
 /* ----------------------------------------------------------  */
 #define numero_medias_PID 2
-
+#define numero_medias_acelerometro 1
 
 /*-------Variáveis globais que serão utilizadas no processo-------*/
 
@@ -84,6 +84,12 @@ float saida_yaw_pid_final =   0;
 float roll_pos_filtro;
 float pitch_pos_filtro;
 float yaw_pos_filtro;
+
+//Variáveis para média
+
+float buffer_medias_acelX[numero_medias_acelerometro];
+float buffer_medias_acelY[numero_medias_acelerometro];
+float buffer_medias_acelZ[numero_medias_acelerometro];
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
@@ -226,6 +232,10 @@ void processar_acelerometro()
     acelerometro_adxl345[acel_x] -= offset_accel[acel_x];
 	acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
 	acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
+
+	acelerometro_adxl345[acel_x] = media_rotativa(acelerometro_adxl345[acel_x], buffer_medias_acelX, numero_medias_acelerometro);
+	acelerometro_adxl345[acel_y] = media_rotativa(acelerometro_adxl345[acel_y], buffer_medias_acelY, numero_medias_acelerometro);
+	acelerometro_adxl345[acel_z] = media_rotativa(acelerometro_adxl345[acel_z], buffer_medias_acelZ, numero_medias_acelerometro);
 }
 
 void processar_magnetometro()
