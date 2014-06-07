@@ -20,6 +20,10 @@
 	void normalizar_vetor_R3(float vetor[3]);
 	float calcular_norma_R3(float vetor[3]);
 	void Rotate3dVector(float vector[3], float roll, float pitch, float yaw, float Retorno[3]);
+	float f_sin(float);
+	float f_cos(float);
+	float f_tan(float);
+	float f_sec(float);
 
 	typedef struct 
 	{

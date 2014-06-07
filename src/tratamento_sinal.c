@@ -125,9 +125,6 @@ double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_
 	
 	float temp;
 
-	if(entrada > 4)
-		ki = ki/10;
-
 	kd = kd/dt;
 	ki = ki*dt/2;
 
@@ -310,4 +307,39 @@ void Rotate3dVector(float vector[3], float roll, float pitch, float yaw, float R
 
 	arm_mat_mult_f32(&RotationMatrix, &InVector, &OutVector);
 
+}
+
+
+// /*	Cálculo do seno com base na série de taylor => Utilização dos 3 primeiros termos */
+// float f_sin(float angle) {
+// 	return (angle - (pow(angle,3)/6));// + (pow(angle,5)/120));
+// }
+// /*	Cálculo do cossenos com base na série de taylor => Utilização dos 3 primeiros termos */
+// float f_cos(float angle) {
+// 	return (1 - (pow(angle,2)/2));// + (pow(angle,4)/24));
+// }
+// /*	Cálculo do tangent com base na série de taylor => Utilização dos 3 primeiros termos */
+// float f_tan(float angle) {
+// 	return (angle + (pow(angle,3)/3));// + 2*pow(angle,5)/15);
+// }
+// /*	Cálculo da secante com base na série de taylor => Utilização dos 3 primeiros termos */
+// float f_sec(float angle) {
+// 	return (1/f_cos(angle));
+// }
+
+/*	Cálculo do seno com base na série de taylor => Utilização dos 3 primeiros termos */
+float f_sin(float angle) {
+	return arm_sin_f32(angle);
+}
+/*	Cálculo do cossenos com base na série de taylor => Utilização dos 3 primeiros termos */
+float f_cos(float angle) {
+	return arm_cos_f32(angle);
+}
+/*	Cálculo do tangent com base na série de taylor => Utilização dos 3 primeiros termos */
+float f_tan(float angle) {
+	return (arm_sin_f32(angle)/arm_cos_f32(angle));
+}
+/*	Cálculo da secante com base na série de taylor => Utilização dos 3 primeiros termos */
+float f_sec(float angle) {
+	return (1/arm_cos_f32(angle));
 }

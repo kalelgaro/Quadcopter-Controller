@@ -21,6 +21,7 @@
 
 /* ----------------------------------------------------------  */
 #define numero_medias_PID 2
+#define numero_medias_acel 1
 
 
 /*-------Variáveis globais que serão utilizadas no processo-------*/
@@ -85,9 +86,14 @@ float roll_pos_filtro;
 float pitch_pos_filtro;
 float yaw_pos_filtro;
 
+//Buffers para média rotativa
+float buffer_media_acelX[numero_medias_acel];
+float buffer_media_acelY[numero_medias_acel];
+float buffer_media_acelZ[numero_medias_acel];
+
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0}, 
+kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0,0,0,0}, 
 
 									  {100,0,0,0,0,0,0,0,0,
 									   0,100,0,0,0,0,0,0,0,
@@ -99,7 +105,7 @@ kalman_filter_state EstadoFiltroKalman = {{0,0,1,0,0,0,0,0,0},
 									   0,0,0,0,0,0,0,100,0,
 									   0,0,0,0,0,0,0,0,100}, 
 
-							           1e-7, 1e-4, 1e-5, 2e1, 4e1, 0.0025};
+							           5e-7, 1e-2, 1e-2, 45, 45, 0.0025, {0.75, 0.75, 0.08}};
 
 //Erros utilizados nos controladores PID
 									   
@@ -226,6 +232,10 @@ void processar_acelerometro()
     acelerometro_adxl345[acel_x] -= offset_accel[acel_x];
 	acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
 	acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
+
+	acelerometro_adxl345[acel_x] = media_rotativa(acelerometro_adxl345[acel_x], buffer_media_acelX, numero_medias_acel);
+	acelerometro_adxl345[acel_y] = media_rotativa(acelerometro_adxl345[acel_y], buffer_media_acelY, numero_medias_acel);
+	acelerometro_adxl345[acel_z] = media_rotativa(acelerometro_adxl345[acel_z], buffer_media_acelZ, numero_medias_acel);
 }
 
 void processar_magnetometro()
@@ -273,24 +283,19 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[0];
-	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[1];
-	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[2];
+	Acelerometro[0] = acelerometro_adxl345[acel_x];
+	Acelerometro[1] = acelerometro_adxl345[acel_y];
+	Acelerometro[2] = acelerometro_adxl345[acel_z];
 
 
-	Giroscopio[0] = acelerometro_adxl345[acel_x];
-	Giroscopio[1] = acelerometro_adxl345[acel_y];
-	Giroscopio[2] = acelerometro_adxl345[acel_z];
-
-	/*
 	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3];
 	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[4];
 	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[5];
-	*/
+	
 
 	Magnetometro[0] = magnetometro[0];
-	Magnetometro[1] = magnetometro[1];
-	Magnetometro[2] = magnetometro[2];
+	Magnetometro[1] = magnetometro[2];
+	Magnetometro[2] = magnetometro[1];
 }
 
 
@@ -347,12 +352,9 @@ void processo_controle()
     //Insere os valores da leituras dentro do filtro de Kalman.
 	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);	
 
-    //Cálculos dos ângulos de rotação do referêncial no corpo do veículo em relação ao referêncial inercial (superfície)   
-    //Roll e Pitch
-	acel_2_angulos(EstadoFiltroKalman.ultimo_estado[acel_x], EstadoFiltroKalman.ultimo_estado[acel_y], EstadoFiltroKalman.ultimo_estado[acel_z], angulos_inclinacao);
-	
-	//Yaw
-	orientacao = calcular_orientacao(EstadoFiltroKalman.ultimo_estado+3, angulos_inclinacao[pitch], angulos_inclinacao[roll]);
+	angulos_inclinacao[roll] = 57.3*EstadoFiltroKalman.ultimo_estado[0];
+	angulos_inclinacao[pitch] = 57.3*EstadoFiltroKalman.ultimo_estado[1];
+	orientacao = 57.3*EstadoFiltroKalman.ultimo_estado[2];
 
 	/*Ajuste de sentidos dos angulos*/
 

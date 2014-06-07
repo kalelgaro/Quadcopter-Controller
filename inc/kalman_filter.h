@@ -29,6 +29,8 @@
 
 		float dt;
 
+		float MagInicial[3];
+
 	} kalman_filter_state;
 
 
