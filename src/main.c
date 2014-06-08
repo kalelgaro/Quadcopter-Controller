@@ -141,11 +141,11 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(52, 60, 20, 60, 0.5, 20);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(52, 60, 20, 100, 10, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 
-	//Qang, Qbias, Qbiasmag, Racel, Rmag
-	setar_parametros_Kalman(5e-6, 1e-3, 1e-6, 15, 50);						//Ajusta as covariâncias do filtro de Kalman.
+	//Qang, Qbiasmag, Qbias, Racel, Rmag
+	setar_parametros_Kalman(1e-12, 1e-10, 1e-10, 10, 250);						//Ajusta as covariâncias do filtro de Kalman.
 	//Melhores parametreos testados até o momento - 1e-6 1e-6 1e-4 12 45
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.

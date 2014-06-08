@@ -250,7 +250,7 @@ void processar_magnetometro()
 	if((status&0x01)==0x01)
 	{
 		HMC5883L_Read_Data(I2C3, magnetometro);
-		//normalizar_vetor_R3(magnetometro);
+		normalizar_vetor_R3(magnetometro);
 	}
 }
 
