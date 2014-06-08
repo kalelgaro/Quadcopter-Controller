@@ -141,7 +141,7 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(52, 60, 20, 60, 0.5, 20);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(52, 60, 20, 100, 10, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	setar_parametros_Kalman(1e-5, 1e-6, 5e-4, 4, 45);						//Ajusta as covariâncias do filtro de Kalman.
 	//Melhores parametreos testados até o momento - 1e-6 1e-6 1e-4 12 45

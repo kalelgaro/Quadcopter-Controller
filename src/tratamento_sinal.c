@@ -125,9 +125,6 @@ double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_
 	
 	float temp;
 
-	if(entrada > 4)
-		ki = ki/10;
-
 	kd = kd/dt;
 	ki = ki*dt/2;
 
