@@ -102,9 +102,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	float dt = buffer_filtro->dt;
 
 	/*Angulos estimados através do filtro. */
-	float phi = buffer_filtro->ultimo_estado[0]; 
-	float theta = buffer_filtro->ultimo_estado[1];
-	float psi = buffer_filtro->ultimo_estado[2];
+	float phi = 	buffer_filtro->ultimo_estado[0]; 
+	float theta = 	buffer_filtro->ultimo_estado[1];
+	float psi = 	buffer_filtro->ultimo_estado[2];
 
 	/*Bias do giroscópio estimado. */
 	float bp = buffer_filtro->ultimo_estado[3];
@@ -128,7 +128,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
 	phi = phi_;
 	theta = theta_;
-	psi = psi_;
+	psi = tratar_intervalo_Angulo(psi_);
 
 	//Elementos da matriz Jacobiana para atualização dos estados (F).
 	float a11 = 1 + f_cos(phi)*f_tan(theta)*q*dt - f_sin(phi)*f_tan(theta)*r*dt;
@@ -213,12 +213,12 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	float bz = buffer_filtro->MagInicial[2]; 
 
 	/* Cálculo das referências com base no magnetômetro e no estado do acelerômetro parado [0; 0; 1]; */
-	float h_f32[6] = { 	-f_sin(theta), 
-        				f_cos(theta)*f_sin(phi), 
+	float h_f32[6] = {  -f_sin(theta),
+        				f_cos(theta)*f_sin(phi),
         				f_cos(phi)*f_cos(theta),
-        				-(f_cos(phi)*f_sin(psi) + f_cos(psi)*f_sin(phi)*f_sin(theta))*(bmy - by) - (f_sin(phi)*f_sin(psi) - f_cos(phi)*f_cos(psi)*f_sin(theta))*(bmz - bz) - f_cos(psi)*f_cos(theta)*(bmx - bx),
-        				f_cos(theta)*f_sin(psi)*(bmx - bx) - (f_cos(psi)*f_sin(phi) + f_cos(phi)*f_sin(psi)*f_sin(theta))*(bmz - bz) - (f_cos(phi)*f_cos(psi) - f_sin(phi)*f_sin(psi)*f_sin(theta))*(bmy - by),
-        				f_cos(theta)*f_sin(phi)*(bmy - by) - f_cos(phi)*f_cos(theta)*(bmz - bz) - f_sin(theta)*(bmx - bx)};
+        				bmx - bz*f_sin(theta) + bx*f_cos(psi)*f_cos(theta) + by*f_cos(theta)*f_sin(psi),
+        				bmy - bx*(f_cos(phi)*f_sin(psi) - f_cos(psi)*f_sin(phi)*f_sin(theta)) + by*(f_cos(phi)*f_cos(psi) + f_sin(phi)*f_sin(psi)*f_sin(theta)) + bz*f_cos(theta)*f_sin(phi),
+        				bmz + bx*(f_sin(phi)*f_sin(psi) + f_cos(phi)*f_cos(psi)*f_sin(theta)) - by*(f_cos(psi)*f_sin(phi) - f_cos(phi)*f_sin(psi)*f_sin(theta)) + bz*f_cos(phi)*f_cos(theta)};
 
 	arm_mat_init_f32(&h, 6, 1, h_f32);        				
 
@@ -248,47 +248,38 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	float h31 = -f_cos(theta)*f_sin(phi);
 	float h32 = -f_cos(phi)*f_sin(theta);
 
-	float h41 = (f_sin(phi)*f_sin(psi) - f_cos(phi)*f_cos(psi)*f_sin(theta))*(bmy - by) - (f_cos(phi)*f_sin(psi) + f_cos(psi)*f_sin(phi)*f_sin(theta))*(bmz - bz);
-	float h42 = f_cos(psi)*f_sin(theta)*(bmx - bx) + f_cos(phi)*f_cos(psi)*f_cos(theta)*(bmz - bz) - f_cos(psi)*f_cos(theta)*f_sin(phi)*(bmy - by);
-	float h43 = f_cos(theta)*f_sin(psi)*(bmx - bx) - (f_cos(psi)*f_sin(phi) + f_cos(phi)*f_sin(psi)*f_sin(theta))*(bmz - bz) - (f_cos(phi)*f_cos(psi) - f_sin(phi)*f_sin(psi)*f_sin(theta))*(bmy - by);
-	float h47 = -f_cos(psi)*f_cos(theta);
-	float h48 = - f_cos(phi)*f_sin(psi) - f_cos(psi)*f_sin(phi)*f_sin(theta);
-	float h49 = f_cos(phi)*f_cos(psi)*f_sin(theta) - f_sin(phi)*f_sin(psi);
+	float h42 = -bz*f_cos(theta) - bx*f_cos(psi)*f_sin(theta) - by*f_sin(psi)*f_sin(theta);
+	float h43 = by*f_cos(psi)*f_cos(theta) - bx*f_cos(theta)*f_sin(psi);
 
-	float h51 = (f_cos(psi)*f_sin(phi) + f_cos(phi)*f_sin(psi)*f_sin(theta))*(bmy - by) - (f_cos(phi)*f_cos(psi) - f_sin(phi)*f_sin(psi)*f_sin(theta))*(bmz - bz);
-	float h52 = f_cos(theta)*f_sin(phi)*f_sin(psi)*(bmy - by) - f_cos(phi)*f_cos(theta)*f_sin(psi)*(bmz - bz) - f_sin(psi)*f_sin(theta)*(bmx - bx);
-	float h53 = (f_cos(phi)*f_sin(psi) + f_cos(psi)*f_sin(phi)*f_sin(theta))*(bmy - by) + (f_sin(phi)*f_sin(psi) - f_cos(phi)*f_cos(psi)*f_sin(theta))*(bmz - bz) + f_cos(psi)*f_cos(theta)*(bmx - bx);
-	float h57 = f_cos(theta)*f_sin(psi);
-	float h58 = f_sin(phi)*f_sin(psi)*f_sin(theta) - f_cos(phi)*f_cos(psi);
-	float h59 = -f_cos(psi)*f_sin(phi) - f_cos(phi)*f_sin(psi)*f_sin(theta);
+	float h51 = bx*(f_sin(phi)*f_sin(psi) + f_cos(phi)*f_cos(psi)*f_sin(theta)) - by*(f_cos(psi)*f_sin(phi) - f_cos(phi)*f_sin(psi)*f_sin(theta)) + bz*f_cos(phi)*f_cos(theta);
+	float h52 = bx*f_cos(psi)*f_cos(theta)*f_sin(phi) - bz*f_sin(phi)*f_sin(theta) + by*f_cos(theta)*f_sin(phi)*f_sin(psi);
+	float h53 = -bx*(f_cos(phi)*f_cos(psi) + f_sin(phi)*f_sin(psi)*f_sin(theta)) - by*(f_cos(phi)*f_sin(psi) - f_cos(psi)*f_sin(phi)*f_sin(theta));
 
-	float h61 = f_cos(phi)*f_cos(theta)*(bmy - by) + f_cos(theta)*f_sin(phi)*(bmz - bz);
-	float h62 = f_cos(phi)*f_sin(theta)*(bmz - bz) - f_cos(theta)*(bmx - bx) - f_sin(phi)*f_sin(theta)*(bmy - by);
-	float h67 = -f_sin(theta);
-	float h68 = f_cos(theta)*f_sin(phi);
-	float h69 = -f_cos(phi)*f_cos(theta);
+	float h61 = bx*(f_cos(phi)*f_sin(psi) - f_cos(psi)*f_sin(phi)*f_sin(theta)) - by*(f_cos(phi)*f_cos(psi) + f_sin(phi)*f_sin(psi)*f_sin(theta)) - bz*f_cos(theta)*f_sin(phi);
+	float h62 = bx*f_cos(phi)*f_cos(psi)*f_cos(theta) - bz*f_cos(phi)*f_sin(theta) + by*f_cos(phi)*f_cos(theta)*f_sin(psi);
+	float h63 = bx*(f_cos(psi)*f_sin(phi) - f_cos(phi)*f_sin(psi)*f_sin(theta)) + by*(f_sin(phi)*f_sin(psi) + f_cos(phi)*f_cos(psi)*f_sin(theta));
 
 	/* Matriz Jacobiana para cálculo da confiabilidade do erro */
 	float H_f32[54] =	{	0,      h12,    0,      0,      0,      0,      0,      0,      0,
 			        		h21,    h22,    0,      0,      0,      0,      0,      0,      0,
 			        		h31,    h32,    0,      0,      0,      0,      0,      0,      0,
-			        		h41,    h42,    h43,    0,      0,      0,      h47,    h48,    h49,
-			        		h51,    h52,    h53,    0,      0,      0,      h57,    h58,    h59,
-			        		h61,    h62,    0,    	0,      0,      0,      h67,    h68,    h69};
+			        		0,    	h42,    h43,    0,      0,      0,      1,    	0,    	0,
+			        		h51,    h52,    h53,    0,      0,      0,      0,    	1,    	0,
+			        		h61,    h62,    h63,   	0,      0,      0,      0,    	0,    	1};
 
 	arm_mat_init_f32(&H, 6, 9, H_f32);
 
 
 	/* Matriz Jacobiana transposta para cálculo da confiabilidade do erro . */
-	float Ht_f32[54] ={	0,		h21,	h31,	h41,	h51,	h61,
+	float Ht_f32[54] ={	0,		h21,	h31,	0,		h51,	h61,
 						h12,	h22,	h32,	h42,	h52,	h62,
-						0,		0,		0,		h43,	h53,	0,
+						0,		0,		0,		h43,	h53,	h63,
 						0,		0,		0,		0,		0,		0,
 						0,		0,		0,		0,		0,		0,
 						0,		0,		0,		0,		0,		0,
-						0,		0,		0,		h47,	h57,	h67,
-						0,		0,		0,		h48,	h58,	h68,
-						0,		0,		0,		h49,	h59,	h69};
+						0,		0,		0,		1,		0,		0,
+						0,		0,		0,		0,		1,		0,
+						0,		0,		0,		0,		0,		1};
 
 	arm_mat_init_f32(&Ht, 9, 6, Ht_f32);
 
@@ -353,6 +344,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	arm_mat_sub_f32(&I, &temp_calc_992, &temp_calc_993);
 
 	arm_mat_mult_f32(&temp_calc_993, &P, &temp_calc_992);
+
 
 	arm_copy_f32(X_f32, buffer_filtro->ultimo_estado, 9);
 	arm_copy_f32(temp_calc_992_f32, buffer_filtro->P, 81);

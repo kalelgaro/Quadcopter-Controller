@@ -141,12 +141,11 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(52, 60, 20, 100, 10, 30);								//Ajusta as constantes do PID para Roll e Pitch.
-
+	setar_parametros_PID(40, 20, 20, 100, 10, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Qbias, Racel, Rmag
-	setar_parametros_Kalman(1e-12, 1e-10, 1e-10, 10, 250);						//Ajusta as covariâncias do filtro de Kalman.
-	//Melhores parametreos testados até o momento - 1e-6 1e-6 1e-4 12 45
+	setar_parametros_Kalman(1e-20, 5e-12, 5e-12, 0.0075, 0.75);						//Ajusta as covariâncias do filtro de Kalman.
+	//Melhores parametreos testados até o momento - 1e-7 1e-12 1e-12 0.75 30
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -502,19 +501,19 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
+			conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[1];
+			conversor.flutuante_entrada = telemetria_giroscopio[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[2];
+			conversor.flutuante_entrada = telemetria_giroscopio[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[0];
+			conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -596,7 +595,7 @@ void iniciar_giroscopio()
   	Configuracao_gyro.Output_DataRate = DR1 | DR0;    	//DR = 800 Hz
   	Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 30 Hz
   	Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
-  	Configuracao_gyro.Full_Scale = FS2000DPS;			//Fundo de escala de 2000 graus por segundo
+  	Configuracao_gyro.Full_Scale = FS250DPS;			//Fundo de escala de 250 graus por segundo
 
   	L3G4200D_Init(I2C3, &Configuracao_gyro);
 }

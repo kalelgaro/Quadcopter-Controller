@@ -229,9 +229,9 @@ void TIM6_DAC_IRQHandler(void)
   {
     TIM_ClearITPendingBit(TIM6, TIM_IT_Update);		//clear interrupt and start counting again to get precise freq
 
-    //Setar referência dos controladores (Pitch, Roll e Yaw) e da rotação constante do motor, respectivamente.
+    //Setar referência dos controladores (Pitch, Yaw e Roll) e da rotação constante do motor, respectivamente.
     setar_referencia(medio_ch2, medio_ch1, medio_ch4, medio_ch3);
-
+    
     //Aquisição,processamento e controle utilizando os sensores.
     processo_controle();              
 

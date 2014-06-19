@@ -21,7 +21,8 @@
 
 /* ----------------------------------------------------------  */
 #define numero_medias_PID 2
-#define numero_medias_acel 1
+#define ordem_filtro 203
+#define numero_medias_gyro 1
 
 
 /*-------Variáveis globais que serão utilizadas no processo-------*/
@@ -86,24 +87,33 @@ float roll_pos_filtro;
 float pitch_pos_filtro;
 float yaw_pos_filtro;
 
-//Buffers para média rotativa
-float buffer_media_acelX[numero_medias_acel];
-float buffer_media_acelY[numero_medias_acel];
-float buffer_media_acelZ[numero_medias_acel];
+//Buffers para o filtro FIR do acelerômetro.
+	//Filtro com banda de passagem de 4Hz e atenuação de 0.1 dB e banda de parada de 40 Hz com atenuação de 120 dB( Filter Builder)
+float coeficientes_FIR[ordem_filtro] = {-2.9594e-06,-2.6145e-06,-3.7377e-06,-5.1529e-06,-6.904e-06,-9.04e-06,-1.161e-05,-1.4668e-05,-1.8265e-05,-2.2453e-05,-2.7284e-05,-3.2808e-05,-3.9071e-05,-4.6114e-05,-5.3969e-05,-6.2664e-05,-7.2214e-05,-8.2626e-05,-9.3885e-05,-0.00010597,-0.00011882,-0.00013239,-0.00014658,-0.00016128,-0.00017634,-0.00019159,-0.00020683,-0.00022182,-0.00023629,-0.00024993,-0.00026238,-0.00027325,-0.00028213,-0.00028854,-0.00029197,-0.00029187,-0.00028765,-0.00027869,-0.00026432,-0.00024385,-0.00021655,-0.00018167,-0.00013843,-8.6029e-05,-2.3667e-05,4.9479e-05,0.00013423,0.0002314,0.00034179,0.0004662,0.00060539,0.00076009,0.00093098,0.0011187,0.0013239,0.001547,0.0017884,0.0020487,0.0023279,0.0026264,0.0029442,0.0032813,0.0036375,0.0040126,0.0044062,0.0048178,0.0052467,0.0056923,0.0061536,0.0066296,0.0071192,0.007621,0.0081338,0.0086559,0.0091858,0.0097217,0.010262,0.010804,0.011347,0.011888,0.012426,0.012957,0.01348,0.013993,0.014494,0.01498,0.015449,0.015899,0.016328,0.016734,0.017116,0.017471,0.017797,0.018094,0.018359,0.018591,0.01879,0.018954,0.019082,0.019174,0.01923,0.019248,0.01923,0.019174,0.019082,0.018954,0.01879,0.018591,0.018359,0.018094,0.017797,0.017471,0.017116,0.016734,0.016328,0.015899,0.015449,0.01498,0.014494,0.013993,0.01348,0.012957,0.012426,0.011888,0.011347,0.010804,0.010262,0.0097217,0.0091858,0.0086559,0.0081338,0.007621,0.0071192,0.0066296,0.0061536,0.0056923,0.0052467,0.0048178,0.0044062,0.0040126,0.0036375,0.0032813,0.0029442,0.0026264,0.0023279,0.0020487,0.0017884,0.001547,0.0013239,0.0011187,0.00093098,0.00076009,0.00060539,0.0004662,0.00034179,0.0002314,0.00013423,4.9479e-05,-2.3667e-05,-8.6029e-05,-0.00013843,-0.00018167,-0.00021655,-0.00024385,-0.00026432,-0.00027869,-0.00028765,-0.00029187,-0.00029197,-0.00028854,-0.00028213,-0.00027325,-0.00026238,-0.00024993,-0.00023629,-0.00022182,-0.00020683,-0.00019159,-0.00017634,-0.00016128,-0.00014658,-0.00013239,-0.00011882,-0.00010597,-9.3885e-05,-8.2626e-05,-7.2214e-05,-6.2664e-05,-5.3969e-05,-4.6114e-05,-3.9071e-05,-3.2808e-05,-2.7284e-05,-2.2453e-05,-1.8265e-05,-1.4668e-05,-1.161e-05,-9.04e-06,-6.904e-06,-5.1529e-06,-3.7377e-06,-2.6145e-06,-2.9594e-06};
+
+float buffer_filtro_acelX[ordem_filtro];
+float buffer_filtro_acelY[ordem_filtro];
+float buffer_filtro_acelZ[ordem_filtro];
+
+//Bufers para média rotativa do giroscópio.
+
+float buffer_media_gx[numero_medias_gyro];
+float buffer_media_gy[numero_medias_gyro];
+float buffer_media_gz[numero_medias_gyro];
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
 kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0,0,0,0}, 
 
-									  {100,0,0,0,0,0,0,0,0,
-									   0,100,0,0,0,0,0,0,0,
-									   0,0,100,0,0,0,0,0,0,
-									   0,0,0,100,0,0,0,0,0,
-									   0,0,0,0,100,0,0,0,0,
-									   0,0,0,0,0,100,0,0,0,
-									   0,0,0,0,0,0,100,0,0,
-									   0,0,0,0,0,0,0,100,0,
-									   0,0,0,0,0,0,0,0,100}, 
+									  {1,0,0,0,0,0,0,0,0,
+									   0,1,0,0,0,0,0,0,0,
+									   0,0,1,0,0,0,0,0,0,
+									   0,0,0,1,0,0,0,0,0,
+									   0,0,0,0,1,0,0,0,0,
+									   0,0,0,0,0,1,0,0,0,
+									   0,0,0,0,0,0,1,0,0,
+									   0,0,0,0,0,0,0,1,0,
+									   0,0,0,0,0,0,0,0,1}, 
 
 							           5e-7, 1e-2, 1e-2, 45, 45, 0.0025, {0.75, 0.75, 0.08}};
 
@@ -134,7 +144,7 @@ void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_yaw, float W_ct
 		ref_roll = 0;
 
 	if((Ref_yaw >= -1.1) && (Ref_yaw <= 1.1))
-		ref_yaw = (Ref_yaw*15);
+		ref_yaw = (Ref_yaw*150);
 	else
 		ref_yaw = 0;
 	
@@ -233,9 +243,9 @@ void processar_acelerometro()
 	acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
 	acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
 
-	acelerometro_adxl345[acel_x] = media_rotativa(acelerometro_adxl345[acel_x], buffer_media_acelX, numero_medias_acel);
-	acelerometro_adxl345[acel_y] = media_rotativa(acelerometro_adxl345[acel_y], buffer_media_acelY, numero_medias_acel);
-	acelerometro_adxl345[acel_z] = media_rotativa(acelerometro_adxl345[acel_z], buffer_media_acelZ, numero_medias_acel);
+	acelerometro_adxl345[acel_x] = filtro_fir(acelerometro_adxl345[acel_x], buffer_filtro_acelX, ordem_filtro, coeficientes_FIR);
+	acelerometro_adxl345[acel_y] = filtro_fir(acelerometro_adxl345[acel_y], buffer_filtro_acelY, ordem_filtro, coeficientes_FIR);
+	acelerometro_adxl345[acel_z] = filtro_fir(acelerometro_adxl345[acel_z], buffer_filtro_acelZ, ordem_filtro, coeficientes_FIR);
 }
 
 void processar_magnetometro()
@@ -250,7 +260,7 @@ void processar_magnetometro()
 	if((status&0x01)==0x01)
 	{
 		HMC5883L_Read_Data(I2C3, magnetometro);
-		normalizar_vetor_R3(magnetometro);
+		//normalizar_vetor_R3(magnetometro);
 	}
 }
 
@@ -262,6 +272,10 @@ void processar_giroscopio()
 	saida_gyro_dps_pf[0] = saida_gyro_dps_pf[0]*0.0174532925;
 	saida_gyro_dps_pf[1] = saida_gyro_dps_pf[1]*0.0174532925;
 	saida_gyro_dps_pf[2] = saida_gyro_dps_pf[2]*0.0174532925;
+
+	saida_gyro_dps_pf[0] = media_rotativa(saida_gyro_dps_pf[0], buffer_media_gx, numero_medias_gyro);
+	saida_gyro_dps_pf[1] = media_rotativa(saida_gyro_dps_pf[1], buffer_media_gy, numero_medias_gyro);
+	saida_gyro_dps_pf[2] = media_rotativa(saida_gyro_dps_pf[2], buffer_media_gz, numero_medias_gyro);
 }
 
 //Retorna as variáveis de estado utilizadas para telemetria.
@@ -288,9 +302,9 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[2] = acelerometro_adxl345[acel_z];
 
 
-	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3];
-	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[4];
-	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[5];
+	Giroscopio[0] = saida_gyro_dps_pf[0]*57.295787785569368296750927762044;
+	Giroscopio[1] = saida_gyro_dps_pf[1]*57.295787785569368296750927762044;
+	Giroscopio[2] = saida_gyro_dps_pf[2]*57.295787785569368296750927762044;
 	
 
 	Magnetometro[0] = magnetometro[0];

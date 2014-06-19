@@ -24,6 +24,7 @@
 	float f_cos(float);
 	float f_tan(float);
 	float f_sec(float);
+	float tratar_intervalo_Angulo(float angles);
 
 	typedef struct 
 	{

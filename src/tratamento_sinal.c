@@ -99,8 +99,8 @@ void acel_2_angulos(float acel_x, float acel_y, float acel_z, float angulos[2])
 //	return temp;
 //}
 
-/* - Back-up Função de cálculo PID padrão -> 23/11/2013*/
-/*Nova versão implementa a velocidade angular com o giroscopio*/
+/*Função para cálculo do controlador PID discreto utilizado */
+//Utilizado para controle de ângulos -> Adequa o erro inserido no intervalo de -180º à 180º para evitar a descontinuidade.
 
 
 double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_pid, float dt)
@@ -122,6 +122,10 @@ double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_
 	//buffer_pid[2] -> Penultima leitura; x[n-2]
 
 	// //entrada -> x[n]
+	if(entrada < -180)
+		entrada = (entrada + 360);
+	else if(entrada > 180)
+		entrada = -(360-entrada);
 	
 	float temp;
 
@@ -182,10 +186,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	delta_m3 = (fator_correcao*(-pitch_pid - roll_pid));
 	delta_m4 = (fator_correcao*(-pitch_pid + roll_pid));
 
-	velocidade_m1 = rotacao_constante + delta_m1 - yaw_pid;
-	velocidade_m2 = rotacao_constante + delta_m2 + yaw_pid;
-	velocidade_m3 = rotacao_constante + delta_m3 - yaw_pid;
-	velocidade_m4 = rotacao_constante + delta_m4 + yaw_pid;
+	velocidade_m1 = rotacao_constante + delta_m1 + yaw_pid;
+	velocidade_m2 = rotacao_constante + delta_m2 - yaw_pid;
+	velocidade_m3 = rotacao_constante + delta_m3 + yaw_pid;
+	velocidade_m4 = rotacao_constante + delta_m4 - yaw_pid;
 
 	if(velocidade_m1 < 0)
 		velocidade_m1 = 0;
@@ -327,19 +331,35 @@ void Rotate3dVector(float vector[3], float roll, float pitch, float yaw, float R
 // 	return (1/f_cos(angle));
 // }
 
-/*	Cálculo do seno com base na série de taylor => Utilização dos 3 primeiros termos */
+/* Cálculos do seno utilizando as funções disponíveis nas funções de DSP do arm. */
 float f_sin(float angle) {
 	return arm_sin_f32(angle);
 }
-/*	Cálculo do cossenos com base na série de taylor => Utilização dos 3 primeiros termos */
+
+/* Cálculos do cos utilizando as funções disponíveis nas funções de DSP do arm. */
 float f_cos(float angle) {
 	return arm_cos_f32(angle);
 }
-/*	Cálculo do tangent com base na série de taylor => Utilização dos 3 primeiros termos */
+
+/* Cálculos do tan utilizando as funções disponíveis nas funções de DSP do arm. */
 float f_tan(float angle) {
 	return (arm_sin_f32(angle)/arm_cos_f32(angle));
 }
-/*	Cálculo da secante com base na série de taylor => Utilização dos 3 primeiros termos */
+
+/* Cálculos do sec utilizando as funções disponíveis nas funções de DSP do arm. */
 float f_sec(float angle) {
 	return (1/arm_cos_f32(angle));
+}
+
+//Função tem por objetivo conter o ângulo de YAW entre o intervalo de -180º e 180º
+
+float tratar_intervalo_Angulo(float angles) {
+	float temp = fmod(angles, 6.283185);
+
+	if(temp > 3.141593) 
+		temp -= 6.283185;
+	else if(temp < -3.141593)
+		temp += 6.283185;
+
+	return temp;
 }
