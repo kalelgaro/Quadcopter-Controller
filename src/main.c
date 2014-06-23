@@ -76,7 +76,7 @@ extern float dc_ch_2;
 extern float dc_ch_3;
 extern float dc_ch_4;
 
-uint8_t start_logging_final = 1;
+uint8_t start_logging_final = 0;
 uint8_t start_logging_sensores = 1;
 
 float telemetria_kalman[3];
@@ -89,6 +89,10 @@ float telemetria_magnetometro[3];
 //Variáveis para armazenar os valores das constantes do pid para telemetria.
 
 float kp,ki,kd, kp_yaw, ki_yaw, kd_yaw;		
+
+//Variáveis de bias teste para o giroscópio
+
+float bx,by,bz,bmx,bmy,bmz;
 
 //Variávies para armazenar os valores das constantes do FK para telemetria.
 
@@ -141,10 +145,10 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(40, 20, 20, 100, 10, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(50, 20, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Qbias, Racel, Rmag
-	setar_parametros_Kalman(1e-20, 5e-12, 5e-12, 0.0075, 0.75);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(7e-12, 1e-15, 1e-17, 5e-4, 1e-2);						//Ajusta as covariâncias do filtro de Kalman.
 	//Melhores parametreos testados até o momento - 1e-7 1e-12 1e-12 0.75 30
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
@@ -328,6 +332,51 @@ int main(void)
 
 					    break;
 
+					    //Insere um nível de bias de teste no giroscópio
+					    case 'b' :
+					    	conversor.bytes[0] = buffer_dados_rx[1];
+							conversor.bytes[1] = buffer_dados_rx[2];
+							conversor.bytes[2] = buffer_dados_rx[3];
+							conversor.bytes[3] = buffer_dados_rx[4];
+
+							bx = conversor.flutuante_entrada;
+
+							conversor.bytes[0] = buffer_dados_rx[5];
+							conversor.bytes[1] = buffer_dados_rx[6];
+							conversor.bytes[2] = buffer_dados_rx[7];
+							conversor.bytes[3] = buffer_dados_rx[8];
+
+							by = conversor.flutuante_entrada;
+
+							conversor.bytes[0] = buffer_dados_rx[9];
+							conversor.bytes[1] = buffer_dados_rx[10];
+							conversor.bytes[2] = buffer_dados_rx[11];
+							conversor.bytes[3] = buffer_dados_rx[12];
+
+							bz = conversor.flutuante_entrada;
+
+							conversor.bytes[0] = buffer_dados_rx[13];
+							conversor.bytes[1] = buffer_dados_rx[14];
+							conversor.bytes[2] = buffer_dados_rx[15];
+							conversor.bytes[3] = buffer_dados_rx[16];
+
+							bmx = conversor.flutuante_entrada;
+
+							conversor.bytes[0] = buffer_dados_rx[17];
+							conversor.bytes[1] = buffer_dados_rx[18];
+							conversor.bytes[2] = buffer_dados_rx[19];
+							conversor.bytes[3] = buffer_dados_rx[20];
+
+							bmy = conversor.flutuante_entrada;
+
+							conversor.bytes[0] = buffer_dados_rx[21];
+							conversor.bytes[1] = buffer_dados_rx[22];
+							conversor.bytes[2] = buffer_dados_rx[23];
+							conversor.bytes[3] = buffer_dados_rx[24];
+
+							bmz = conversor.flutuante_entrada;
+	
+							setar_bias(bx, by, bz, bmx, bmy, bmz);
 
 						//Altera as constantes utilizadas no PID.
 						case 'U':
@@ -593,11 +642,22 @@ void iniciar_giroscopio()
   	Configuracao_gyro.Axes_Enable = XYZ_EN;				//Ativação dos três eixos
   	Configuracao_gyro.Power_Mode = NORMAL_MODE;			//Modo de operação normal
   	Configuracao_gyro.Output_DataRate = DR1 | DR0;    	//DR = 800 Hz
-  	Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 30 Hz
+  	Configuracao_gyro.bandwidth = BW1;        			//Frequência de corte = 30 Hz
   	Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
   	Configuracao_gyro.Full_Scale = FS250DPS;			//Fundo de escala de 250 graus por segundo
 
   	L3G4200D_Init(I2C3, &Configuracao_gyro);
+
+  	L3G4200D_HPFilterConfigTypeDef Configuracao_HPF_gyro;
+
+  	Configuracao_HPF_gyro.HP_cutoff_freq = 0b1001;
+  	Configuracao_HPF_gyro.HP_mode = REFERENCE;
+
+  	Configuracao_HPF_gyro.Filter_Enable = 1;
+  	Configuracao_HPF_gyro.Output__Selection = Out_Sel1 | Out_Sel0;
+
+  	L3G4200D_HP_Init(I2C3, &Configuracao_HPF_gyro);
+  	
 }
 
 //Rotina para inicialização do acelerômetro
@@ -759,27 +819,29 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
-  // void teste_filtro_de_kalman(void)
-  // {
-		// kalman_filter_state estado_teste = {  {0,0,0,0,0,0,0,0,0}, 
+// void teste_filtro_de_kalman(void)
+// {
+// 	kalman_filter_state estado_teste = {  {0,0,0,0,0,0,0,0,0}, 
 
-		// 									  {100,0,0,0,0,0,0,0,0,
-		// 									   0,100,0,0,0,0,0,0,0,
-		// 									   0,0,100,0,0,0,0,0,0,
-		// 									   0,0,0,100,0,0,0,0,0,
-		// 									   0,0,0,0,100,0,0,0,0,
-		// 									   0,0,0,0,0,100,0,0,0,
-		// 									   0,0,0,0,0,0,100,0,0,
-		// 									   0,0,0,0,0,0,0,100,0,
-		// 									   0,0,0,0,0,0,0,0,100}, 
+// 										  {100,0,0,0,0,0,0,0,0,
+// 										   0,100,0,0,0,0,0,0,0,
+// 										   0,0,100,0,0,0,0,0,0,
+// 										   0,0,0,100,0,0,0,0,0,
+// 										   0,0,0,0,100,0,0,0,0,
+// 										   0,0,0,0,0,100,0,0,0,
+// 										   0,0,0,0,0,0,100,0,0,
+// 										   0,0,0,0,0,0,0,100,0,
+// 										   0,0,0,0,0,0,0,0,100}, 
 
-		// 							           1e-7, 1e-4, 1e-5, 2e1, 4e1, 0.0025, {1, 0, 0}};
+// 								           1e-7, 1e-4, 1e-5, 2e1, 4e1, 0.0025, {1, 0, 0}};
 
-  // 	float teste_medida_gyro[3] = {20, 10, 45};
-  // 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
-  // 	float teste_medida_mag[3] = {1.3, 1, -0.3};
+// 	float teste_medida_gyro[3] = {20, 10, 45};
+// 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
+// 	float teste_medida_mag[3] = {1.3, 1, -0.3};
 
-  // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
+// 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
 
-  // 	float teste = 4.5;
-  // }
+// 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
+
+// 	float teste = 4.5;
+// }

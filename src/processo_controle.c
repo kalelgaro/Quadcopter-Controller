@@ -20,10 +20,25 @@
 #define acel_z 2
 
 /* ----------------------------------------------------------  */
-#define numero_medias_PID 2
+#define numero_medias_PID 4
 #define ordem_filtro 203
-#define numero_medias_gyro 1
 
+/*-------Tempo de amostragem------------*/
+
+#define dt 0.0025
+
+
+/*-------Taxa de rotação constante--------*/
+
+#define CONSTANT_RATE 72 //72 graus por segundo (360/5)
+
+
+/*-------Inclinações máximas (Roll e Pitch)-------*/
+
+#define MAX_INCLINATION 20
+
+/*-------Contagem de ativação-------*/
+#define nro_contagem_ativacao 12000
 
 /*-------Variáveis globais que serão utilizadas no processo-------*/
 
@@ -39,6 +54,7 @@ uint8_t controlador_ligado = 0;
 float ref_pitch = 0.0;
 float ref_roll = 0.0;
 float ref_yaw = 0.0;
+float ref_rate_yaw = 0.0;
 
 uint16_t rotacao_constante = 0;
 
@@ -87,35 +103,52 @@ float roll_pos_filtro;
 float pitch_pos_filtro;
 float yaw_pos_filtro;
 
+//Variáveis com os bias do giroscópio testes para serem inseridos
+
+float bx = 0.0;
+float by = 0.0;
+float bz = 0.0;
+
+//Variáveis com os bias do magnetômetro testes para serem inseridos
+
+float bmx = 0.0;
+float bmy = 0.0;
+float bmz = 0.0;
+
 //Buffers para o filtro FIR do acelerômetro.
 	//Filtro com banda de passagem de 4Hz e atenuação de 0.1 dB e banda de parada de 40 Hz com atenuação de 120 dB( Filter Builder)
-float coeficientes_FIR[ordem_filtro] = {-2.9594e-06,-2.6145e-06,-3.7377e-06,-5.1529e-06,-6.904e-06,-9.04e-06,-1.161e-05,-1.4668e-05,-1.8265e-05,-2.2453e-05,-2.7284e-05,-3.2808e-05,-3.9071e-05,-4.6114e-05,-5.3969e-05,-6.2664e-05,-7.2214e-05,-8.2626e-05,-9.3885e-05,-0.00010597,-0.00011882,-0.00013239,-0.00014658,-0.00016128,-0.00017634,-0.00019159,-0.00020683,-0.00022182,-0.00023629,-0.00024993,-0.00026238,-0.00027325,-0.00028213,-0.00028854,-0.00029197,-0.00029187,-0.00028765,-0.00027869,-0.00026432,-0.00024385,-0.00021655,-0.00018167,-0.00013843,-8.6029e-05,-2.3667e-05,4.9479e-05,0.00013423,0.0002314,0.00034179,0.0004662,0.00060539,0.00076009,0.00093098,0.0011187,0.0013239,0.001547,0.0017884,0.0020487,0.0023279,0.0026264,0.0029442,0.0032813,0.0036375,0.0040126,0.0044062,0.0048178,0.0052467,0.0056923,0.0061536,0.0066296,0.0071192,0.007621,0.0081338,0.0086559,0.0091858,0.0097217,0.010262,0.010804,0.011347,0.011888,0.012426,0.012957,0.01348,0.013993,0.014494,0.01498,0.015449,0.015899,0.016328,0.016734,0.017116,0.017471,0.017797,0.018094,0.018359,0.018591,0.01879,0.018954,0.019082,0.019174,0.01923,0.019248,0.01923,0.019174,0.019082,0.018954,0.01879,0.018591,0.018359,0.018094,0.017797,0.017471,0.017116,0.016734,0.016328,0.015899,0.015449,0.01498,0.014494,0.013993,0.01348,0.012957,0.012426,0.011888,0.011347,0.010804,0.010262,0.0097217,0.0091858,0.0086559,0.0081338,0.007621,0.0071192,0.0066296,0.0061536,0.0056923,0.0052467,0.0048178,0.0044062,0.0040126,0.0036375,0.0032813,0.0029442,0.0026264,0.0023279,0.0020487,0.0017884,0.001547,0.0013239,0.0011187,0.00093098,0.00076009,0.00060539,0.0004662,0.00034179,0.0002314,0.00013423,4.9479e-05,-2.3667e-05,-8.6029e-05,-0.00013843,-0.00018167,-0.00021655,-0.00024385,-0.00026432,-0.00027869,-0.00028765,-0.00029187,-0.00029197,-0.00028854,-0.00028213,-0.00027325,-0.00026238,-0.00024993,-0.00023629,-0.00022182,-0.00020683,-0.00019159,-0.00017634,-0.00016128,-0.00014658,-0.00013239,-0.00011882,-0.00010597,-9.3885e-05,-8.2626e-05,-7.2214e-05,-6.2664e-05,-5.3969e-05,-4.6114e-05,-3.9071e-05,-3.2808e-05,-2.7284e-05,-2.2453e-05,-1.8265e-05,-1.4668e-05,-1.161e-05,-9.04e-06,-6.904e-06,-5.1529e-06,-3.7377e-06,-2.6145e-06,-2.9594e-06};
+// float coeficientes_FIR[ordem_filtro] = {-2.9594e-06,-2.6145e-06,-3.7377e-06,-5.1529e-06,-6.904e-06,-9.04e-06,-1.161e-05,-1.4668e-05,-1.8265e-05,-2.2453e-05,-2.7284e-05,-3.2808e-05,-3.9071e-05,-4.6114e-05,-5.3969e-05,-6.2664e-05,
+// 										-7.2214e-05,-8.2626e-05,-9.3885e-05,-0.00010597,-0.00011882,-0.00013239,-0.00014658,-0.00016128,-0.00017634,-0.00019159,-0.00020683,-0.00022182,-0.00023629,-0.00024993,-0.00026238,-0.00027325,
+// 										-0.00028213,-0.00028854,-0.00029197,-0.00029187,-0.00028765,-0.00027869,-0.00026432,-0.00024385,-0.00021655,-0.00018167,-0.00013843,-8.6029e-05,-2.3667e-05,4.9479e-05,0.00013423,0.0002314,
+// 										0.00034179,0.0004662,0.00060539,0.00076009,0.00093098,0.0011187,0.0013239,0.001547,0.0017884,0.0020487,0.0023279,0.0026264,0.0029442,0.0032813,0.0036375,0.0040126,0.0044062,0.0048178,0.0052467,
+// 										0.0056923,0.0061536,0.0066296,0.0071192,0.007621,0.0081338,0.0086559,0.0091858,0.0097217,0.010262,0.010804,0.011347,0.011888,0.012426,0.012957,0.01348,0.013993,0.014494,0.01498,0.015449,
+// 										0.015899,0.016328,0.016734,0.017116,0.017471,0.017797,0.018094,0.018359,0.018591,0.01879,0.018954,0.019082,0.019174,0.01923,0.019248,0.01923,0.019174,0.019082,0.018954,0.01879,0.018591,0.018359,
+// 										0.018094,0.017797,0.017471,0.017116,0.016734,0.016328,0.015899,0.015449,0.01498,0.014494,0.013993,0.01348,0.012957,0.012426,0.011888,0.011347,0.010804,0.010262,0.0097217,0.0091858,0.0086559,
+// 										0.0081338,0.007621,0.0071192,0.0066296,0.0061536,0.0056923,0.0052467,0.0048178,0.0044062,0.0040126,0.0036375,0.0032813,0.0029442,0.0026264,0.0023279,0.0020487,0.0017884,0.001547,0.0013239,
+// 										0.0011187,0.00093098,0.00076009,0.00060539,0.0004662,0.00034179,0.0002314,0.00013423,4.9479e-05,-2.3667e-05,-8.6029e-05,-0.00013843,-0.00018167,-0.00021655,-0.00024385,-0.00026432,-0.00027869,
+// 										-0.00028765,-0.00029187,-0.00029197,-0.00028854,-0.00028213,-0.00027325,-0.00026238,-0.00024993,-0.00023629,-0.00022182,-0.00020683,-0.00019159,-0.00017634,-0.00016128,-0.00014658,-0.00013239,
+// 										-0.00011882,-0.00010597,-9.3885e-05,-8.2626e-05,-7.2214e-05,-6.2664e-05,-5.3969e-05,-4.6114e-05,-3.9071e-05,-3.2808e-05,-2.7284e-05,-2.2453e-05,-1.8265e-05,-1.4668e-05,-1.161e-05,-9.04e-06,
+// 										-6.904e-06,-5.1529e-06,-3.7377e-06,-2.6145e-06,-2.9594e-06};
 
-float buffer_filtro_acelX[ordem_filtro];
-float buffer_filtro_acelY[ordem_filtro];
-float buffer_filtro_acelZ[ordem_filtro];
-
-//Bufers para média rotativa do giroscópio.
-
-float buffer_media_gx[numero_medias_gyro];
-float buffer_media_gy[numero_medias_gyro];
-float buffer_media_gz[numero_medias_gyro];
+// float buffer_filtro_acelX[ordem_filtro];
+// float buffer_filtro_acelY[ordem_filtro];
+// float buffer_filtro_acelZ[ordem_filtro];
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
 kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0,0,0,0}, 
 
-									  {1,0,0,0,0,0,0,0,0,
-									   0,1,0,0,0,0,0,0,0,
-									   0,0,1,0,0,0,0,0,0,
-									   0,0,0,1,0,0,0,0,0,
-									   0,0,0,0,1,0,0,0,0,
-									   0,0,0,0,0,1,0,0,0,
+									  {1e-6,0,0,0,0,0,0,0,0,
+									   0,1e-6,0,0,0,0,0,0,0,
+									   0,0,1e-6,0,0,0,0,0,0,
+									   0,0,0,1e-4,0,0,0,0,0,
+									   0,0,0,0,1e-4,0,0,0,0,
+									   0,0,0,0,0,1e-4,0,0,0,
 									   0,0,0,0,0,0,1,0,0,
 									   0,0,0,0,0,0,0,1,0,
 									   0,0,0,0,0,0,0,0,1}, 
 
-							           5e-7, 1e-2, 1e-2, 45, 45, 0.0025, {0.75, 0.75, 0.08}};
+							           5e-7, 1e-2, 1e-2, 45, 45, dt, {0.0, 0.0, 0.0}};
 
 //Erros utilizados nos controladores PID
 									   
@@ -123,30 +156,29 @@ float erro_pitch ,erro_roll ,erro_yaw;
 
 //--------------------------------------------------------------------//
 
-
 //Altera os valores de referência utilizados no controlador PID.
 	//Os angulos de referência - Pitch,Roll e Yaw vão de -1 a 1
 	//O valor da rotação constante - W_cte - Vai de 0 até 2.
-void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_yaw, float W_cte)
+void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_rate_yaw, float W_cte)
 {
 	//Altera a referência dos controladores
 		//A constante de 10 define que a excursão dos ângulos vai de - 10 até 10 graus.
 		//As condições abaixo checam se os valores inseridos são validos.
 
 	if((Ref_pitch >= -1.1) && (Ref_pitch <= 1.1))
-		ref_pitch = (Ref_pitch*15);
+		ref_pitch = (Ref_pitch*MAX_INCLINATION);
 	else
 		ref_pitch = 0;
 
 	if((Ref_roll >= -1.1) && (Ref_roll <= 1.1))
-		ref_roll =  (Ref_roll*15);
+		ref_roll =  (Ref_roll*MAX_INCLINATION);
 	else
 		ref_roll = 0;
 
-	if((Ref_yaw >= -1.1) && (Ref_yaw <= 1.1))
-		ref_yaw = (Ref_yaw*150);
+	if((Ref_rate_yaw >= -1.1) && (Ref_rate_yaw <= 1.1))
+		ref_rate_yaw = Ref_rate_yaw*CONSTANT_RATE*dt;
 	else
-		ref_yaw = 0;
+		ref_rate_yaw = 0;
 	
 
 	//Checa a posição da alavanca de aceleração -> 
@@ -243,9 +275,9 @@ void processar_acelerometro()
 	acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
 	acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
 
-	acelerometro_adxl345[acel_x] = filtro_fir(acelerometro_adxl345[acel_x], buffer_filtro_acelX, ordem_filtro, coeficientes_FIR);
-	acelerometro_adxl345[acel_y] = filtro_fir(acelerometro_adxl345[acel_y], buffer_filtro_acelY, ordem_filtro, coeficientes_FIR);
-	acelerometro_adxl345[acel_z] = filtro_fir(acelerometro_adxl345[acel_z], buffer_filtro_acelZ, ordem_filtro, coeficientes_FIR);
+	//acelerometro_adxl345[acel_x] = filtro_fir(acelerometro_adxl345[acel_x], buffer_filtro_acelX, ordem_filtro, coeficientes_FIR);
+	//acelerometro_adxl345[acel_y] = filtro_fir(acelerometro_adxl345[acel_y], buffer_filtro_acelY, ordem_filtro, coeficientes_FIR);
+	//acelerometro_adxl345[acel_z] = filtro_fir(acelerometro_adxl345[acel_z], buffer_filtro_acelZ, ordem_filtro, coeficientes_FIR);
 }
 
 void processar_magnetometro()
@@ -261,6 +293,9 @@ void processar_magnetometro()
 	{
 		HMC5883L_Read_Data(I2C3, magnetometro);
 		//normalizar_vetor_R3(magnetometro);
+		magnetometro[0] =+ bmx;
+		magnetometro[1] =+ bmy;
+		magnetometro[2] =+ bmz;
 	}
 }
 
@@ -269,13 +304,9 @@ void processar_giroscopio()
 	L3G4200D_Read_Data(I2C3, saida_gyro_dps_pf);
 
 	//Conversao de unidades -> deg/s -> rad/s
-	saida_gyro_dps_pf[0] = saida_gyro_dps_pf[0]*0.0174532925;
-	saida_gyro_dps_pf[1] = saida_gyro_dps_pf[1]*0.0174532925;
-	saida_gyro_dps_pf[2] = saida_gyro_dps_pf[2]*0.0174532925;
-
-	saida_gyro_dps_pf[0] = media_rotativa(saida_gyro_dps_pf[0], buffer_media_gx, numero_medias_gyro);
-	saida_gyro_dps_pf[1] = media_rotativa(saida_gyro_dps_pf[1], buffer_media_gy, numero_medias_gyro);
-	saida_gyro_dps_pf[2] = media_rotativa(saida_gyro_dps_pf[2], buffer_media_gz, numero_medias_gyro);
+	saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0]+bx)*0.0174532925;
+	saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1]+by)*0.0174532925;
+	saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2]+bz)*0.0174532925;
 }
 
 //Retorna as variáveis de estado utilizadas para telemetria.
@@ -288,7 +319,7 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 	// estado_KF[roll] =  ref_roll;
 	// estado_KF[pitch] = ref_pitch;
-	// estado_KF[yaw] =   ref_yaw;
+	// estado_KF[yaw] =   ref_rate_yaw;
 
 	estado_PID[roll] =  ref_roll;
 	estado_PID[pitch] = ref_pitch;
@@ -297,14 +328,14 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = acelerometro_adxl345[acel_x];
-	Acelerometro[1] = acelerometro_adxl345[acel_y];
-	Acelerometro[2] = acelerometro_adxl345[acel_z];
+	Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[6];
+	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[7];
+	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[8];
 
 
-	Giroscopio[0] = saida_gyro_dps_pf[0]*57.295787785569368296750927762044;
-	Giroscopio[1] = saida_gyro_dps_pf[1]*57.295787785569368296750927762044;
-	Giroscopio[2] = saida_gyro_dps_pf[2]*57.295787785569368296750927762044;
+	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3]*57.295787785569368296750927762044;
+	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[4]*57.295787785569368296750927762044;
+	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[5]*57.295787785569368296750927762044;
 	
 
 	Magnetometro[0] = magnetometro[0];
@@ -347,6 +378,26 @@ float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
 	return heading;
 }
 
+
+//Processar referência do yaw 
+	//Cálcula a referência de yaw com base na taxa de variação inserida
+void calculate_Yaw_Ref(float yaw_Rate) {
+	ref_yaw = ref_yaw + yaw_Rate;
+	ref_yaw = 57.3*tratar_intervalo_Angulo(ref_yaw*0.017452);
+}
+
+
+//Altera os valores do bias teste para o giroscópio
+void setar_bias(float Bx, float By, float Bz, float Bmx, float Bmy, float Bmz) {
+	bx = Bx;
+	by = By;
+	bz = Bz;
+	bmx = Bmx;
+	bmy = Bmy;
+	bmz = Bmz;
+}
+
+
 //Procedimento de controle principal executado no overflow no Timer 3 à cada 1,25mS (800 Hz)
 void processo_controle()
 {
@@ -370,8 +421,6 @@ void processo_controle()
 	angulos_inclinacao[pitch] = 57.3*EstadoFiltroKalman.ultimo_estado[1];
 	orientacao = 57.3*EstadoFiltroKalman.ultimo_estado[2];
 
-	/*Ajuste de sentidos dos angulos*/
-
 	if(flag_inicializacao == 1 && controlador_ligado == 1)
 	{
 		//Controlador PID com o resultado do filtro de Kalman
@@ -379,17 +428,20 @@ void processo_controle()
 		/* Cálcula o erro  bufferque será utilizado no PID -> Referência - Feedback */
 		ref_roll = -ref_roll;
 
+		/*Cálcular a referência do yaw com base na taxa inserida pelo controle remoto*/
+		calculate_Yaw_Ref(ref_rate_yaw);
+
 		erro_pitch = (ref_pitch - angulos_inclinacao[pitch]);
 		erro_roll =  (ref_roll - angulos_inclinacao[roll]);
 		erro_yaw =   (ref_yaw - (orientacao - orientacao_inicial));
 
 		/* Cálculo do PID */
 			//Pitch & Roll
-		saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, 0.0025); //Controlador PI para cada eixo.
-		saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  0.0025);
+		saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, dt); //Controlador PI para cada eixo.
+		saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  dt);
 		
 			//Yaw
-		saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   0.0025);
+		saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   dt);
 
 		
 		//Realiza média rotativa dos últimos n processos de cálculo do PID.
@@ -416,10 +468,10 @@ void processo_controle()
 		if(flag_inicializacao == 0)
 		{
 			contador_ativacao++;
-			orientacao_inicial = orientacao_inicial + orientacao/2000;
+			orientacao_inicial = orientacao_inicial + orientacao/nro_contagem_ativacao;
 		}
 			
-		if(contador_ativacao == 2000)
+		if(contador_ativacao == nro_contagem_ativacao)
 		{
 			GPIO_SetBits(GPIOD, GPIO_Pin_14);
 

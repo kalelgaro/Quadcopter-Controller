@@ -58,7 +58,7 @@
 	#define DR1 			0b10000000
 	#define DR0 			0b01000000
 
-	#define BW1 			0b00100000
+	#define BW1	 			0b00100000
 	#define BW0 			0b00010000
 
 	#define P_DOWN_MODE 	0b00000000

@@ -11,5 +11,7 @@
 	void retornar_estado(float estado_KF[], float estado_PID[]);
 	void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[]);
 	void retornar_offset_acel(float *offsetX, float *offsetY, float *offsetZ);
+	void calculate_Yaw_Ref(float yaw_Rate);
+	void setar_bias(float Bx, float By, float Bz, float Bmx, float Bmy, float Bmz);
 	
 #endif
