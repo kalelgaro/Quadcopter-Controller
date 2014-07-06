@@ -13,9 +13,9 @@
 
 	typedef struct
 	{
-		float ultimo_estado[9]; 				//Salva o estado da ultima iteração do filtro Xk-1|k-1
+		float ultimo_estado[6]; 				//Salva o estado da ultima iteração do filtro Xk-1|k-1
 
-		float P[81];							//Matriz de Covariância do erro da ultima iterção (Pk|k-1)
+		float P[36];							//Matriz de Covariância do erro da ultima iterção (Pk|k-1)
 
 		float Q_acel;
 

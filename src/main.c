@@ -148,7 +148,7 @@ int main(void)
 	setar_parametros_PID(50, 20, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Qbias, Racel, Rmag
-	setar_parametros_Kalman(7e-12, 1e-15, 1e-17, 5e-4, 1e-2);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(2e-9, 0, 1e-12, 5e-3, 6e-1);						//Ajusta as covariâncias do filtro de Kalman.
 	//Melhores parametreos testados até o momento - 1e-7 1e-12 1e-12 0.75 30
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
@@ -493,7 +493,7 @@ int main(void)
 
 		//Função para envio dos dados da telemetria : Se a telemetria estiver ativada e o tempo entre o envio se passou.
 
-		if(variavel_delay_100ms == 0 && start_logging_final == 1)
+		if(variavel_delay_100ms == 0)
 		{
 			buffer_dados_tx[0] = 'L';
 
@@ -526,14 +526,14 @@ int main(void)
 			
 			//Retorna ao modo de recepção para habilitar a chegada de novos pacotes.
 
-			modo_rx(SPI2);
+//			modo_rx(SPI2);
 
 			//Variável para controle de tempo entre os envios dos dados da telemetria.
 
-			variavel_delay_100ms = 500; 	//500* 100 uS -> 1 Ponto a cada 50 mS
+			//variavel_delay_100ms = 500; 	//500* 100 uS -> 1 Ponto a cada 50 mS
 
-		}else if(variavel_delay_100ms == 0 && start_logging_sensores == 1 && start_logging_final == 0)
-		{
+		//}else if(variavel_delay_100ms == 0 && start_logging_sensores == 1 && start_logging_final == 0)
+		//{
 			buffer_dados_tx[0] = 'S';
 
 			retornar_estado_sensores(telemetria_acelerometro, telemetria_giroscopio, telemetria_magnetometro);
@@ -550,19 +550,19 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[0];
+			conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[1];
+			conversor.flutuante_entrada = telemetria_magnetometro[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[2];
+			conversor.flutuante_entrada = telemetria_magnetometro[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
+			conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -574,7 +574,7 @@ int main(void)
 			//Retorna ao modo de recepção para habilitar a chegada de novos pacotes.
 
 			modo_rx(SPI2);
-			variavel_delay_100ms = 500; 	//500* 100 uS -> 1 Ponto a cada 50 mS
+			variavel_delay_100ms = 250; 	//500* 100 uS -> 1 Ponto a cada 50 mS
 		}
 	}
 }
@@ -819,29 +819,26 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
-// void teste_filtro_de_kalman(void)
-// {
-// 	kalman_filter_state estado_teste = {  {0,0,0,0,0,0,0,0,0}, 
+ void teste_filtro_de_kalman(void)
+ {
+ 	kalman_filter_state estado_teste = {  {0,0,0,0,0,0},
 
-// 										  {100,0,0,0,0,0,0,0,0,
-// 										   0,100,0,0,0,0,0,0,0,
-// 										   0,0,100,0,0,0,0,0,0,
-// 										   0,0,0,100,0,0,0,0,0,
-// 										   0,0,0,0,100,0,0,0,0,
-// 										   0,0,0,0,0,100,0,0,0,
-// 										   0,0,0,0,0,0,100,0,0,
-// 										   0,0,0,0,0,0,0,100,0,
-// 										   0,0,0,0,0,0,0,0,100}, 
+ 										  {100,0,0,0,0,0,
+ 										   0,100,0,0,0,0,
+ 										   0,0,100,0,0,0,
+ 										   0,0,0,100,0,0,
+ 										   0,0,0,0,100,0,
+ 										   0,0,0,0,0,100},
 
-// 								           1e-7, 1e-4, 1e-5, 2e1, 4e1, 0.0025, {1, 0, 0}};
+ 								           1e-7, 1e-4, 1e-5, 2e1, 4e1, 0.0025, {1, 0, 0}};
 
-// 	float teste_medida_gyro[3] = {20, 10, 45};
-// 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
-// 	float teste_medida_mag[3] = {1.3, 1, -0.3};
+ 	float teste_medida_gyro[3] = {20, 10, 45};
+ 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
+ 	float teste_medida_mag[3] = {1.3, 1, -0.3};
 
-// 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
+ 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
 
-// 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
+ 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
 
-// 	float teste = 4.5;
-// }
+ 	float teste = 4.5;
+ }

@@ -38,7 +38,7 @@
 #define MAX_INCLINATION 20
 
 /*-------Contagem de ativação-------*/
-#define nro_contagem_ativacao 12000
+#define nro_contagem_ativacao 2000
 
 /*-------Variáveis globais que serão utilizadas no processo-------*/
 
@@ -136,17 +136,14 @@ float bmz = 0.0;
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0,0,0,0}, 
+kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0}, 
 
-									  {1e-6,0,0,0,0,0,0,0,0,
-									   0,1e-6,0,0,0,0,0,0,0,
-									   0,0,1e-6,0,0,0,0,0,0,
-									   0,0,0,1e-4,0,0,0,0,0,
-									   0,0,0,0,1e-4,0,0,0,0,
-									   0,0,0,0,0,1e-4,0,0,0,
-									   0,0,0,0,0,0,1,0,0,
-									   0,0,0,0,0,0,0,1,0,
-									   0,0,0,0,0,0,0,0,1}, 
+									  {1e-6,0,0,0,0,0,
+									   0,1e-6,0,0,0,0,
+									   0,0,1e-6,0,0,0,
+									   0,0,0,1e-6,0,0,
+									   0,0,0,0,1e-6,0,
+									   0,0,0,0,0,1e-6}, 
 
 							           5e-7, 1e-2, 1e-2, 45, 45, dt, {0.0, 0.0, 0.0}};
 
@@ -293,9 +290,9 @@ void processar_magnetometro()
 	{
 		HMC5883L_Read_Data(I2C3, magnetometro);
 		//normalizar_vetor_R3(magnetometro);
-		magnetometro[0] =+ bmx;
-		magnetometro[1] =+ bmy;
-		magnetometro[2] =+ bmz;
+		magnetometro[0] = magnetometro[0] + bmx;
+		magnetometro[1] = magnetometro[1] + bmy;
+		magnetometro[2] = magnetometro[2] + bmz;
 	}
 }
 
@@ -328,9 +325,9 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[6];
-	Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[7];
-	Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[8];
+	Acelerometro[0] = acelerometro_adxl345[acel_x];
+	Acelerometro[1] = acelerometro_adxl345[acel_y];
+	Acelerometro[2] = acelerometro_adxl345[acel_z];
 
 
 	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3]*57.295787785569368296750927762044;
