@@ -145,11 +145,11 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(50, 20, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(52, 20, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Qbias, Racel, Rmag
-	setar_parametros_Kalman(2e-9, 0, 1e-12, 5e-3, 6e-1);						//Ajusta as covariâncias do filtro de Kalman.
-	//Melhores parametreos testados até o momento - 1e-7 1e-12 1e-12 0.75 30
+	setar_parametros_Kalman(2e-9, 5e-8, 5e-12, 2e-2, 2e-1, 1e-10, 1e-10);						//Ajusta as covariâncias do filtro de Kalman.
+	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -467,7 +467,7 @@ int main(void)
 							R_magnetometro = conversor.flutuante_entrada;							
 
 							//Qang, Qbias, Qbiasmag, Racel, Rmag
-							setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, Q_bias, R_acelerometro, R_magnetometro); //Insere os parametros no processo de controle.
+							setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, Q_bias, R_acelerometro, R_magnetometro, 1e-10, 1e-10); //Insere os parametros no processo de controle.
 
 						break;
 
@@ -550,19 +550,19 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
+			conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[1];
+			conversor.flutuante_entrada = telemetria_giroscopio[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[2];
+			conversor.flutuante_entrada = telemetria_giroscopio[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[0];
+			conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -641,8 +641,8 @@ void iniciar_giroscopio()
 
   	Configuracao_gyro.Axes_Enable = XYZ_EN;				//Ativação dos três eixos
   	Configuracao_gyro.Power_Mode = NORMAL_MODE;			//Modo de operação normal
-  	Configuracao_gyro.Output_DataRate = DR1 | DR0;    	//DR = 800 Hz
-  	Configuracao_gyro.bandwidth = BW1;        			//Frequência de corte = 30 Hz
+  	Configuracao_gyro.Output_DataRate = DR1;    	     //DR = 400 Hz
+  	Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 20 Hz
   	Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
   	Configuracao_gyro.Full_Scale = FS250DPS;			//Fundo de escala de 250 graus por segundo
 
@@ -676,7 +676,7 @@ void configurar_acelerometro()
 	//Configuração do ADXL345.
 
   	configuracao_inicial.Power_Mode = Measure;							//Coloca a placa em modo de aquisição contínua.
-  	configuracao_inicial.bandwidth = Rate_D3 | Rate_D2 | Rate_D0;		//Aquisição da placa em 800 Hz.
+  	configuracao_inicial.bandwidth = Rate_D3 | Rate_D2;					//Aquisição da placa em 400 Hz.
   	configuracao_inicial.Full_Scale = Range_D1;							//Fundo de escala em 8G
   	configuracao_inicial.Resolution = 0;								//Resolução da placa em 10 bits.
   	configuracao_inicial.Self_Test = 0;									//Desliga o "self-test"
@@ -819,26 +819,26 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
- void teste_filtro_de_kalman(void)
- {
- 	kalman_filter_state estado_teste = {  {0,0,0,0,0,0},
+ // void teste_filtro_de_kalman(void)
+ // {
+ // 	kalman_filter_state estado_teste = {  {0,0,0,0,0,0},
 
- 										  {100,0,0,0,0,0,
- 										   0,100,0,0,0,0,
- 										   0,0,100,0,0,0,
- 										   0,0,0,100,0,0,
- 										   0,0,0,0,100,0,
- 										   0,0,0,0,0,100},
+ // 										  {100,0,0,0,0,0,
+ // 										   0,100,0,0,0,0,
+ // 										   0,0,100,0,0,0,
+ // 										   0,0,0,100,0,0,
+ // 										   0,0,0,0,100,0,
+ // 										   0,0,0,0,0,100},
 
- 								           1e-7, 1e-4, 1e-5, 2e1, 4e1, 0.0025, {1, 0, 0}};
+ // 								           1e-7, 1e-4, 1e-5, 2e1, 4e1, 1e-10, 1e-10, 0.0025, {1, 0, 0}};
 
- 	float teste_medida_gyro[3] = {20, 10, 45};
- 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
- 	float teste_medida_mag[3] = {1.3, 1, -0.3};
+ // 	float teste_medida_gyro[3] = {20, 10, 45};
+ // 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
+ // 	float teste_medida_mag[3] = {1.3, 1, -0.3};
 
- 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
+ // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
 
- 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
+ // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
 
- 	float teste = 4.5;
- }
+ // 	float teste = 4.5;
+ // }
