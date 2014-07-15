@@ -148,7 +148,7 @@ int main(void)
 	setar_parametros_PID(52, 20, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Qbias, Racel, Rmag
-	setar_parametros_Kalman(2e-9, 5e-8, 5e-12, 2e-2, 2e-1, 1e-10, 1e-10);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(1e-10, 5e-9, 5e-15, 3e-2, 5e-2, 1e-11, 1e-11);						//Ajusta as covariâncias do filtro de Kalman.
 	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
@@ -718,7 +718,7 @@ void configurar_bussola()
 {	
 	HMC5883L_InitTypeDef configuracao_inicial;
 
-	configuracao_inicial.Samples = _1_samples;
+	configuracao_inicial.Samples = _8_samples;
 	configuracao_inicial.Output_DataRate = _75_0_HZ;
 	//configuracao_inicial.Meas_mode = Positive_bias;
 	//configuracao_inicial.Meas_mode = Negative_bias;

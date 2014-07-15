@@ -33,8 +33,7 @@ void HMC5883L_Init(I2C_TypeDef *I2Cx, HMC5883L_InitTypeDef *Configuracoes)
 		break;
 
 		case 0xA0:
-			//ganho = 2.56;
-			ganho=1;
+			ganho = 2.56e-3;
 		break;
 	}
 
@@ -51,18 +50,16 @@ float  HMC5883L_Read_Data(I2C_TypeDef *I2Cx, float dados[])
 
 	buffer_temp = (int16_t)(buffer_dados[0]*256);
 	buffer_temp = (int16_t)(buffer_temp | buffer_dados[1]);
-	//dados[0] = (buffer_temp-25)*0.01333333;
-	dados[0] = (buffer_temp)*0.01333333;
+	dados[0] = (buffer_temp)*ganho;
 
 	buffer_temp = (int16_t)(buffer_dados[2]*256);
 	buffer_temp = (int16_t)(buffer_temp | buffer_dados[3]);
-	//dados[2] = (buffer_temp+59.5)*0.0148148;
-	dados[2] = (buffer_temp)*0.0148148;
+	dados[2] = (buffer_temp)*ganho;
+	
 	
 	buffer_temp = (int16_t)(buffer_dados[4]*256);
 	buffer_temp = (int16_t)(buffer_temp | buffer_dados[5]);
-	//dados[1] = (buffer_temp-25)*0.01333333;
-	dados[1] = (buffer_temp)*0.01333333;
+	dados[1] = (buffer_temp)*ganho;
 
 	return 0;
 }
