@@ -20,7 +20,7 @@
 #define acel_z 2
 
 /* ----------------------------------------------------------  */
-#define numero_medias_PID 4
+#define numero_medias_PID 1
 #define ordem_filtro 203
 
 /*-------Tempo de amostragem------------*/
@@ -144,7 +144,7 @@ kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0,0,0,0},
 
 									  {1e-3,0,0,0,0,0,0,0,0,
 									   0,1e-3,0,0,0,0,0,0,0,
-									   0,0,1e2,0,0,0,0,0,0,
+									   0,0,1e-3,0,0,0,0,0,0,
 									   0,0,0,1,0,0,0,0,0,
 									   0,0,0,0,1,0,0,0,0,
 									   0,0,0,0,0,1,0,0,0,
@@ -201,6 +201,24 @@ void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_rate_yaw, float
 		W_cte -= 0.15;
 		rotacao_constante = (W_cte*2500); //Insere o valor de rotação dos motores entre 146,25 e 2145
 	}
+}
+
+void iniciar_estado_Kalman() {
+
+	uint8_t status;
+
+	//Leitura do registrador de STATUS do magnetômetro
+	I2C_ler_registradores(I2C3, end_HMC5883L, STATUS_MG, 1, &status);
+	//Aguarda enquanto não houverem novos dados dentro dos registradores de leitura.
+	while((status&0x01)!=0x01);
+
+	float mag_init[3];
+	HMC5883L_Read_Data(I2C3, mag_init);
+
+	float yaw_init = calcular_orientacao(mag_init, 0, 0);
+	
+	EstadoFiltroKalman.ultimo_estado[2] = yaw_init;
+
 }
 
 //Altera as contastes do controlador PID. - Roll, Pitch e Yaw.
@@ -342,9 +360,9 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[1] = magnetometro[1];
 	Acelerometro[2] = magnetometro[2];
 
-	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[6];
-	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[7];
-	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[8];
+	Giroscopio[0] = magnetometro[0]-EstadoFiltroKalman.ultimo_estado[6];
+	Giroscopio[1] = magnetometro[1]-EstadoFiltroKalman.ultimo_estado[7];
+	Giroscopio[2] = magnetometro[2]-EstadoFiltroKalman.ultimo_estado[8];
 
 /*
 	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3]*57.295787785569368296750927762044;

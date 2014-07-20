@@ -145,10 +145,10 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(52, 20, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(52, 15, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Qbias, Racel, Rmag
-	setar_parametros_Kalman(1e-10, 5e-9, 5e-15, 3e-2, 5e-2, 1e-11, 1e-11);						//Ajusta as covariâncias do filtro de Kalman.
+	setar_parametros_Kalman(2e-9, 5e-8, 1e-8, 1e-3, 1.5e-2, 5e-10, 5e-10);						//Ajusta as covariâncias do filtro de Kalman.
 	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
@@ -196,6 +196,8 @@ int main(void)
 	//delay(100);																	//Delay de 100*100us = 10mS
 
 	configurar_timers_PWM_I();													//Configura os timers utilizados para PWMinput do controle.
+
+	iniciar_estado_Kalman();
 
 	iniciar_timer_processamento();												//Iniciar o timer responsável pelo controle do PID -> TIM6.
 

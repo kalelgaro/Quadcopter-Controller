@@ -13,5 +13,7 @@
 	void retornar_offset_acel(float *offsetX, float *offsetY, float *offsetZ);
 	void calculate_Yaw_Ref(float yaw_Rate);
 	void setar_bias(float Bx, float By, float Bz, float Bmx, float Bmy, float Bmz);
-	
+	float calcular_orientacao(float leituras_mag[], float Pitch, float Roll);
+	void iniciar_estado_Kalman();
+
 #endif
