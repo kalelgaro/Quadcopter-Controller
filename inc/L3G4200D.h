@@ -9,7 +9,9 @@
 #ifndef L3G4200D_H_
 #define L3G4200D_H_
 
- #include "stm32f4xx.h"
+#include "stm32f4xx.h"
+#include "aquisicao_IMU.h"
+#include "arm_math.h"
 
 	/*Endereço dos registradores*/
 	#define WHO_AM_I 0x0F
@@ -186,6 +188,7 @@ typedef struct
 	uint8_t bandwidth;
 	uint8_t Full_Scale;
 	uint8_t Self_Test;
+	uint8_t BDU_Enabled;
 }L3G4200D_InitTypeDef;
 
 typedef struct

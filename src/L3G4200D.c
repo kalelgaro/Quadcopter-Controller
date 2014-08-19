@@ -4,11 +4,7 @@
  *  Created on: May 28, 2013
  *      Author: Bruno
  */
-#include "stm32f4_discovery.h"
-
 #include "L3G4200D.h"
-#include "aquisicao_IMU.h"
-#include "arm_math.h"
 
 uint16_t full_scale;
 
@@ -20,8 +16,8 @@ void L3G4200D_Init(I2C_TypeDef* I2Cx, L3G4200D_InitTypeDef *Configuracoes)
 
 	I2C_ler_registradores(I2Cx, end_L3G4200, CTRL_REG4, 1, &data_buffer);
 
-	data_buffer &= 0b11001001;
-	data_buffer = (data_buffer | (Configuracoes->Full_Scale | Configuracoes->Self_Test));
+	data_buffer &= 0b01001001;
+	data_buffer = (data_buffer | (Configuracoes->Full_Scale | Configuracoes->Self_Test | Configuracoes->BDU_Enabled));
 
 	I2C_escrever_registrador(I2Cx, end_L3G4200, CTRL_REG4, 1, &data_buffer);
 

@@ -1,8 +1,4 @@
-#include "stm32f4_discovery.h"
-
 #include "HMC5883L.h"
-#include "aquisicao_IMU.h"
-#include "arm_math.h"
 
 float ganho;
 

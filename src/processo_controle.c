@@ -23,6 +23,12 @@
 #define numero_medias_PID 1
 #define ordem_filtro 203
 
+//Nro de aquisições antes de realizar o processamento no filtro de Kalman.
+#define NRO_AQUISICOES_PRE_KF 1
+
+//Nro de aquisições utilizadas para média rotativa.
+#define NRO_MEDIA_AQUISICAO 1
+
 /*-------Tempo de amostragem------------*/
 
 #define dt 0.0025
@@ -38,7 +44,7 @@
 #define MAX_INCLINATION 20
 
 /*-------Contagem de ativação-------*/
-#define nro_contagem_ativacao 6000
+#define nro_contagem_ativacao (uint16_t)(1200/NRO_AQUISICOES_PRE_KF)
 
 /*-------Variáveis globais que serão utilizadas no processo-------*/
 
@@ -117,6 +123,7 @@ float bmz = 0.0;
 
 //Buffers para o filtro FIR do acelerômetro.
 	//Filtro com banda de passagem de 4Hz e atenuação de 0.1 dB e banda de parada de 40 Hz com atenuação de 120 dB( Filter Builder)
+/*
 float coeficientes_FIR[ordem_filtro] = {-2.9594e-06,-2.6145e-06,-3.7377e-06,-5.1529e-06,-6.904e-06,-9.04e-06,-1.161e-05,-1.4668e-05,-1.8265e-05,-2.2453e-05,-2.7284e-05,-3.2808e-05,-3.9071e-05,-4.6114e-05,-5.3969e-05,-6.2664e-05,
 										-7.2214e-05,-8.2626e-05,-9.3885e-05,-0.00010597,-0.00011882,-0.00013239,-0.00014658,-0.00016128,-0.00017634,-0.00019159,-0.00020683,-0.00022182,-0.00023629,-0.00024993,-0.00026238,-0.00027325,
 										-0.00028213,-0.00028854,-0.00029197,-0.00029187,-0.00028765,-0.00027869,-0.00026432,-0.00024385,-0.00021655,-0.00018167,-0.00013843,-8.6029e-05,-2.3667e-05,4.9479e-05,0.00013423,0.0002314,
@@ -129,30 +136,38 @@ float coeficientes_FIR[ordem_filtro] = {-2.9594e-06,-2.6145e-06,-3.7377e-06,-5.1
 										-0.00028765,-0.00029187,-0.00029197,-0.00028854,-0.00028213,-0.00027325,-0.00026238,-0.00024993,-0.00023629,-0.00022182,-0.00020683,-0.00019159,-0.00017634,-0.00016128,-0.00014658,-0.00013239,
 										-0.00011882,-0.00010597,-9.3885e-05,-8.2626e-05,-7.2214e-05,-6.2664e-05,-5.3969e-05,-4.6114e-05,-3.9071e-05,-3.2808e-05,-2.7284e-05,-2.2453e-05,-1.8265e-05,-1.4668e-05,-1.161e-05,-9.04e-06,
 										-6.904e-06,-5.1529e-06,-3.7377e-06,-2.6145e-06,-2.9594e-06};
+*/
 
-float buffer_filtro_magX[ordem_filtro];
-float buffer_filtro_magY[ordem_filtro];
-float buffer_filtro_magZ[ordem_filtro];
+//float buffer_filtro_magX[ordem_filtro];
+//float buffer_filtro_magY[ordem_filtro];
+//float buffer_filtro_magZ[ordem_filtro];
 
 // float buffer_filtro_acelX[ordem_filtro];
 // float buffer_filtro_acelY[ordem_filtro];
 // float buffer_filtro_acelZ[ordem_filtro];
 
+/*
+float buffer_media_acelX[NRO_MEDIA_AQUISICAO];
+float buffer_media_acelY[NRO_MEDIA_AQUISICAO];
+float buffer_media_acelZ[NRO_MEDIA_AQUISICAO];
+
+float buffer_media_gyroX[NRO_MEDIA_AQUISICAO];
+float buffer_media_gyroY[NRO_MEDIA_AQUISICAO];
+float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
+*/
+
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0,0,0,0}, 
+kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0}, 
 
-									  {1e-3,0,0,0,0,0,0,0,0,
-									   0,1e-3,0,0,0,0,0,0,0,
-									   0,0,1e-3,0,0,0,0,0,0,
-									   0,0,0,1,0,0,0,0,0,
-									   0,0,0,0,1,0,0,0,0,
-									   0,0,0,0,0,1,0,0,0,
-									   0,0,0,0,0,0,1,0,0,
-									   0,0,0,0,0,0,0,1,0,
-									   0,0,0,0,0,0,0,0,1}, 
+									  {100,		0,		0,		0,		0,		0,
+									   0,		100,	0,		0,		0,		0,
+									   0,		0,		1e-3,	0,		0,		0,
+									   0,		0,		0,		100,	0,		0,
+									   0,		0,		0,		0,		100,	0,
+									   0,		0,		0,		0,		0,		100}, 
 
-							           5e-7, 1e-2, 1e-2, 45, 45, 1e-10, 1e-10, dt, {0.14, 0.10, 0.0155}};
+							           5e-7, 1e-2, 45, 45, 1e-10, dt, {0.14, 0.05, -0.0155}};
 
 //Erros utilizados nos controladores PID
 									  
@@ -215,9 +230,14 @@ void iniciar_estado_Kalman() {
 	float mag_init[3];
 	HMC5883L_Read_Data(I2C3, mag_init);
 
-	float yaw_init = calcular_orientacao(mag_init, 0, 0);
+	//float yaw_init = calcular_orientacao(mag_init, 0, 0);
+	calcular_orientacao(mag_init, 0, 0);
 	
-	EstadoFiltroKalman.ultimo_estado[2] = yaw_init;
+	//EstadoFiltroKalman.ultimo_estado[2] = yaw_init;
+	
+	EstadoFiltroKalman.MagInicial[0] = mag_init[0];
+	EstadoFiltroKalman.MagInicial[1] = mag_init[1];
+	EstadoFiltroKalman.MagInicial[2] = mag_init[2];
 
 }
 
@@ -236,15 +256,13 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
 
-void setar_parametros_Kalman(float32_t Q_angulos, float32_t Q_biasmag, float32_t Q_biasgyro, float32_t R_acelerometro, float32_t R_magnetometro, float32_t R_determinant, float32_t R_orthogonal)
+void setar_parametros_Kalman(float32_t Q_angulos, float32_t Q_biasmag, float32_t R_acelerometro, float32_t R_magnetometro, float32_t R_orthogonal)
 {
 	EstadoFiltroKalman.Q_ang = Q_angulos;
 	EstadoFiltroKalman.Q_bias_mag = Q_biasmag;
-	EstadoFiltroKalman.Q_bias_gyro = Q_biasgyro;
 	
 	EstadoFiltroKalman.R_acel = R_acelerometro;
 	EstadoFiltroKalman.R_mag = R_magnetometro;
-	EstadoFiltroKalman.R_det = R_determinant;
 	EstadoFiltroKalman.R_orth = R_orthogonal;
 }
 
@@ -271,7 +289,7 @@ void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *Q_magnetom
 {
 	*Q_acelerometro = EstadoFiltroKalman.Q_ang;
 	*Q_magnetometro = EstadoFiltroKalman.Q_bias_mag;
-	*Q_bias = EstadoFiltroKalman.Q_bias_gyro;
+	*Q_bias = 0;
 
 	*R_acelerometro = EstadoFiltroKalman.R_acel;
 	*R_magnetometro = EstadoFiltroKalman.R_mag;
@@ -299,9 +317,11 @@ void processar_acelerometro()
 	acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
 	acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
 
-	//acelerometro_adxl345[acel_x] = filtro_fir(acelerometro_adxl345[acel_x], buffer_filtro_acelX, ordem_filtro, coeficientes_FIR);
-	//acelerometro_adxl345[acel_y] = filtro_fir(acelerometro_adxl345[acel_y], buffer_filtro_acelY, ordem_filtro, coeficientes_FIR);
-	//acelerometro_adxl345[acel_z] = filtro_fir(acelerometro_adxl345[acel_z], buffer_filtro_acelZ, ordem_filtro, coeficientes_FIR);
+	//acelerometro_adxl345[acel_x] = media_rotativa(acelerometro_adxl345[acel_x], buffer_media_acelX, NRO_MEDIA_AQUISICAO);
+	//acelerometro_adxl345[acel_y] = media_rotativa(acelerometro_adxl345[acel_y], buffer_media_acelY, NRO_MEDIA_AQUISICAO);
+	//acelerometro_adxl345[acel_z] = media_rotativa(acelerometro_adxl345[acel_z], buffer_media_acelZ, NRO_MEDIA_AQUISICAO);
+
+
 }
 
 void processar_magnetometro()
@@ -321,9 +341,6 @@ void processar_magnetometro()
 		magnetometro[1] = magnetometro[1] + bmy;
 		magnetometro[2] = magnetometro[2] + bmz;
 
-		magnetometro[0] = filtro_fir(magnetometro[0], buffer_filtro_magX, ordem_filtro, coeficientes_FIR);
-		magnetometro[1] = filtro_fir(magnetometro[1], buffer_filtro_magY, ordem_filtro, coeficientes_FIR);
-		magnetometro[2] = filtro_fir(magnetometro[2], buffer_filtro_magZ, ordem_filtro, coeficientes_FIR);
 	}
 }
 
@@ -335,6 +352,11 @@ void processar_giroscopio()
 	saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0]+bx)*0.0174532925;
 	saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1]+by)*0.0174532925;
 	saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2]+bz)*0.0174532925;
+
+	//saida_gyro_dps_pf[0] = media_rotativa(saida_gyro_dps_pf[0], buffer_media_gyroX, NRO_MEDIA_AQUISICAO);
+	//saida_gyro_dps_pf[1] = media_rotativa(saida_gyro_dps_pf[1], buffer_media_gyroY, NRO_MEDIA_AQUISICAO);
+	//saida_gyro_dps_pf[2] = media_rotativa(saida_gyro_dps_pf[2], buffer_media_gyroZ, NRO_MEDIA_AQUISICAO);
+	
 }
 
 //Retorna as variáveis de estado utilizadas para telemetria.
@@ -356,13 +378,19 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = magnetometro[0];
-	Acelerometro[1] = magnetometro[1];
-	Acelerometro[2] = magnetometro[2];
+	Acelerometro[0] = saida_gyro_dps_pf[0];
+	Acelerometro[1] = saida_gyro_dps_pf[1];
+	Acelerometro[2] = saida_gyro_dps_pf[2];
 
-	Giroscopio[0] = magnetometro[0]-EstadoFiltroKalman.ultimo_estado[6];
-	Giroscopio[1] = magnetometro[1]-EstadoFiltroKalman.ultimo_estado[7];
-	Giroscopio[2] = magnetometro[2]-EstadoFiltroKalman.ultimo_estado[8];
+	Acelerometro[0] = acelerometro_adxl345[acel_x];
+	Acelerometro[1] = acelerometro_adxl345[acel_y];
+	Acelerometro[2] = acelerometro_adxl345[acel_z];
+
+/*
+	Giroscopio[0] = magnetometro[0]-EstadoFiltroKalman.ultimo_estado[3];
+	Giroscopio[1] = magnetometro[1]-EstadoFiltroKalman.ultimo_estado[4];
+	Giroscopio[2] = magnetometro[2]-EstadoFiltroKalman.ultimo_estado[5];
+*/
 
 /*
 	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3]*57.295787785569368296750927762044;
@@ -370,9 +398,11 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[5]*57.295787785569368296750927762044;
 */	
 
+/*
 	Magnetometro[0] = magnetometro[0];
 	Magnetometro[1] = magnetometro[2];
 	Magnetometro[2] = magnetometro[1];
+*/
 }
 
 
@@ -435,6 +465,8 @@ void processo_controle()
 {
 	GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
 
+	static uint8_t contador_aquisicao = 0;
+
 	static uint16_t contador_ativacao = 0;
 
 	static uint8_t flag_inicializacao = 0;
@@ -445,74 +477,80 @@ void processo_controle()
     processar_acelerometro();
 
     processar_magnetometro();
-       
-    //Insere os valores da leituras dentro do filtro de Kalman.
-	kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);	
 
-	angulos_inclinacao[roll] = 57.3*EstadoFiltroKalman.ultimo_estado[0];
-	angulos_inclinacao[pitch] = 57.3*EstadoFiltroKalman.ultimo_estado[1];
-	orientacao = 57.3*EstadoFiltroKalman.ultimo_estado[2];
+    contador_aquisicao++;
 
-	if(flag_inicializacao == 1 && controlador_ligado == 1)
-	{
-		//Controlador PID com o resultado do filtro de Kalman
+    if(contador_aquisicao == NRO_AQUISICOES_PRE_KF) {
 
-		/* Cálcula o erro  bufferque será utilizado no PID -> Referência - Feedback */
-		ref_roll = -ref_roll;
+    	contador_aquisicao = 0;
+	       
+	    //Insere os valores da leituras dentro do filtro de Kalman.
+		kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);	
 
-		/*Cálcular a referência do yaw com base na taxa inserida pelo controle remoto*/
-		calculate_Yaw_Ref(ref_rate_yaw);
+		angulos_inclinacao[roll] = 57.3*EstadoFiltroKalman.ultimo_estado[0];
+		angulos_inclinacao[pitch] = 57.3*EstadoFiltroKalman.ultimo_estado[1];
+		orientacao = 57.3*EstadoFiltroKalman.ultimo_estado[2];
 
-		erro_pitch = (ref_pitch - angulos_inclinacao[pitch]);
-		erro_roll =  (ref_roll - angulos_inclinacao[roll]);
-		erro_yaw =   (ref_yaw - (orientacao)); //- orientacao_inicial));
-
-		/* Cálculo do PID */
-			//Pitch & Roll
-		saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, dt); //Controlador PI para cada eixo.
-		saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  dt);
-		
-			//Yaw
-		saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   dt);
-
-		
-		//Realiza média rotativa dos últimos n processos de cálculo do PID.
-		saida_pitch_pid_final = media_rotativa(saida_pitch_pid, buffer_pid_pitch_media, numero_medias_PID); 
-		saida_roll_pid_final  = media_rotativa(saida_roll_pid,  buffer_pid_roll_media,  numero_medias_PID);
-		saida_yaw_pid_final	  = media_rotativa(saida_yaw_pid,   buffer_pid_yaw_media,   numero_medias_PID);
-
-		//Insere os valores provnientes dos PID's dentro da função que divide a carga para cada um dos motores. -- Arredondamento pois esta só trabalha com inteiro (Duty Cicle é uint16_t)
-		inserir_ajuster_motores(saida_pitch_pid_final, saida_roll_pid_final, saida_yaw_pid_final, round(rotacao_constante));
-
-	}else
-	{
-		//Saída dos PIDS zeradas.
-		saida_pitch_pid = 0;
-		saida_roll_pid = 0;
-		saida_yaw_pid = 0;
-
-		saida_pitch_pid_final = 0;
-		saida_roll_pid_final  = 0;
-		saida_yaw_pid_final   = 0;
-
-		inserir_ajuster_motores(0, 0, 0, 0);
-
-		if(flag_inicializacao == 0)
+		if(flag_inicializacao == 1 && controlador_ligado == 1)
 		{
-			contador_ativacao++;
-			orientacao_inicial = orientacao_inicial + orientacao/nro_contagem_ativacao;
-		}
-			
-		if(contador_ativacao == nro_contagem_ativacao)
-		{
-			GPIO_SetBits(GPIOD, GPIO_Pin_14);
+			//Controlador PID com o resultado do filtro de Kalman
 
-			flag_inicializacao = 1;
-		}
+			/* Cálcula o erro  bufferque será utilizado no PID -> Referência - Feedback */
+			ref_roll = -ref_roll;
+
+			/*Cálcular a referência do yaw com base na taxa inserida pelo controle remoto*/
+			calculate_Yaw_Ref(ref_rate_yaw);
+
+			erro_pitch = (ref_pitch - angulos_inclinacao[pitch]);
+			erro_roll =  (ref_roll - angulos_inclinacao[roll]);
+			erro_yaw =   (ref_yaw - (orientacao)); //- orientacao_inicial));
+
+			/* Cálculo do PID */
+				//Pitch & Roll
+			saida_pitch_pid = calcular_PID(erro_pitch, kp, 	ki, 	kd, 	buffer_pid_pitch, dt); //Controlador PI para cada eixo.
+			saida_roll_pid  = calcular_PID(erro_roll,  kp, 	ki, 	kd,		buffer_pid_roll,  dt);
 			
-		
+				//Yaw
+			saida_yaw_pid 	= calcular_PID(erro_yaw,	kp_yaw, ki_yaw, kd_yaw, buffer_pid_yaw,   dt);
+
+			
+			//Realiza média rotativa dos últimos n processos de cálculo do PID.
+			saida_pitch_pid_final = media_rotativa(saida_pitch_pid, buffer_pid_pitch_media, numero_medias_PID); 
+			saida_roll_pid_final  = media_rotativa(saida_roll_pid,  buffer_pid_roll_media,  numero_medias_PID);
+			saida_yaw_pid_final	  = media_rotativa(saida_yaw_pid,   buffer_pid_yaw_media,   numero_medias_PID);
+
+			//Insere os valores provnientes dos PID's dentro da função que divide a carga para cada um dos motores. -- Arredondamento pois esta só trabalha com inteiro (Duty Cicle é uint16_t)
+			inserir_ajuster_motores(saida_pitch_pid_final, saida_roll_pid_final, saida_yaw_pid_final, round(rotacao_constante));
+
+		}else
+		{
+			//Saída dos PIDS zeradas.
+			saida_pitch_pid = 0;
+			saida_roll_pid = 0;
+			saida_yaw_pid = 0;
+
+			saida_pitch_pid_final = 0;
+			saida_roll_pid_final  = 0;
+			saida_yaw_pid_final   = 0;
+
+			inserir_ajuster_motores(0, 0, 0, 0);
+
+			if(flag_inicializacao == 0)
+			{
+				contador_ativacao++;
+				orientacao_inicial = orientacao_inicial + orientacao/nro_contagem_ativacao;
+			}
+				
+			if(contador_ativacao == nro_contagem_ativacao)
+			{
+				GPIO_SetBits(GPIOD, GPIO_Pin_14);
+
+				flag_inicializacao = 1;
+			}
+				
+			
+		}
+		//Salva valores de interesse nas estrutura que é enviada para telemetria.
 	}
-	//Salva valores de interesse nas estrutura que é enviada para telemetria.
-
 	GPIO_ResetBits(GPIOD, GPIO_Pin_12); 
 }

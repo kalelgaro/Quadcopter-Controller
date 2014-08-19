@@ -6,7 +6,6 @@
  */
 
 #include "ADXL345.h"
-#include "aquisicao_IMU.h"
 
 float resolucao = 0;
 uint8_t escala ;

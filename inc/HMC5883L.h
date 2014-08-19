@@ -2,10 +2,11 @@
 #define HMC5883L_H_
 
 #include "stm32f4xx.h"
+#include "aquisicao_IMU.h"
+#include "arm_math.h"
 
 	/*Endereço dos endereços de configuração*/
 	#define WHO_AM_I_MG				10
-
 
 	/*Registradores de configuração*/
 	#define CONFIG_A 				00

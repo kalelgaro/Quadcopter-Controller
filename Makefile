@@ -1,9 +1,9 @@
 # put your *.o targets here, make should handle the rest!
 
-SRCS = main.c stm32f4xx_it.c system_stm32f4xx.c 
-SRCS += controle_motores.c L3G4200D.c ADXL345.c aquisicao_IMU.c nRF24l01.c
-SRCS += funcoes_spi.c array_functions.c tratamento_sinal.c
-SRCS += kalman_filter.c processo_controle.c HMC5883L.c processamento_entrada.c
+SRCS =  main.c 				stm32f4xx_it.c 		system_stm32f4xx.c 	aquisicao_IMU.c 
+SRCS += controle_motores.c 	L3G4200D.c 			ADXL345.c 			nRF24l01.c
+SRCS += funcoes_spi.c 		array_functions.c 	tratamento_sinal.c 	processamento_entrada.c
+SRCS += kalman_filter.c 	processo_controle.c HMC5883L.c 	
 
 # all the files will be generated with this name (main.elf, main.bin, main.hex, etc)
 
@@ -20,8 +20,8 @@ STLINK_WIN = "C:\Program Files (x86)\STMicroelectronics\STM32 ST-LINK Utility\ST
 CC=arm-none-eabi-gcc
 OBJCOPY=arm-none-eabi-objcopy
 
-CFLAGS = -DHSE_VALUE=8000000
-CFLAGS += -DARM_MATH_CM4=1 -DARM_MATH_MATRIX_CHECK=1 -D__FPU_USED=1 -DUSE_STDPERIPH_DRIVER=1
+CFLAGS = 	-DHSE_VALUE=8000000
+CFLAGS += 	-DARM_MATH_CM4=1 -DARM_MATH_MATRIX_CHECK=1 -D__FPU_USED=1 -DUSE_STDPERIPH_DRIVER=1
 
 CFLAGS += -g -Wall -Tstm32_flash.ld 
 CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
@@ -37,8 +37,7 @@ vpath %.a lib
 
 ROOT=$(shell pwd)
 
-CFLAGS += -Iinc -Ilib -Ilib/inc 
-CFLAGS += -Ilib/inc/core -Ilib/inc/peripherals 
+CFLAGS += -Iinc		-Ilib		-Ilib/inc 		-Ilib/inc/peripherals 	-Ilib/inc/core 	 
 
 SRCS += lib/startup_stm32f4xx.s # add startup file to build
 

@@ -124,6 +124,7 @@ static void configurar_acelerometro();
 void iniciar_RF();
 void iniciar_giroscopio();
 void configurar_bussola();
+void blinkDebugLeds();
 void iniciar_timer_processamento(void);
 void iniciar_timer_controle(void);
 void enviar_log(SPI_TypeDef* SPIx, uint8_t identificador, float dados[2]);
@@ -145,18 +146,20 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(52, 15, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(60, 15, 15, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
-	//Qang, Qbiasmag, Qbias, Racel, Rmag
-	setar_parametros_Kalman(2e-9, 5e-8, 1e-8, 1e-3, 1.5e-2, 5e-10, 5e-10);						//Ajusta as covariâncias do filtro de Kalman.
+	//Qang, Qbiasmag, Racel, Rmag, Rorth
+	setar_parametros_Kalman(1e-6, 5e-10, 0.5, 1.5, 1e-6);						//Ajusta as covariâncias do filtro de Kalman.
 	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
 	uint8_t status_RF = 0;														//Variável que aloca o estado do link RF.
 
-	SysTick_Config(168e6/10000); 										//Frequência de 100uS no systick.
+	SysTick_Config(168e6/10000);		 										//Frequência de 100uS no systick.
 
+	blinkDebugLeds();															//Pisca os leds
+	
 	iniciar_ESC();																//Inicia PWM para controle dos ESCS.
 
 	ajustar_velocidade(15,0);													//15 -> 0b1111 -> todos os motores -> Velocidade 0 -> Motores parados.
@@ -165,7 +168,7 @@ int main(void)
 
 	iniciar_RF();																//Inicar a placa nRF24L01p
 
-	//delay(100);																	//Delay de 100*100us = 10mS
+	//delay(100);																//Delay de 100*100us = 10mS
 
 	configurar_I2C();															//Configurar o periférico I²C da placa.
 
@@ -469,7 +472,7 @@ int main(void)
 							R_magnetometro = conversor.flutuante_entrada;							
 
 							//Qang, Qbias, Qbiasmag, Racel, Rmag
-							setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, Q_bias, R_acelerometro, R_magnetometro, 1e-10, 1e-10); //Insere os parametros no processo de controle.
+							setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, R_acelerometro, R_magnetometro, 1e-10); //Insere os parametros no processo de controle.
 
 						break;
 
@@ -635,6 +638,43 @@ void iniciar_RF()
 	modo_rx(SPI2);
 }
 
+//Rotina para exibir, visualmente, que os dispostivios foram iniciados
+
+void blinkDebugLeds() {
+
+	GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+
+	delay(2500);
+
+	GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+
+	delay(2500);
+	
+	GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
+
+	delay(2500);
+
+	GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
+
+	delay(2500);
+
+	GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
+
+	delay(2500);
+
+	GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
+
+	delay(2500);
+
+	GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
+
+	delay(2500);
+
+	GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
+
+	delay(2500);
+}
+
 //Rotina para inicialização do giroscópio.
 
 void iniciar_giroscopio()
@@ -643,10 +683,11 @@ void iniciar_giroscopio()
 
   	Configuracao_gyro.Axes_Enable = XYZ_EN;				//Ativação dos três eixos
   	Configuracao_gyro.Power_Mode = NORMAL_MODE;			//Modo de operação normal
-  	Configuracao_gyro.Output_DataRate = DR1;    	     //DR = 400 Hz
+  	Configuracao_gyro.Output_DataRate = DR1;    		//DR = 400 Hz
   	Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 20 Hz
   	Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
-  	Configuracao_gyro.Full_Scale = FS250DPS;			//Fundo de escala de 250 graus por segundo
+  	Configuracao_gyro.BDU_Enabled = BDU;				//Block Data Update - Impede a reescrita dos registradores antes da leitura.
+  	Configuracao_gyro.Full_Scale = FS500DPS;			//Fundo de escala de 250 graus por segundo
 
   	L3G4200D_Init(I2C3, &Configuracao_gyro);
 
@@ -733,7 +774,7 @@ void configurar_bussola()
 }
 
 //Inicia o timer principal utilizado na aquisição de dados (TIM6)
-//A frequência de interrupção é de 800 Hz (1,25mS)
+//A frequência de interrupção é de 400 Hz (2,5mS)
 
 void iniciar_timer_processamento()
 {
