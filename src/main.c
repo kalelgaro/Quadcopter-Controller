@@ -33,6 +33,7 @@
 #include "ADXL345.h"
 #include "L3G4200D.h"
 #include "HMC5883L.h"
+#include "MPU6050.h"
 #include "tratamento_sinal.h"
 #include "stdlib.h"
 #include "kalman_filter.h"
@@ -120,10 +121,11 @@ union byte_converter
 
 /* Private function prototypes -----------------------------------------------*/
 
-static void configurar_acelerometro();
+void configurar_acelerometro();
 void iniciar_RF();
 void iniciar_giroscopio();
 void configurar_bussola();
+void iniciarMPU6050Imu();
 void blinkDebugLeds();
 void iniciar_timer_processamento(void);
 void iniciar_timer_controle(void);
@@ -146,11 +148,10 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(60, 15, 15, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+	setar_parametros_PID(40, 15, 15, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
-	setar_parametros_Kalman(1e-6, 5e-10, 0.5, 1.5, 1e-6);						//Ajusta as covariâncias do filtro de Kalman.
-	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+	setar_parametros_Kalman(5e-9, 5e-10, 0.1, 0.75, 1e-6);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -158,7 +159,7 @@ int main(void)
 
 	SysTick_Config(168e6/10000);		 										//Frequência de 100uS no systick.
 
-	blinkDebugLeds();															//Pisca os leds
+    //blinkDebugLeds();															//Pisca os leds
 	
 	iniciar_ESC();																//Inicia PWM para controle dos ESCS.
 
@@ -168,37 +169,19 @@ int main(void)
 
 	iniciar_RF();																//Inicar a placa nRF24L01p
 
-	//delay(100);																//Delay de 100*100us = 10mS
-
 	configurar_I2C();															//Configurar o periférico I²C da placa.
 
-	//delay(1000);																//Delay de 10*100us = 100mS
+    iniciarMPU6050Imu();
 
-	iniciar_giroscopio();														//Iniciar o Giroscópio.
-
-	//delay(100);																	//Delay de 100*100us = 10mS
-
-	configurar_acelerometro();													//Iniciar o acelerômetro.
-
-	//delay(100);																	//Delay de 10mS
-	
 	configurar_bussola();														//Inicia o magnetômetro.
 	
-	//delay(100);																	//Delay de 10mS
-
 	//iniciar_timer_controle();													//Timer responsável por checar se houve recepção de controel nos últimos 2 segundos.
-
-	//delay(100);																	//Delay de 100*100us = 10mS
 
 	escrita_dados(SPI2, (uint8_t *)"Iniciado.", 32);							//Mensagem que informa que o procimento de inicialização foi concluído.
 
-	//delay(100);																	//Delay de 100*100us = 10mS
+    modo_rx(SPI2);																//Habilita recepção de novas mensagens.
 
-	modo_rx(SPI2);																//Habilita recepção de novas mensagens.
-
-	//delay(100);																	//Delay de 100*100us = 10mS
-
-	configurar_timers_PWM_I();													//Configura os timers utilizados para PWMinput do controle.
+    configurar_timers_PWM_I();													//Configura os timers utilizados para PWMinput do controle.
 
 	iniciar_estado_Kalman();
 
@@ -555,15 +538,15 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[0];
+			conversor.flutuante_entrada = 57.3*telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[1];
+			conversor.flutuante_entrada = 57.3*telemetria_giroscopio[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[2];
+			conversor.flutuante_entrada = 57.3*telemetria_giroscopio[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
@@ -687,7 +670,7 @@ void iniciar_giroscopio()
   	Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 20 Hz
   	Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
   	Configuracao_gyro.BDU_Enabled = BDU;				//Block Data Update - Impede a reescrita dos registradores antes da leitura.
-  	Configuracao_gyro.Full_Scale = FS500DPS;			//Fundo de escala de 250 graus por segundo
+  	Configuracao_gyro.Full_Scale = FS500DPS;			//Fundo de escala de 500 graus por segundo
 
   	L3G4200D_Init(I2C3, &Configuracao_gyro);
 
@@ -696,11 +679,82 @@ void iniciar_giroscopio()
   	Configuracao_HPF_gyro.HP_cutoff_freq = 0b1001;
   	Configuracao_HPF_gyro.HP_mode = REFERENCE;
 
-  	Configuracao_HPF_gyro.Filter_Enable = 1;
+  	Configuracao_HPF_gyro.Filter_Enable = 0;
   	Configuracao_HPF_gyro.Output__Selection = Out_Sel1 | Out_Sel0;
 
   	L3G4200D_HP_Init(I2C3, &Configuracao_HPF_gyro);
+
+  	float dadosGyro[3] = {0.0, 0.0, 0.0};
+  	float offsetGyro[3] = {0.0, 0.0, 0.0};
   	
+  	uint16_t counterOffsetGyro = 400;
+
+  	delay(1000);
+  	while(counterOffsetGyro--) {
+  		GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
+
+  		L3G4200D_Read_Data(I2C3, dadosGyro);
+  		offsetGyro[0] += dadosGyro[0];
+  		offsetGyro[1] += dadosGyro[1];
+  		offsetGyro[2] += dadosGyro[2];
+
+  		delay(100); //Delay de 50ms
+  	}
+  	
+  	offsetGyro[0] = offsetGyro[0]/(float)400;
+  	offsetGyro[1] = offsetGyro[1]/(float)400;
+  	offsetGyro[2] = offsetGyro[2]/(float)400;
+
+  	setar_offset_gyro(offsetGyro);
+}
+
+
+void iniciarMPU6050Imu() {
+    MPU6050_InitStruct initialConfig;
+
+    initialConfig.accelFullScale = AFS_8G;              //Fundo de escala de 8G.
+    initialConfig.gyroFullScale = FS500DPS;             //Fundo de escala de 500 graus por segundo.
+    initialConfig.clockSource = CLK_GYRO_X_PLL;         //Fonte de clock no oscilador do eixo X do giroscópio.
+    initialConfig.fifoEnabled = 0;                      //Fifo desligada;
+    initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual à do Gyro
+    initialConfig.temperatureSensorDisabled = 0;        //Sensor de temperatura ligado.
+    initialConfig.powerMode = 0;                        //Sem modo de energia especial;
+    initialConfig.digitalLowPassConfig = 0x04;
+
+    MPU6050_Init(I2C3, &initialConfig);
+
+    float offset_accel[3] = {0,0,0};
+    float offset_gyro[3] = {0,0,0};
+    float temp_accel[3];
+    float temp_gyro[3];
+
+    uint16_t counterOffsetAquisition = 400;
+
+    while(counterOffsetAquisition--) {
+        MPU6050_readData(I2C3, temp_accel, temp_gyro);
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+
+        offset_accel[0] += temp_accel[0];
+        offset_accel[1] += temp_accel[1];
+        offset_accel[2] += (1-temp_accel[2]);
+
+        offset_gyro[0] += temp_gyro[0];
+        offset_gyro[1] += temp_gyro[1];
+        offset_gyro[2] += temp_gyro[2];
+
+        delay(10);
+    }
+
+    offset_accel[0] = offset_accel[0]/((float)(400));
+    offset_accel[1] = offset_accel[1]/((float)(400));
+    offset_accel[2] = offset_accel[2]/((float)(400));
+
+    offset_gyro[0] = offset_gyro[0]/((float)(400));
+    offset_gyro[1] = offset_gyro[1]/((float)(400));
+    offset_gyro[2] = offset_gyro[2]/((float)(400));
+
+    setar_offset_acel(offset_accel);
+    setar_offset_gyro(offset_gyro);
 }
 
 //Rotina para inicialização do acelerômetro
@@ -745,7 +799,7 @@ void configurar_acelerometro()
     	offset_accel[1] += teste[1];
     	offset_accel[2] += (teste[2]-1);
 
-    	delay(50);      //0.05S
+    	delay(50);      //0.5 mS
   	}	
 
   	offset_accel[0] = (offset_accel[0]/(float)400);
@@ -784,7 +838,7 @@ void iniciar_timer_processamento()
 
   	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;		//100.000 Contagens por segundo
 
-  	TIM_TimeBaseStructure.TIM_Period = 250;											//(1/100.000)*250 segundos por "overflow" -> 0.0025 segundos por overflow
+    TIM_TimeBaseStructure.TIM_Period = 250;											//(1/100.000)*250 segundos por "overflow" -> 0.0025 segundos por overflow
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;

@@ -14,11 +14,7 @@ void L3G4200D_Init(I2C_TypeDef* I2Cx, L3G4200D_InitTypeDef *Configuracoes)
 	data_buffer = Configuracoes->Output_DataRate | Configuracoes->bandwidth | Configuracoes->Axes_Enable | Configuracoes->Power_Mode;
 	I2C_escrever_registrador(I2Cx, end_L3G4200, CTRL_REG1, 1, &data_buffer);
 
-	I2C_ler_registradores(I2Cx, end_L3G4200, CTRL_REG4, 1, &data_buffer);
-
-	data_buffer &= 0b01001001;
-	data_buffer = (data_buffer | (Configuracoes->Full_Scale | Configuracoes->Self_Test | Configuracoes->BDU_Enabled));
-
+	data_buffer = (Configuracoes->Full_Scale | Configuracoes->Self_Test | Configuracoes->BDU_Enabled);
 	I2C_escrever_registrador(I2Cx, end_L3G4200, CTRL_REG4, 1, &data_buffer);
 
 	full_scale = (Configuracoes->Full_Scale >> 4);
@@ -48,10 +44,7 @@ void L3G4200D_HP_Init(I2C_TypeDef* I2Cx, L3G4200D_HPFilterConfigTypeDef *Configu
 	data_buffer = (Configuracoes_HPF->HP_mode | Configuracoes_HPF->HP_cutoff_freq)&0b00111111;
 	I2C_escrever_registrador(I2Cx, end_L3G4200, CTRL_REG2, 1, &data_buffer);
 
-	I2C_ler_registradores(I2Cx, end_L3G4200, CTRL_REG5, 1, &data_buffer);
-
-	data_buffer &= 0b11101100;
-	data_buffer = (data_buffer | (Configuracoes_HPF->Filter_Enable | Configuracoes_HPF->Output__Selection));
+	data_buffer = ((Configuracoes_HPF->Filter_Enable | Configuracoes_HPF->Output__Selection));
 
 	I2C_escrever_registrador(I2Cx, end_L3G4200, CTRL_REG5, 1, &data_buffer);
 

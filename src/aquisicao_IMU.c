@@ -37,7 +37,7 @@ void configurar_I2C(void)
 	I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;									// I2C mode
 	I2C_InitStruct.I2C_DutyCycle = I2C_DutyCycle_2;							// 50% duty cycle --> standard
 	I2C_InitStruct.I2C_OwnAddress1 = 0xFF;									// Endereço próprio - Não é relevante uma vez que este é utilizado como MASTER.
-	I2C_InitStruct.I2C_Ack = I2C_Ack_Disable;								// disable acknowledge when reading (can be changed later on)
+    I2C_InitStruct.I2C_Ack = I2C_Ack_Disable;								// disable acknowledge when reading (can be changed later on)
 	I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit; 	// Endereços de 7 bits.
 
 	I2C_Init(I2C3, &I2C_InitStruct);										// init I2C1
@@ -193,7 +193,7 @@ void I2C_ler_registradores(I2C_TypeDef* I2Cx, uint8_t slave_address, uint8_t reg
 
 	I2C_start(I2Cx, slave_address, I2C_Direction_Transmitter);
 	I2C_write(I2Cx, register_address);
-	I2C_r_start(I2Cx, slave_address, I2C_Direction_Receiver);
+    I2C_r_start(I2Cx, slave_address, I2C_Direction_Receiver);
 
 	for(; contador_dados < (num_bytes-1); contador_dados++)
 	{

@@ -5,6 +5,7 @@
 	void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_yaw, float Kd_yaw);
 	void setar_parametros_Kalman(float Q_angulos, float Q_biasmag, float R_acelerometro, float R_magnetometro, float R_orthogonal);
 	void setar_offset_acel(float offset[3]);
+	void setar_offset_gyro(float offset[3]);
 	void retornar_parametros_pid(float *Kp, float *Ki, float *Kd);
 	void retornar_parametros_Kalman(float *Q_acelerometro, float *Q_magnetometro, float *Q_bias, float *R_acelerometro, float *R_magnetometro);
 	void processo_controle(void);
