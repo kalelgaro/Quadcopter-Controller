@@ -30,10 +30,10 @@ void MPU6050_Init(I2C_TypeDef *I2Cx, MPU6050_InitStruct *initialConfig) {
     i2cDataBuffer = initialConfig->fifoEnabled;
     I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, USER_CTRL, 1, &i2cDataBuffer);
 
-    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1);
-    i2cDataBuffer = initialConfig->clockSource | initialConfig->powerMode | initialConfig->temperatureSensorDisabled;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, 1, &i2cDataBuffer);
-
+//FIXME: Modificações teste - Testar se necessita de escrita no PWR_MGMT_1 neste ponto, após todas as configurações.
+//    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1);
+//    i2cDataBuffer = initialConfig->clockSource | initialConfig->powerMode | initialConfig->temperatureSensorDisabled;
+//    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, 1, &i2cDataBuffer);
 
     switch(initialConfig->gyroFullScale) {
     case FS_250DPS:
@@ -100,5 +100,6 @@ float MPU6050_readData(I2C_TypeDef* I2Cx, float accelBuffer[3], float gyroBuffer
     gyroBuffer[1] = gyroBuffer[1]*gyroFullScale/((float)32768);
     gyroBuffer[2] = gyroBuffer[2]*gyroFullScale/((float)32768);
 
-    return 0;
+    //FIXME: Corrigir a escala para obtenção da temperatura.
+    return (tempReadData[6]*256)|(tempReadData[7]);
 }

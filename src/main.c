@@ -107,7 +107,6 @@ union byte_converter
   uint32_t armazenamento_flash;
   float flutuante_entrada;
   uint8_t bytes[4];
-
 }conversor;
 
 //Coeficientes filtros FIR
@@ -121,9 +120,7 @@ union byte_converter
 
 /* Private function prototypes -----------------------------------------------*/
 
-void configurar_acelerometro();
 void iniciar_RF();
-void iniciar_giroscopio();
 void configurar_bussola();
 void iniciarMPU6050Imu();
 void blinkDebugLeds();
@@ -319,52 +316,6 @@ int main(void)
 							escrita_dados(SPI2, buffer_dados_tx, 32);
 
 					    break;
-
-					    //Insere um nível de bias de teste no giroscópio
-					    case 'b' :
-					    	conversor.bytes[0] = buffer_dados_rx[1];
-							conversor.bytes[1] = buffer_dados_rx[2];
-							conversor.bytes[2] = buffer_dados_rx[3];
-							conversor.bytes[3] = buffer_dados_rx[4];
-
-							bx = conversor.flutuante_entrada;
-
-							conversor.bytes[0] = buffer_dados_rx[5];
-							conversor.bytes[1] = buffer_dados_rx[6];
-							conversor.bytes[2] = buffer_dados_rx[7];
-							conversor.bytes[3] = buffer_dados_rx[8];
-
-							by = conversor.flutuante_entrada;
-
-							conversor.bytes[0] = buffer_dados_rx[9];
-							conversor.bytes[1] = buffer_dados_rx[10];
-							conversor.bytes[2] = buffer_dados_rx[11];
-							conversor.bytes[3] = buffer_dados_rx[12];
-
-							bz = conversor.flutuante_entrada;
-
-							conversor.bytes[0] = buffer_dados_rx[13];
-							conversor.bytes[1] = buffer_dados_rx[14];
-							conversor.bytes[2] = buffer_dados_rx[15];
-							conversor.bytes[3] = buffer_dados_rx[16];
-
-							bmx = conversor.flutuante_entrada;
-
-							conversor.bytes[0] = buffer_dados_rx[17];
-							conversor.bytes[1] = buffer_dados_rx[18];
-							conversor.bytes[2] = buffer_dados_rx[19];
-							conversor.bytes[3] = buffer_dados_rx[20];
-
-							bmy = conversor.flutuante_entrada;
-
-							conversor.bytes[0] = buffer_dados_rx[21];
-							conversor.bytes[1] = buffer_dados_rx[22];
-							conversor.bytes[2] = buffer_dados_rx[23];
-							conversor.bytes[3] = buffer_dados_rx[24];
-
-							bmz = conversor.flutuante_entrada;
-	
-							setar_bias(bx, by, bz, bmx, bmy, bmz);
 
 						//Altera as constantes utilizadas no PID.
 						case 'U':
@@ -569,7 +520,6 @@ int main(void)
 
 
 //Rotina para inicialização do link RF com os parâmetros utilizados neste
-
 void iniciar_RF() 
 {
 
@@ -622,7 +572,6 @@ void iniciar_RF()
 }
 
 //Rotina para exibir, visualmente, que os dispostivios foram iniciados
-
 void blinkDebugLeds() {
 
 	GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
@@ -658,57 +607,6 @@ void blinkDebugLeds() {
 	delay(2500);
 }
 
-//Rotina para inicialização do giroscópio.
-
-void iniciar_giroscopio()
-{ 
-  	L3G4200D_InitTypeDef Configuracao_gyro;
-
-  	Configuracao_gyro.Axes_Enable = XYZ_EN;				//Ativação dos três eixos
-  	Configuracao_gyro.Power_Mode = NORMAL_MODE;			//Modo de operação normal
-  	Configuracao_gyro.Output_DataRate = DR1;    		//DR = 400 Hz
-  	Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 20 Hz
-  	Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
-  	Configuracao_gyro.BDU_Enabled = BDU;				//Block Data Update - Impede a reescrita dos registradores antes da leitura.
-  	Configuracao_gyro.Full_Scale = FS500DPS;			//Fundo de escala de 500 graus por segundo
-
-  	L3G4200D_Init(I2C3, &Configuracao_gyro);
-
-  	L3G4200D_HPFilterConfigTypeDef Configuracao_HPF_gyro;
-
-  	Configuracao_HPF_gyro.HP_cutoff_freq = 0b1001;
-  	Configuracao_HPF_gyro.HP_mode = REFERENCE;
-
-  	Configuracao_HPF_gyro.Filter_Enable = 0;
-  	Configuracao_HPF_gyro.Output__Selection = Out_Sel1 | Out_Sel0;
-
-  	L3G4200D_HP_Init(I2C3, &Configuracao_HPF_gyro);
-
-  	float dadosGyro[3] = {0.0, 0.0, 0.0};
-  	float offsetGyro[3] = {0.0, 0.0, 0.0};
-  	
-  	uint16_t counterOffsetGyro = 400;
-
-  	delay(1000);
-  	while(counterOffsetGyro--) {
-  		GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
-
-  		L3G4200D_Read_Data(I2C3, dadosGyro);
-  		offsetGyro[0] += dadosGyro[0];
-  		offsetGyro[1] += dadosGyro[1];
-  		offsetGyro[2] += dadosGyro[2];
-
-  		delay(100); //Delay de 50ms
-  	}
-  	
-  	offsetGyro[0] = offsetGyro[0]/(float)400;
-  	offsetGyro[1] = offsetGyro[1]/(float)400;
-  	offsetGyro[2] = offsetGyro[2]/(float)400;
-
-  	setar_offset_gyro(offsetGyro);
-}
-
-
 void iniciarMPU6050Imu() {
     MPU6050_InitStruct initialConfig;
 
@@ -726,10 +624,11 @@ void iniciarMPU6050Imu() {
     float offset_accel[3] = {0,0,0};
     float offset_gyro[3] = {0,0,0};
     float temp_accel[3];
-    float temp_gyro[3];
+    float temp_gyro[3];  
 
-    uint16_t counterOffsetAquisition = 400;
+    delay(10000);
 
+    uint16_t counterOffsetAquisition = 1000;
     while(counterOffsetAquisition--) {
         MPU6050_readData(I2C3, temp_accel, temp_gyro);
         GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
@@ -742,75 +641,22 @@ void iniciarMPU6050Imu() {
         offset_gyro[1] += temp_gyro[1];
         offset_gyro[2] += temp_gyro[2];
 
-        delay(10);
+        delay(100);
     }
 
-    offset_accel[0] = offset_accel[0]/((float)(400));
-    offset_accel[1] = offset_accel[1]/((float)(400));
-    offset_accel[2] = offset_accel[2]/((float)(400));
+    offset_accel[0] = offset_accel[0]/((float)(1000));
+    offset_accel[1] = offset_accel[1]/((float)(1000));
+    offset_accel[2] = offset_accel[2]/((float)(1000));
 
-    offset_gyro[0] = offset_gyro[0]/((float)(400));
-    offset_gyro[1] = offset_gyro[1]/((float)(400));
-    offset_gyro[2] = offset_gyro[2]/((float)(400));
+    offset_gyro[0] = offset_gyro[0]/((float)(1000));
+    offset_gyro[1] = offset_gyro[1]/((float)(1000));
+    offset_gyro[2] = offset_gyro[2]/((float)(1000));
 
     setar_offset_acel(offset_accel);
     setar_offset_gyro(offset_gyro);
 }
 
-//Rotina para inicialização do acelerômetro
-//Adicionalmente, obtêm o 'zero g level' do sensor (Offset).
-
-void configurar_acelerometro()
-{
-  	uint16_t counter_offset_accel;
-
-  	float teste[3] = {0,0,0};
-
-  	float offset_accel[3] = {0,0,0};
-
-  	ADXL345_InitTypeDef configuracao_inicial;
-
-	//Configuração do ADXL345.
-
-  	configuracao_inicial.Power_Mode = Measure;							//Coloca a placa em modo de aquisição contínua.
-  	configuracao_inicial.bandwidth = Rate_D3 | Rate_D2;					//Aquisição da placa em 400 Hz.
-  	configuracao_inicial.Full_Scale = Range_D1;							//Fundo de escala em 8G
-  	configuracao_inicial.Resolution = 0;								//Resolução da placa em 10 bits.
-  	configuracao_inicial.Self_Test = 0;									//Desliga o "self-test"
-
-  	ADXL345_Init(I2C3, &configuracao_inicial);							
-  	
-  	//-------Obtenção do "Zero G level" , OFFSET da placa-------//
-
-  	counter_offset_accel = 400;
-
-  	delay(1000);
-
-  	offset_accel[0] = 0; offset_accel[1] = 0; offset_accel[2] = 0;
-
-  	while(counter_offset_accel--)
-  	{
-
-    	GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
-
-    	ADXL345_Read_Data(I2C3, teste);
-
-    	offset_accel[0] += teste[0];
-    	offset_accel[1] += teste[1];
-    	offset_accel[2] += (teste[2]-1);
-
-    	delay(50);      //0.5 mS
-  	}	
-
-  	offset_accel[0] = (offset_accel[0]/(float)400);
-  	offset_accel[1] = (offset_accel[1]/(float)400);
-  	offset_accel[2] = (offset_accel[2]/(float)400);
-
-  	setar_offset_acel(offset_accel);
-}
-
 //Inicia o Magnetômetro para obtenção orientação magnética.
-
 void configurar_bussola()
 {	
 	HMC5883L_InitTypeDef configuracao_inicial;
@@ -829,7 +675,6 @@ void configurar_bussola()
 
 //Inicia o timer principal utilizado na aquisição de dados (TIM6)
 //A frequência de interrupção é de 400 Hz (2,5mS)
-
 void iniciar_timer_processamento()
 {
 
@@ -862,7 +707,6 @@ void iniciar_timer_processamento()
 //O timer abaixo será utilizado para checagem se há houve recepção de dados num intervalo pré-definido
 //Se o timer abaixo disparar a interrupção , houveram 2 segundos sem recepção de sinal, e desta forma,
 //há o procedimento de desligamento
-
 void iniciar_timer_controle()
 {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
@@ -892,7 +736,6 @@ void iniciar_timer_controle()
 }
 
 //Rotina de pausa inicial para estabilização dos PWMS utilizados nos ESCS.
-
 void delay_startup(void)
 {
   uint32_t var_contador = 1000000;
@@ -900,7 +743,6 @@ void delay_startup(void)
 }
 
 //Rotina que inicia as portas conectadas aos leds de debug
-
 void iniciar_leds_debug(void)
 {
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);

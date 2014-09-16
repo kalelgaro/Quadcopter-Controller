@@ -1,8 +1,6 @@
 ﻿#include "stm32f4_discovery.h"
 
 #include "aquisicao_IMU.h"
-//#include "L3G4200D.h"
-//#include "ADXL345.h"
 #include "MPU6050.h"
 #include "HMC5883L.h"
 
@@ -236,7 +234,6 @@ void iniciar_estado_Kalman() {
 			I2C_ler_registradores(I2C3, end_HMC5883L, STATUS_MG, 1, &status);
 			//Aguarda enquanto não houverem novos dados dentro dos registradores de leitura.
 			GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
-			delay(100);
 		}while((status&0x01)!=0x01);
 
 		HMC5883L_Read_Data(I2C3, mag_init);
@@ -261,7 +258,6 @@ void iniciar_estado_Kalman() {
 }
 
 //Altera as contastes do controlador PID. - Roll, Pitch e Yaw.
-
 void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_yaw, float Kd_yaw)
 {
 	kp = Kp;
@@ -274,7 +270,6 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 }
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
-
 void setar_parametros_Kalman(float32_t Q_angulos, float32_t Q_biasmag, float32_t R_acelerometro, float32_t R_magnetometro, float32_t R_orthogonal)
 {
 	EstadoFiltroKalman.Q_ang = Q_angulos;
@@ -342,30 +337,13 @@ void processar_mpu6050() {
     saida_gyro_dps_pf[1] -= offset_gyro[1];
     saida_gyro_dps_pf[2] -= offset_gyro[2];
 
-    saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0]+bx)*0.0174532925;
-    saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1]+by)*0.0174532925;
-    saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2]+bz)*0.0174532925;
+    saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0])*0.0174532925;
+    saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1])*0.0174532925;
+    saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2])*0.0174532925;
 
     acelerometro_adxl345[acel_x] -= offset_accel[acel_x];
     acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
     acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
-}
-
-void processar_acelerometro()
-{
-	//Aquisição das leituras do acelerômetro.
-	ADXL345_Read_Data(I2C3,acelerometro_adxl345);
-
-	//Remove o offset, desvio, do acelerômetro das leituras.
-    acelerometro_adxl345[acel_x] -= offset_accel[acel_x];
-	acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
-	acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
-
-	//acelerometro_adxl345[acel_x] = media_rotativa(acelerometro_adxl345[acel_x], buffer_media_acelX, NRO_MEDIA_AQUISICAO);
-	//acelerometro_adxl345[acel_y] = media_rotativa(acelerometro_adxl345[acel_y], buffer_media_acelY, NRO_MEDIA_AQUISICAO);
-	//acelerometro_adxl345[acel_z] = media_rotativa(acelerometro_adxl345[acel_z], buffer_media_acelZ, NRO_MEDIA_AQUISICAO);
-
-
 }
 
 void processar_magnetometro()
@@ -388,25 +366,6 @@ void processar_magnetometro()
 	}
 }
 
-void processar_giroscopio()
-{
-	L3G4200D_Read_Data(I2C3, saida_gyro_dps_pf);
-
-	//Conversao de unidades -> deg/s -> rad/s
-	saida_gyro_dps_pf[0] -= offset_gyro[0];
-	saida_gyro_dps_pf[1] -= offset_gyro[1];
-	saida_gyro_dps_pf[2] -= offset_gyro[2];
-
-	saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0]+bx)*0.0174532925;
-	saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1]+by)*0.0174532925;
-	saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2]+bz)*0.0174532925;
-
-	//saida_gyro_dps_pf[0] = media_rotativa(saida_gyro_dps_pf[0], buffer_media_gyroX, NRO_MEDIA_AQUISICAO);
-	//saida_gyro_dps_pf[1] = media_rotativa(saida_gyro_dps_pf[1], buffer_media_gyroY, NRO_MEDIA_AQUISICAO);
-	//saida_gyro_dps_pf[2] = media_rotativa(saida_gyro_dps_pf[2], buffer_media_gyroZ, NRO_MEDIA_AQUISICAO);
-	
-}
-
 //Retorna as variáveis de estado utilizadas para telemetria.
 
 void retornar_estado(float estado_KF[], float estado_PID[])
@@ -414,10 +373,6 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 	estado_KF[roll] =  angulos_inclinacao[roll];
 	estado_KF[pitch] = angulos_inclinacao[pitch];
 	estado_KF[yaw] =   orientacao - orientacao_inicial;
-
-	// estado_KF[roll] =  ref_roll;
-	// estado_KF[pitch] = ref_pitch;
-	// estado_KF[yaw] =   ref_rate_yaw;
 
 	estado_PID[roll] =  ref_roll;
 	estado_PID[pitch] = ref_pitch;
@@ -434,23 +389,9 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Giroscopio[1] = saida_gyro_dps_pf[1];
 	Giroscopio[2] = saida_gyro_dps_pf[2];
 
-/*
-	Giroscopio[0] = magnetometro[0]-EstadoFiltroKalman.ultimo_estado[3];
-	Giroscopio[1] = magnetometro[1]-EstadoFiltroKalman.ultimo_estado[4];
-	Giroscopio[2] = magnetometro[2]-EstadoFiltroKalman.ultimo_estado[5];
-*/
-
-/*
-	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3]*57.295787785569368296750927762044;
-	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[4]*57.295787785569368296750927762044;
-	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[5]*57.295787785569368296750927762044;
-*/	
-
-/*
 	Magnetometro[0] = magnetometro[0];
 	Magnetometro[1] = magnetometro[2];
 	Magnetometro[2] = magnetometro[1];
-*/
 }
 
 //Cálculo do YAW, orientção, com base no documento
@@ -495,18 +436,6 @@ void calculate_Yaw_Ref(float yaw_Rate) {
 	ref_yaw = 57.3*tratar_intervalo_Angulo(ref_yaw*0.017452);
 }
 
-
-//Altera os valores do bias teste para o giroscópio
-void setar_bias(float Bx, float By, float Bz, float Bmx, float Bmy, float Bmz) {
-	bx = Bx;
-	by = By;
-	bz = Bz;
-	bmx = Bmx;
-	bmy = Bmy;
-	bmz = Bmz;
-}
-
-
 //Procedimento de controle principal executado no overflow no Timer 3 à cada 1,25mS (800 Hz)
 void processo_controle()
 {
@@ -519,9 +448,7 @@ void processo_controle()
 	static uint8_t flag_inicializacao = 0;
 
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
-    GPIO_SetBits(GPIOD, GPIO_Pin_15);
     processar_mpu6050();
-    GPIO_ResetBits(GPIOD, GPIO_Pin_15);
 
     processar_magnetometro();
 
