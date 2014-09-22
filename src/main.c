@@ -626,7 +626,7 @@ void iniciarMPU6050Imu() {
     float temp_accel[3];
     float temp_gyro[3];  
 
-    delay(10000);
+    delay(1000);
 
     uint16_t counterOffsetAquisition = 1000;
     while(counterOffsetAquisition--) {
@@ -641,7 +641,7 @@ void iniciarMPU6050Imu() {
         offset_gyro[1] += temp_gyro[1];
         offset_gyro[2] += temp_gyro[2];
 
-        delay(100);
+        delay(50);
     }
 
     offset_accel[0] = offset_accel[0]/((float)(1000));
