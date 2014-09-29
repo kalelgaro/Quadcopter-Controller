@@ -1,3 +1,13 @@
+#include "stm32f4_discovery.h"
+
+#include "aquisicao_IMU.h"
+#include "MPU6050.h"
+#include "HMC5883L.h"
+
+#include "arm_math.h"
+#include "kalman_filter.h"
+#include "tratamento_sinal.h"
+
 #ifndef _processo_controle_
 #define _processo_controle_
 

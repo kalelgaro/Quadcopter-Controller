@@ -1,13 +1,4 @@
-﻿#include "stm32f4_discovery.h"
-
-#include "aquisicao_IMU.h"
-#include "MPU6050.h"
-#include "HMC5883L.h"
-
-#include "arm_math.h"
-#include "kalman_filter.h"
-#include "processo_controle.h"
-#include "tratamento_sinal.h"
+﻿#include "processo_controle.h"
 
 #define yaw 2
 #define pitch 1

@@ -40,13 +40,6 @@
 #include "processo_controle.h"
 #include "processamento_entrada.h"
 
-/** @addtogroup STM32F4_Discovery_Peripheral_Examples
-  * @{
-  */
-
-/** @addtogroup IO_Toggle
-  * @{
-  */ 
 
 /* Private typedef -----------------------------------------------------------*/
 

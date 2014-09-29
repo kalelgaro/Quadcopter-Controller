@@ -11,4 +11,5 @@
 *.sublime*
 lib/*.o
 lib/libstm32f4.a
+*.pro.user
 *.map
