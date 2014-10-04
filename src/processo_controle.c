@@ -23,15 +23,16 @@
 
 #define dt 0.0025
 
-
 /*-------Taxa de rotação constante--------*/
 
 #define CONSTANT_RATE 72 //72 graus por segundo (360/5)
 
 
 /*-------Inclinações máximas (Roll e Pitch)-------*/
-
 #define MAX_INCLINATION 20
+
+/*------Constante para conversão de Graus para Rad-----*/
+#define DEG_TO_RAD 0.01745201
 
 /*-------Contagem de ativação-------*/
 #define nro_contagem_ativacao (uint16_t)(1200/NRO_AQUISICOES_PRE_KF)
@@ -328,9 +329,9 @@ void processar_mpu6050() {
     saida_gyro_dps_pf[1] -= offset_gyro[1];
     saida_gyro_dps_pf[2] -= offset_gyro[2];
 
-    saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0])*0.0174532925;
-    saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1])*0.0174532925;
-    saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2])*0.0174532925;
+    saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0])*DEG_TO_RAD;
+    saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1])*DEG_TO_RAD;
+    saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2])*DEG_TO_RAD;
 
     acelerometro_adxl345[acel_x] -= offset_accel[acel_x];
     acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
@@ -376,9 +377,9 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[1] = acelerometro_adxl345[acel_y];
 	Acelerometro[2] = acelerometro_adxl345[acel_z];
 
-	Giroscopio[0] = saida_gyro_dps_pf[0];
-	Giroscopio[1] = saida_gyro_dps_pf[1];
-	Giroscopio[2] = saida_gyro_dps_pf[2];
+    Giroscopio[0] = saida_gyro_dps_pf[0];
+    Giroscopio[1] = saida_gyro_dps_pf[1];
+    Giroscopio[2] = saida_gyro_dps_pf[2];
 
 	Magnetometro[0] = magnetometro[0];
 	Magnetometro[1] = magnetometro[2];

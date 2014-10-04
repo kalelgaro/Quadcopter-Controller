@@ -55,8 +55,6 @@ void iniciar_spi2()
 	SPI_Init(SPI2, &SPI2_estrutura_conf);
 
 	SPI_Cmd(SPI2, ENABLE);
-
-
 }
 
 void enviar_dados_SPI(SPI_TypeDef* SPIx, uint8_t buffer_envio[], uint8_t buffer_recepcao[], uint8_t tamanho)
