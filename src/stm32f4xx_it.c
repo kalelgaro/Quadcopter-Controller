@@ -1,5 +1,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4_discovery.h"
+#include "stm32f4xx_dma.h"
 
 #include "array_functions.h"
 #include "funcoes_spi.h"
@@ -254,6 +255,34 @@ void TIM7_IRQHandler(void)
     }
 }
 
+//Rotina de interrupção do DMA1 Stream 0
+void DMA1_Stream0_IRQHandler(void) {
+
+    if (DMA_GetITStatus(DMA1_Stream0, DMA_IT_TCIF0))
+      {
+        /* Clear DMA Stream Transfer Complete interrupt pending bit */
+        DMA_ClearITPendingBit(DMA1_Stream0, DMA_IT_TCIF0);
+
+        USART_SendData(UART5, 'C');
+
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+        delay(2500);
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+        delay(2500);
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
+        delay(2500);
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
+        delay(2500);
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
+        delay(2500);
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
+        delay(2500);
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
+        delay(2500);
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
+        delay(2500);
+      }
+}
 
 /**
   * @brief  This function handles SysTick Handler.

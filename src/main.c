@@ -21,6 +21,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4_discovery.h"
+#include "misc.h"
 
 #include "arm_math.h"
 #include "funcoes_spi.h"
@@ -40,6 +41,8 @@
 #include "processo_controle.h"
 #include "processamento_entrada.h"
 
+#include "stm32f4xx_dma.h"
+#include "stm32f4xx_usart.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -117,6 +120,7 @@ void iniciar_RF();
 void configurar_bussola();
 void iniciarMPU6050Imu();
 void blinkDebugLeds();
+void configUartAndDMA();
 void iniciar_timer_processamento(void);
 void iniciar_timer_controle(void);
 void enviar_log(SPI_TypeDef* SPIx, uint8_t identificador, float dados[2]);
@@ -136,8 +140,6 @@ int main(void)
 {
 	iniciar_leds_debug();
 
-	//teste_filtro_de_kalman();
-
 	setar_parametros_PID(40, 15, 15, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
@@ -156,6 +158,8 @@ int main(void)
 	ajustar_velocidade(15,0);													//15 -> 0b1111 -> todos os motores -> Velocidade 0 -> Motores parados.
 
 	delay_startup();															//Delay de inicialização dos ESCS.
+
+    configUartAndDMA();
 
 	iniciar_RF();																//Inicar a placa nRF24L01p
 
@@ -751,6 +755,52 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
+volatile char usartBuffer[] = "Testando";
+
+void configUartAndDMA(void) {    
+    /* DMA1 clock enable */
+
+
+    //TODO: Configurar a USART5 para recepção de dados e teste do DMA.
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
+    DMA_InitTypeDef dmaInitialConfigStruct;
+
+    DMA_DeInit(DMA1_Stream0);
+
+    dmaInitialConfigStruct.DMA_Channel = 4;
+    dmaInitialConfigStruct.DMA_DIR = DMA_DIR_PeripheralToMemory; //Receive data;
+    dmaInitialConfigStruct.DMA_Memory0BaseAddr = (uint32_t)usartBuffer;
+    dmaInitialConfigStruct.DMA_BufferSize = (uint16_t)5;
+    dmaInitialConfigStruct.DMA_PeripheralBaseAddr = (uint32_t)&(UART5->DR);
+    dmaInitialConfigStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+    dmaInitialConfigStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+    dmaInitialConfigStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
+    dmaInitialConfigStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    dmaInitialConfigStruct.DMA_Mode = DMA_Mode_Normal;
+    dmaInitialConfigStruct.DMA_Priority = DMA_Priority_High;
+    dmaInitialConfigStruct.DMA_FIFOMode = DMA_FIFOMode_Enable;
+    dmaInitialConfigStruct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+    dmaInitialConfigStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+    dmaInitialConfigStruct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+
+    DMA_Init(DMA1_Stream0, &dmaInitialConfigStruct);
+    USART_DMACmd(UART5, USART_DMAReq_Rx, ENABLE);
+
+    DMA_ITConfig(DMA1_Stream0, DMA_IT_TC, ENABLE);
+
+    DMA_Cmd(DMA1_Stream0, ENABLE);
+
+    //Configuração da interrupção para utilização do DMA
+    NVIC_InitTypeDef nvicDMAInitStructure;
+
+    NVIC_SetPriorityGrouping(NVIC_PriorityGroup_2);
+
+    nvicDMAInitStructure.NVIC_IRQChannel = DMA1_Stream0_IRQn;
+    nvicDMAInitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    nvicDMAInitStructure.NVIC_IRQChannelSubPriority = 0;
+    nvicDMAInitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&nvicDMAInitStructure);
+}
  // void teste_filtro_de_kalman(void)
  // {
  // 	kalman_filter_state estado_teste = {  {0,0,0,0,0,0},

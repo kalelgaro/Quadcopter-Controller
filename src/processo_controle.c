@@ -4,7 +4,6 @@
 #define pitch 1
 #define roll 0
 
-
 #define acel_x 0
 #define acel_y 1
 #define acel_z 2
@@ -25,12 +24,9 @@
 
 
 /*-------Taxa de rotação constante--------*/
-
 #define CONSTANT_RATE 72 //72 graus por segundo (360/5)
 
-
 /*-------Inclinações máximas (Roll e Pitch)-------*/
-
 #define MAX_INCLINATION 20
 
 /*-------Contagem de ativação-------*/

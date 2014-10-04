@@ -110,7 +110,8 @@ SOURCES += \
     src/stm32f4_discovery_lis302dl.c \
     src/stm32f4xx_it.c \
     src/system_stm32f4xx.c \
-    src/tratamento_sinal.c
+    src/tratamento_sinal.c \
+    lib/startup_stm32f4xx.s
 
 HEADERS += \
     inc/ADXL345.h \

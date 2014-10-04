@@ -205,18 +205,21 @@ void SystemInit(void)
 {
   /* Reset the RCC clock configuration to the default reset state ------------*/
   /* Set HSION bit */
+  //RCC_CR_HSION
   RCC->CR |= (uint32_t)0x00000001;
 
   /* Reset CFGR register */
   RCC->CFGR = 0x00000000;
 
   /* Reset HSEON, CSSON and PLLON bits */
+  //(uint32_t)(~(RCC_CR_HSEON | RCC_CR_CSSON | RCC_CR_PLLON));
   RCC->CR &= (uint32_t)0xFEF6FFFF;
 
   /* Reset PLLCFGR register */
   RCC->PLLCFGR = 0x24003010;
 
   /* Reset HSEBYP bit */
+  //(uint32_t)(~RCC_CR_HSEBYP)
   RCC->CR &= (uint32_t)0xFFFBFFFF;
 
   /* Disable all interrupts */
