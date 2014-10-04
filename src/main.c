@@ -64,6 +64,9 @@ GPIO_InitTypeDef  GPIO_InitStructure;
 #define M2_f1 GPIO_Pin_1
 #define M2_f2 GPIO_Pin_3
 
+#define GYRO_INITIAL_OFFSET_MEAS 400
+#define ACCEL_INITIAL_OFFSET_MEAS 400
+
 /* Private variables ---------------------------------------------------------*/
 
 uint8_t buffer_dados_tx[33] = "";
@@ -120,7 +123,7 @@ union byte_converter
 
 /* Private function prototypes -----------------------------------------------*/
 
-static void configurar_acelerometro();
+static void iniciar_acelerometro();
 void iniciar_RF();
 void iniciar_giroscopio();
 void configurar_bussola();
@@ -178,7 +181,7 @@ int main(void)
 
 	//delay(100);																	//Delay de 100*100us = 10mS
 
-	configurar_acelerometro();													//Iniciar o acelerômetro.
+    iniciar_acelerometro();													//Iniciar o acelerômetro.
 
 	//delay(100);																	//Delay de 10mS
 	
@@ -704,9 +707,10 @@ void iniciar_giroscopio()
     float dadosGyro[3] = {0.0, 0.0, 0.0};
     float offsetGyro[3] = {0.0, 0.0, 0.0};
 
-    uint16_t counterOffsetGyro = 400;
+    uint16_t counterOffsetGyro = GYRO_INITIAL_OFFSET_MEAS;
 
     delay(1000);
+
     while(counterOffsetGyro--) {
         GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
 
@@ -715,12 +719,12 @@ void iniciar_giroscopio()
         offsetGyro[1] += dadosGyro[1];
         offsetGyro[2] += dadosGyro[2];
 
-        delay(100); //Delay de 50ms
+        delay(50); //Delay de 50ms
     }
 
-    offsetGyro[0] = offsetGyro[0]/(float)400;
-    offsetGyro[1] = offsetGyro[1]/(float)400;
-    offsetGyro[2] = offsetGyro[2]/(float)400;
+    offsetGyro[0] = offsetGyro[0]/(float)GYRO_INITIAL_OFFSET_MEAS;
+    offsetGyro[1] = offsetGyro[1]/(float)GYRO_INITIAL_OFFSET_MEAS;
+    offsetGyro[2] = offsetGyro[2]/(float)GYRO_INITIAL_OFFSET_MEAS;
 
     setar_offset_gyro(offsetGyro);
 }
@@ -728,7 +732,7 @@ void iniciar_giroscopio()
 //Rotina para inicialização do acelerômetro
 //Adicionalmente, obtêm o 'zero g level' do sensor (Offset).
 
-void configurar_acelerometro()
+void iniciar_acelerometro()
 {
   	uint16_t counter_offset_accel;
 
@@ -750,7 +754,7 @@ void configurar_acelerometro()
   	
   	//-------Obtenção do "Zero G level" , OFFSET da placa-------//
 
-  	counter_offset_accel = 400;
+    counter_offset_accel = ACCEL_INITIAL_OFFSET_MEAS;
 
   	delay(1000);
 
@@ -770,9 +774,9 @@ void configurar_acelerometro()
     	delay(50);      //0.05S
   	}	
 
-  	offset_accel[0] = (offset_accel[0]/(float)400);
-  	offset_accel[1] = (offset_accel[1]/(float)400);
-  	offset_accel[2] = (offset_accel[2]/(float)400);
+    offset_accel[0] = (offset_accel[0]/(float)ACCEL_INITIAL_OFFSET_MEAS);
+    offset_accel[1] = (offset_accel[1]/(float)ACCEL_INITIAL_OFFSET_MEAS);
+    offset_accel[2] = (offset_accel[2]/(float)ACCEL_INITIAL_OFFSET_MEAS);
 
   	setar_offset_acel(offset_accel);
 }
