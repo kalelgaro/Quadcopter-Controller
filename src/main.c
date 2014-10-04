@@ -158,7 +158,7 @@ int main(void)
 
 	SysTick_Config(168e6/10000);		 										//Frequência de 100uS no systick.
 
-	blinkDebugLeds();															//Pisca os leds
+    //blinkDebugLeds();															//Pisca os leds
 	
 	iniciar_ESC();																//Inicia PWM para controle dos ESCS.
 
@@ -679,28 +679,50 @@ void blinkDebugLeds() {
 
 void iniciar_giroscopio()
 { 
-  	L3G4200D_InitTypeDef Configuracao_gyro;
+    L3G4200D_InitTypeDef Configuracao_gyro;
 
-  	Configuracao_gyro.Axes_Enable = XYZ_EN;				//Ativação dos três eixos
-  	Configuracao_gyro.Power_Mode = NORMAL_MODE;			//Modo de operação normal
-  	Configuracao_gyro.Output_DataRate = DR1;    		//DR = 400 Hz
-  	Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 20 Hz
-  	Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
-  	Configuracao_gyro.BDU_Enabled = BDU;				//Block Data Update - Impede a reescrita dos registradores antes da leitura.
-  	Configuracao_gyro.Full_Scale = FS500DPS;			//Fundo de escala de 250 graus por segundo
+    Configuracao_gyro.Axes_Enable = XYZ_EN;				//Ativação dos três eixos
+    Configuracao_gyro.Power_Mode = NORMAL_MODE;			//Modo de operação normal
+    Configuracao_gyro.Output_DataRate = DR1;    		//DR = 400 Hz
+    Configuracao_gyro.bandwidth = 0;        			//Frequência de corte = 20 Hz
+    Configuracao_gyro.Self_Test = ST_NORMAL;			//Self-Teste desativado
+    Configuracao_gyro.BDU_Enabled = BDU;				//Block Data Update - Impede a reescrita dos registradores antes da leitura.
+    Configuracao_gyro.Full_Scale = FS500DPS;			//Fundo de escala de 500 graus por segundo
 
-  	L3G4200D_Init(I2C3, &Configuracao_gyro);
+    L3G4200D_Init(I2C3, &Configuracao_gyro);
 
-  	L3G4200D_HPFilterConfigTypeDef Configuracao_HPF_gyro;
+    L3G4200D_HPFilterConfigTypeDef Configuracao_HPF_gyro;
 
-  	Configuracao_HPF_gyro.HP_cutoff_freq = 0b1001;
-  	Configuracao_HPF_gyro.HP_mode = REFERENCE;
+    Configuracao_HPF_gyro.HP_cutoff_freq = 0b1001;
+    Configuracao_HPF_gyro.HP_mode = REFERENCE;
 
-  	Configuracao_HPF_gyro.Filter_Enable = 1;
-  	Configuracao_HPF_gyro.Output__Selection = Out_Sel1 | Out_Sel0;
+    Configuracao_HPF_gyro.Filter_Enable = 0;
+    Configuracao_HPF_gyro.Output__Selection = Out_Sel1 | Out_Sel0;
 
-  	L3G4200D_HP_Init(I2C3, &Configuracao_HPF_gyro);
-  	
+    L3G4200D_HP_Init(I2C3, &Configuracao_HPF_gyro);
+
+    float dadosGyro[3] = {0.0, 0.0, 0.0};
+    float offsetGyro[3] = {0.0, 0.0, 0.0};
+
+    uint16_t counterOffsetGyro = 400;
+
+    delay(1000);
+    while(counterOffsetGyro--) {
+        GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
+
+        L3G4200D_Read_Data(I2C3, dadosGyro);
+        offsetGyro[0] += dadosGyro[0];
+        offsetGyro[1] += dadosGyro[1];
+        offsetGyro[2] += dadosGyro[2];
+
+        delay(100); //Delay de 50ms
+    }
+
+    offsetGyro[0] = offsetGyro[0]/(float)400;
+    offsetGyro[1] = offsetGyro[1]/(float)400;
+    offsetGyro[2] = offsetGyro[2]/(float)400;
+
+    setar_offset_gyro(offsetGyro);
 }
 
 //Rotina para inicialização do acelerômetro

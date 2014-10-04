@@ -67,6 +67,7 @@ uint16_t rotacao_constante = 0;
 /*------------------------------------------------------*/
 
 float offset_accel[3];
+float offset_gyro[3];
 
 float saida_gyro_dps_pf[3] = {0,0,0};		//Buffer para valores do gyroscopio antes da filtragem.
 
@@ -304,6 +305,12 @@ void setar_offset_acel(float offset[3])
 	offset_accel[2] = offset[2];
 }
 
+void setar_offset_gyro(float offset[3]) {
+    offset_gyro[0] = offset[0];
+    offset_gyro[1] = offset[1];
+    offset_gyro[2] = offset[2];
+}
+
 /*----Procedimentos utilizados durante a rotina de controle-----*/
 //Aquisição dos sensores.
 
@@ -349,9 +356,9 @@ void processar_giroscopio()
 	L3G4200D_Read_Data(I2C3, saida_gyro_dps_pf);
 
 	//Conversao de unidades -> deg/s -> rad/s
-	saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0]+bx)*0.0174532925;
-	saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1]+by)*0.0174532925;
-	saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2]+bz)*0.0174532925;
+    saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0]-offset_gyro[0])*0.0174532925;
+    saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1]-offset_gyro[1])*0.0174532925;
+    saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2]-offset_gyro[2])*0.0174532925;
 
 	//saida_gyro_dps_pf[0] = media_rotativa(saida_gyro_dps_pf[0], buffer_media_gyroX, NRO_MEDIA_AQUISICAO);
 	//saida_gyro_dps_pf[1] = media_rotativa(saida_gyro_dps_pf[1], buffer_media_gyroY, NRO_MEDIA_AQUISICAO);
@@ -378,9 +385,9 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-	Acelerometro[0] = saida_gyro_dps_pf[0];
-	Acelerometro[1] = saida_gyro_dps_pf[1];
-	Acelerometro[2] = saida_gyro_dps_pf[2];
+    Giroscopio[0] = saida_gyro_dps_pf[0];
+    Giroscopio[1] = saida_gyro_dps_pf[1];
+    Giroscopio[2] = saida_gyro_dps_pf[2];
 
 	Acelerometro[0] = acelerometro_adxl345[acel_x];
 	Acelerometro[1] = acelerometro_adxl345[acel_y];
