@@ -41,8 +41,13 @@
 #include "processo_controle.h"
 #include "processamento_entrada.h"
 
+#include "misc.h"
+#include "stm32f4xx.h"
 #include "stm32f4xx_dma.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
 #include "stm32f4xx_usart.h"
+#include "system_stm32f4xx.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -159,13 +164,13 @@ int main(void)
 
 	delay_startup();															//Delay de inicialização dos ESCS.
 
-    configUartAndDMA();
-
 	iniciar_RF();																//Inicar a placa nRF24L01p
 
 	configurar_I2C();															//Configurar o periférico I²C da placa.
 
     iniciarMPU6050Imu();
+
+    configUartAndDMA();
 
 	configurar_bussola();														//Inicia o magnetômetro.
 	
@@ -486,25 +491,18 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = 57.3*telemetria_giroscopio[0];
+            conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = 57.3*telemetria_giroscopio[1];
+            conversor.flutuante_entrada = telemetria_giroscopio[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = 57.3*telemetria_giroscopio[2];
+            conversor.flutuante_entrada = telemetria_giroscopio[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
-			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
-
-
-			//conversor.flutuante_entrada = telemetria_giroscopio[1];
-			//copy_to(buffer_dados_tx, conversor.bytes, 29, 4);
-			
 			escrita_dados(SPI2, buffer_dados_tx, 32);
 			
 			//Retorna ao modo de recepção para habilitar a chegada de novos pacotes.
@@ -625,8 +623,8 @@ void iniciarMPU6050Imu() {
 
     delay(1000);
 
-    uint16_t counterOffsetAquisition = 1000;
-    while(counterOffsetAquisition--) {
+    uint16_t counterOffsetAquisition;
+    for(counterOffsetAquisition = 1000; counterOffsetAquisition > 0; counterOffsetAquisition--) {
         MPU6050_readData(I2C3, temp_accel, temp_gyro);
         GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
 
@@ -755,51 +753,88 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
-volatile char usartBuffer[] = "Testando";
+volatile char usartBuffer[100] = {};
 
-void configUartAndDMA(void) {    
-    /* DMA1 clock enable */
-
-
-    //TODO: Configurar a USART5 para recepção de dados e teste do DMA.
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
-    DMA_InitTypeDef dmaInitialConfigStruct;
-
-    DMA_DeInit(DMA1_Stream0);
-
-    dmaInitialConfigStruct.DMA_Channel = 4;
-    dmaInitialConfigStruct.DMA_DIR = DMA_DIR_PeripheralToMemory; //Receive data;
-    dmaInitialConfigStruct.DMA_Memory0BaseAddr = (uint32_t)usartBuffer;
-    dmaInitialConfigStruct.DMA_BufferSize = (uint16_t)5;
-    dmaInitialConfigStruct.DMA_PeripheralBaseAddr = (uint32_t)&(UART5->DR);
-    dmaInitialConfigStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    dmaInitialConfigStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    dmaInitialConfigStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-    dmaInitialConfigStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-    dmaInitialConfigStruct.DMA_Mode = DMA_Mode_Normal;
-    dmaInitialConfigStruct.DMA_Priority = DMA_Priority_High;
-    dmaInitialConfigStruct.DMA_FIFOMode = DMA_FIFOMode_Enable;
-    dmaInitialConfigStruct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
-    dmaInitialConfigStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-    dmaInitialConfigStruct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-
-    DMA_Init(DMA1_Stream0, &dmaInitialConfigStruct);
-    USART_DMACmd(UART5, USART_DMAReq_Rx, ENABLE);
-
-    DMA_ITConfig(DMA1_Stream0, DMA_IT_TC, ENABLE);
-
-    DMA_Cmd(DMA1_Stream0, ENABLE);
-
+void configUartAndDMA(void) {
     //Configuração da interrupção para utilização do DMA
     NVIC_InitTypeDef nvicDMAInitStructure;
 
-    NVIC_SetPriorityGrouping(NVIC_PriorityGroup_2);
+    //TODO: Checar o que significam os grupos de prioridade.
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
     nvicDMAInitStructure.NVIC_IRQChannel = DMA1_Stream0_IRQn;
-    nvicDMAInitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-    nvicDMAInitStructure.NVIC_IRQChannelSubPriority = 0;
+    nvicDMAInitStructure.NVIC_IRQChannelPreemptionPriority = 2;
+    nvicDMAInitStructure.NVIC_IRQChannelSubPriority = 2;
     nvicDMAInitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&nvicDMAInitStructure);
+
+    //UART5_TX -> PC12
+    //UART5_RX -> PD2
+    GPIO_InitTypeDef uartGpioInitialConfigStruct;
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+
+    uartGpioInitialConfigStruct.GPIO_Pin = GPIO_Pin_12;
+    uartGpioInitialConfigStruct.GPIO_Mode = GPIO_Mode_AF;   //Modo de função alternativa.
+    uartGpioInitialConfigStruct.GPIO_OType = GPIO_OType_PP; //PushPull ativado
+    uartGpioInitialConfigStruct.GPIO_PuPd = GPIO_PuPd_NOPULL; //Sem pull-up ou pull-down
+    uartGpioInitialConfigStruct.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOC, &uartGpioInitialConfigStruct);
+
+    uartGpioInitialConfigStruct.GPIO_Pin = GPIO_Pin_2;
+    uartGpioInitialConfigStruct.GPIO_PuPd = GPIO_PuPd_UP; //Sem pull-up ou pull-down
+    GPIO_Init(GPIOD, &uartGpioInitialConfigStruct);
+
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_UART5);   //Liga o pino ao periférico (UART5) para ativar sua função alternativa. (TX)
+    GPIO_PinAFConfig(GPIOD, GPIO_PinSource2, GPIO_AF_UART5);   //Liga o pino ao periférico (UART5) para ativar sua função alternativa. (RX)
+
+    //Ativa o lcock do periférico do UART5
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART5, ENABLE);
+    USART_InitTypeDef uartInitialConfigStruct;
+
+    //Reiniciar os valores dos registradores do UART5
+    USART_DeInit(UART5);
+
+    uartInitialConfigStruct.USART_BaudRate = 38400;
+    uartInitialConfigStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    uartInitialConfigStruct.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+    uartInitialConfigStruct.USART_Parity = USART_Parity_No;
+    uartInitialConfigStruct.USART_StopBits = USART_StopBits_1;
+    uartInitialConfigStruct.USART_WordLength = USART_WordLength_8b;
+    USART_Init(UART5, &uartInitialConfigStruct);
+
+    USART_Cmd(UART5, ENABLE);
+
+    //Ativa o clock do periférico de DMA1
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
+    DMA_InitTypeDef dmaInitialConfigStruct;
+
+    //Reiniciar os valores dos registradores do DMA1 para os valores padrões.
+    DMA_DeInit(DMA1_Stream0);
+    while(DMA_GetCmdStatus(DMA1_Stream0) == ENABLE);
+
+    dmaInitialConfigStruct.DMA_Channel = DMA_Channel_4;
+    dmaInitialConfigStruct.DMA_DIR = DMA_DIR_PeripheralToMemory; //Receive data;
+    dmaInitialConfigStruct.DMA_Memory0BaseAddr = (uint32_t)usartBuffer;
+    dmaInitialConfigStruct.DMA_BufferSize = (uint16_t)8;
+    dmaInitialConfigStruct.DMA_PeripheralBaseAddr = (uint32_t)&(UART5->DR);
+    dmaInitialConfigStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+    dmaInitialConfigStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+    dmaInitialConfigStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+    dmaInitialConfigStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    dmaInitialConfigStruct.DMA_Mode = DMA_Mode_Circular;
+    dmaInitialConfigStruct.DMA_Priority = DMA_Priority_High;
+    dmaInitialConfigStruct.DMA_FIFOMode = DMA_FIFOMode_Disable;
+    dmaInitialConfigStruct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+    dmaInitialConfigStruct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+    dmaInitialConfigStruct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+    DMA_Init(DMA1_Stream0, &dmaInitialConfigStruct);
+
+    USART_DMACmd(UART5, USART_DMAReq_Rx, ENABLE);
+
+    DMA_ITConfig(DMA1_Stream0, DMA_IT_TC | DMA_IT_HT, ENABLE);
+
+    DMA_Cmd(DMA1_Stream0, ENABLE);
 }
  // void teste_filtro_de_kalman(void)
  // {

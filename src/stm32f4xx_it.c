@@ -1,6 +1,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4_discovery.h"
 #include "stm32f4xx_dma.h"
+#include "stm32f4xx_gpio.h"
 
 #include "array_functions.h"
 #include "funcoes_spi.h"
@@ -258,30 +259,27 @@ void TIM7_IRQHandler(void)
 //Rotina de interrupção do DMA1 Stream 0
 void DMA1_Stream0_IRQHandler(void) {
 
-    if (DMA_GetITStatus(DMA1_Stream0, DMA_IT_TCIF0))
-      {
-        /* Clear DMA Stream Transfer Complete interrupt pending bit */
+    if (DMA_GetITStatus(DMA1_Stream0, DMA_IT_TCIF0) == SET)
+    {
         DMA_ClearITPendingBit(DMA1_Stream0, DMA_IT_TCIF0);
 
-        USART_SendData(UART5, 'C');
+        int counter;
+        for(counter = 10; counter >= 0; counter --) {
+            GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
+            uint32_t i = 1000000;
+            while(i--);
+        }
+    }else if (DMA_GetITStatus(DMA1_Stream0, DMA_IT_HTIF0) == SET)
+    {
+        DMA_ClearITPendingBit(DMA1_Stream0, DMA_IT_HTIF0);
 
-        GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
-        delay(2500);
-        GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
-        delay(2500);
-        GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
-        delay(2500);
-        GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
-        delay(2500);
-        GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
-        delay(2500);
-        GPIO_ToggleBits(GPIOD, GPIO_Pin_14);
-        delay(2500);
-        GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
-        delay(2500);
-        GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
-        delay(2500);
-      }
+        int counter;
+        for(counter = 10; counter >= 0; counter --) {
+            GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
+            uint32_t i = 1000000;
+            while(i--);
+        }
+    }
 }
 
 /**
