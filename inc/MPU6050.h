@@ -567,6 +567,9 @@
 		uint8_t digitalLowPassConfig;
 	} MPU6050_InitStruct;
 
+    uint16_t accelFullScale;
+    uint16_t gyroFullScale;
+
     void MPU6050_Init(I2C_TypeDef *I2Cx, MPU6050_InitStruct *initialConfig);
     float MPU6050_readData(I2C_TypeDef* I2Cx, float accelBuffer[3], float gyroBuffer[3]);
 

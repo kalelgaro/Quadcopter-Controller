@@ -66,6 +66,8 @@ GPIO_InitTypeDef  GPIO_InitStructure;
 #define M2_f1 GPIO_Pin_1
 #define M2_f2 GPIO_Pin_3
 
+#define DMA_BUFFER_SIZE 50
+
 /* Private variables ---------------------------------------------------------*/
 
 uint8_t buffer_dados_tx[33] = "";
@@ -110,15 +112,6 @@ union byte_converter
   uint8_t bytes[4];
 }conversor;
 
-//Coeficientes filtros FIR
-//Frequência de amostragem - 800 Hz
-//Final da banda de passagem - 5Hz
-//Atenuação máxima na banda de passagem de 5dB
-//Banda de rejeição - 15Hz - Atenuação no fim da banda de rejeição - 40dB
-//Ordem - 91
-
-//float coeficientes_FIR[91] = {0.0056999,0.001782,0.0020507,0.0023411,0.0026491,0.00298,0.003328,0.0036964,0.0040826,0.0044878,0.0049083,0.0053472,0.0058007,0.0062714,0.006754,0.0072498,0.0077544,0.0082689,0.0087882,0.0093145,0.0098432,0.010377,0.01091,0.01144,0.011963,0.01248,0.012989,0.013495,0.013979,0.014446,0.014909,0.01534,0.015758,0.016151,0.016518,0.016862,0.017177,0.017463,0.017718,0.017943,0.018134,0.018292,0.018415,0.018504,0.018558,0.018577,0.018558,0.018504,0.018415,0.018292,0.018134,0.017943,0.017718,0.017463,0.017177,0.016862,0.016518,0.016151,0.015758,0.01534,0.014909,0.014446,0.013979,0.013495,0.012989,0.01248,0.011963,0.01144,0.01091,0.010377,0.0098432,0.0093145,0.0087882,0.0082689,0.0077544,0.0072498,0.006754,0.0062714,0.0058007,0.0053472,0.0049083,0.0044878,0.0040826,0.0036964,0.003328,0.00298,0.0026491,0.0023411,0.0020507,0.001782,0.0056999};
-
 /* Private function prototypes -----------------------------------------------*/
 
 void iniciar_RF();
@@ -156,7 +149,7 @@ int main(void)
 
 	SysTick_Config(168e6/10000);		 										//Frequência de 100uS no systick.
 
-    //blinkDebugLeds();															//Pisca os leds
+    blinkDebugLeds();															//Pisca os leds
 	
 	iniciar_ESC();																//Inicia PWM para controle dos ESCS.
 
@@ -167,8 +160,8 @@ int main(void)
 	iniciar_RF();																//Inicar a placa nRF24L01p
 
 	configurar_I2C();															//Configurar o periférico I²C da placa.
-
-    iniciarMPU6050Imu();
+    //FIXME: Religar o config da unidade inercial.
+    //iniciarMPU6050Imu();
 
     configUartAndDMA();
 
@@ -176,7 +169,7 @@ int main(void)
 	
 	//iniciar_timer_controle();													//Timer responsável por checar se houve recepção de controel nos últimos 2 segundos.
 
-	escrita_dados(SPI2, (uint8_t *)"Iniciado.", 32);							//Mensagem que informa que o procimento de inicialização foi concluído.
+    escrita_dados(SPI2, (uint8_t *)"Iniciado.", 32);							//Mensagem que informa que o procimento de inicialização foi concluído.*
 
     modo_rx(SPI2);																//Habilita recepção de novas mensagens.
 
@@ -517,7 +510,6 @@ int main(void)
 //Rotina para inicialização do link RF com os parâmetros utilizados neste
 void iniciar_RF() 
 {
-
 	uint8_t buffer_conf_rf[11] = "";
 
 	iniciar_spi2();				//Inicia o periférico de comunicação serial.
@@ -695,8 +687,6 @@ void iniciar_timer_processamento()
   	TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
   	/* TIM6 enable counter */
 	TIM_Cmd(TIM6, ENABLE);
-
-  	//STM_EVAL_LEDInit(LED4);
 }
 
 //O timer abaixo será utilizado para checagem se há houve recepção de dados num intervalo pré-definido
@@ -715,7 +705,6 @@ void iniciar_timer_controle()
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;								
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;						//Apena conta de maneira ascendente -> Overflow ao atingir o fim do contador.
   	TIM_TimeBaseInit(TIM7, &TIM_TimeBaseStructure);
-
 
   	NVIC_InitTypeDef NVIC_InitStructure;
   	/* Enable the TIM7 gloabal Interrupt */
@@ -753,7 +742,7 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
-volatile char usartBuffer[100] = {};
+volatile char usartBuffer[DMA_BUFFER_SIZE] = {};
 
 void configUartAndDMA(void) {
     //Configuração da interrupção para utilização do DMA
@@ -788,7 +777,7 @@ void configUartAndDMA(void) {
     GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_UART5);   //Liga o pino ao periférico (UART5) para ativar sua função alternativa. (TX)
     GPIO_PinAFConfig(GPIOD, GPIO_PinSource2, GPIO_AF_UART5);   //Liga o pino ao periférico (UART5) para ativar sua função alternativa. (RX)
 
-    //Ativa o lcock do periférico do UART5
+    //Ativa o clock do periférico do UART5
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART5, ENABLE);
     USART_InitTypeDef uartInitialConfigStruct;
 
@@ -816,7 +805,7 @@ void configUartAndDMA(void) {
     dmaInitialConfigStruct.DMA_Channel = DMA_Channel_4;
     dmaInitialConfigStruct.DMA_DIR = DMA_DIR_PeripheralToMemory; //Receive data;
     dmaInitialConfigStruct.DMA_Memory0BaseAddr = (uint32_t)usartBuffer;
-    dmaInitialConfigStruct.DMA_BufferSize = (uint16_t)8;
+    dmaInitialConfigStruct.DMA_BufferSize = (uint16_t)DMA_BUFFER_SIZE;
     dmaInitialConfigStruct.DMA_PeripheralBaseAddr = (uint32_t)&(UART5->DR);
     dmaInitialConfigStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
     dmaInitialConfigStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;

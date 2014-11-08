@@ -111,6 +111,7 @@ SOURCES += \
     src/stm32f4xx_it.c \
     src/system_stm32f4xx.c \
     src/tratamento_sinal.c \
+    src/UBLOX.c
     lib/startup_stm32f4xx.s
 
 HEADERS += \
@@ -171,6 +172,7 @@ HEADERS += \
     lib/inc/pdm_filter.h \
     lib/inc/stm32f4_discovery.h \
     lib/inc/stm32f4xx.h \
+    inc/UBLOX.h
     lib/inc/system_stm32f4xx.h
 
 OTHER_FILES += \

@@ -2,12 +2,14 @@
 #include "stm32f4_discovery.h"
 #include "stm32f4xx_dma.h"
 #include "stm32f4xx_gpio.h"
+#include "stm32f4xx_usart.h"
 
 #include "array_functions.h"
 #include "funcoes_spi.h"
 #include "string.h"
 #include "processo_controle.h"
 #include "stm32f4xx_it.h"
+#include "UBLOX.h"
 #include "tratamento_sinal.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -17,6 +19,8 @@
 /* - Defines para facilitar indexação dos vetores de dados - */
 
 #define medias_controle 2
+
+#define DMA_BUFFER_SIZE 50
 
 /* Private variables ---------------------------------------------------------*/
 
@@ -37,6 +41,8 @@ float buffer_ch1[medias_controle];
 float buffer_ch2[medias_controle];
 float buffer_ch3[medias_controle];
 float buffer_ch4[medias_controle];
+
+extern volatile char usartBuffer[];
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -256,29 +262,26 @@ void TIM7_IRQHandler(void)
     }
 }
 
-//Rotina de interrupção do DMA1 Stream 0
+//Rotina de interrupção do DMA1 Stream 0 -> Utilizado no GPS.
 void DMA1_Stream0_IRQHandler(void) {
 
     if (DMA_GetITStatus(DMA1_Stream0, DMA_IT_TCIF0) == SET)
     {
         DMA_ClearITPendingBit(DMA1_Stream0, DMA_IT_TCIF0);
 
-        int counter;
-        for(counter = 10; counter >= 0; counter --) {
-            GPIO_ToggleBits(GPIOD, GPIO_Pin_13);
-            uint32_t i = 1000000;
-            while(i--);
-        }
+        //Adiciona as leituras para o vetor.
+        appendToReceivedDataBuffer((uint8_t *)usartBuffer,
+                                           (uint16_t)DMA_BUFFER_SIZE/2,
+                                           (uint16_t)DMA_BUFFER_SIZE/2);
+
     }else if (DMA_GetITStatus(DMA1_Stream0, DMA_IT_HTIF0) == SET)
     {
         DMA_ClearITPendingBit(DMA1_Stream0, DMA_IT_HTIF0);
 
-        int counter;
-        for(counter = 10; counter >= 0; counter --) {
-            GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
-            uint32_t i = 1000000;
-            while(i--);
-        }
+        //Adiciona as leituras para o vetor.
+        appendToReceivedDataBuffer((uint8_t *)usartBuffer,
+                                   0,
+                                   (uint16_t)DMA_BUFFER_SIZE/2);
     }
 }
 

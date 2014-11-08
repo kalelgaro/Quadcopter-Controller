@@ -3,7 +3,7 @@
 #include "array_functions.h"
 //#include <math.h>
 
-void inverter_vetor(uint8_t *buffer, uint8_t tamanho) //Inverte a posição dos elementos num vetor
+void inverter_vetor(uint8_t *buffer, uint8_t tamanho) //Inverte a posiï¿½ï¿½o dos elementos num vetor
 {
     uint8_t counter = 0;
     uint8_t temp = 0;
@@ -53,7 +53,7 @@ void limpar_buffer(uint8_t *inicial, uint8_t tamanho)
 	return;
 }
 
-uint8_t numToASCII(int16_t numero,uint8_t *buffer) //Converte um numero para caracteres ASCII na mesma ordem com que este está escrito.
+uint8_t numToASCII(int16_t numero,uint8_t *buffer) //Converte um numero para caracteres ASCII na mesma ordem com que este estï¿½ escrito.
 {
     uint16_t counter = 0;
     uint8_t flag_negativo = 0;
@@ -129,7 +129,7 @@ void printfint(double numerof,uint8_t *destino)
     
     copy_to(destino,buffer,index,tamanho);
     
-    index+=tamanho;                                 //Posição após a cópia.
+    index+=tamanho;                                 //Posiï¿½ï¿½o apï¿½s a cï¿½pia.
     destino[index] = CR;
     index++;
     destino[index] = LF;

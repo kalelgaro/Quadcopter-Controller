@@ -4,6 +4,7 @@ SRCS =  main.c 				stm32f4xx_it.c 		system_stm32f4xx.c 	aquisicao_IMU.c
 SRCS += controle_motores.c 	L3G4200D.c 			ADXL345.c 			nRF24l01.c
 SRCS += funcoes_spi.c 		array_functions.c 	tratamento_sinal.c 	processamento_entrada.c
 SRCS += kalman_filter.c 	processo_controle.c HMC5883L.c 			MPU6050.c	
+SRCS += UBLOX.c
 
 # all the files will be generated with this name (main.elf, main.bin, main.hex, etc)
 
@@ -77,4 +78,3 @@ resetw:
 
 burnw:
 	$(STLINK_WIN)/ST-LINK_CLI.exe -P main.hex 0x08000000 -Rst -Run
-	

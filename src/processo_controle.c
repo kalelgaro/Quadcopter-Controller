@@ -125,6 +125,15 @@ float coeficientes_FIR[ordem_filtro] = {-2.9594e-06,-2.6145e-06,-3.7377e-06,-5.1
 										-6.904e-06,-5.1529e-06,-3.7377e-06,-2.6145e-06,-2.9594e-06};
 */
 
+//Coeficientes filtros FIR
+//Frequência de amostragem - 800 Hz
+//Final da banda de passagem - 5Hz
+//Atenuação máxima na banda de passagem de 5dB
+//Banda de rejeição - 15Hz - Atenuação no fim da banda de rejeição - 40dB
+//Ordem - 91
+
+//float coeficientes_FIR[91] = {0.0056999,0.001782,0.0020507,0.0023411,0.0026491,0.00298,0.003328,0.0036964,0.0040826,0.0044878,0.0049083,0.0053472,0.0058007,0.0062714,0.006754,0.0072498,0.0077544,0.0082689,0.0087882,0.0093145,0.0098432,0.010377,0.01091,0.01144,0.011963,0.01248,0.012989,0.013495,0.013979,0.014446,0.014909,0.01534,0.015758,0.016151,0.016518,0.016862,0.017177,0.017463,0.017718,0.017943,0.018134,0.018292,0.018415,0.018504,0.018558,0.018577,0.018558,0.018504,0.018415,0.018292,0.018134,0.017943,0.017718,0.017463,0.017177,0.016862,0.016518,0.016151,0.015758,0.01534,0.014909,0.014446,0.013979,0.013495,0.012989,0.01248,0.011963,0.01144,0.01091,0.010377,0.0098432,0.0093145,0.0087882,0.0082689,0.0077544,0.0072498,0.006754,0.0062714,0.0058007,0.0053472,0.0049083,0.0044878,0.0040826,0.0036964,0.003328,0.00298,0.0026491,0.0023411,0.0020507,0.001782,0.0056999};
+
 //float buffer_filtro_magX[ordem_filtro];
 //float buffer_filtro_magY[ordem_filtro];
 //float buffer_filtro_magZ[ordem_filtro];
@@ -435,9 +444,10 @@ void processo_controle()
 	static uint8_t flag_inicializacao = 0;
 
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
-    processar_mpu6050();
-
-    processar_magnetometro();
+    //FIXME: Religar aquisição da unidade inercial.
+    //processar_mpu6050();
+    //FIXME: Religar aquisição do magnetômetro.
+    //processar_magnetometro();
 
     contador_aquisicao++;
 

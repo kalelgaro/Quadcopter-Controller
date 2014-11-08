@@ -2,7 +2,7 @@
 #define _ARRAY_FUNCTIONS_H_
 	
 #define CR 13
-	#define LF 10
+#define LF 10
 
 		void limpar_buffer(uint8_t *,uint8_t);
 		void inverter_vetor(uint8_t *,uint8_t);

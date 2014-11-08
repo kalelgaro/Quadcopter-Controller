@@ -43,7 +43,6 @@ void configurar_I2C(void)
 	I2C_Init(I2C3, &I2C_InitStruct);										// init I2C1
 	// enable I2C1
 	I2C_Cmd(I2C3, ENABLE);
-
 }
 
 

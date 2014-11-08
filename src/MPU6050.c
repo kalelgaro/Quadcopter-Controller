@@ -1,8 +1,5 @@
 #include "MPU6050.h"
 
-uint16_t accelFullScale;
-uint16_t gyroFullScale;
-
 void MPU6050_Init(I2C_TypeDef *I2Cx, MPU6050_InitStruct *initialConfig) {
 	uint8_t i2cDataBuffer = 0x00;
 
