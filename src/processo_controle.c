@@ -24,14 +24,14 @@
 #define ordem_filtro 203
 
 //Nro de aquisições antes de realizar o processamento no filtro de Kalman.
-#define NRO_AQUISICOES_PRE_KF 1
+#define NRO_AQUISICOES_PRE_KF 5
 
 //Nro de aquisições utilizadas para média rotativa.
-#define NRO_MEDIA_AQUISICAO 1
+#define NRO_MEDIA_AQUISICAO 5
 
 /*-------Tempo de amostragem------------*/
 
-#define dt 0.0025
+#define dt 0.0025*NRO_AQUISICOES_PRE_KF
 
 
 /*-------Taxa de rotação constante--------*/
@@ -147,7 +147,6 @@ float coeficientes_FIR[ordem_filtro] = {-2.9594e-06,-2.6145e-06,-3.7377e-06,-5.1
 // float buffer_filtro_acelY[ordem_filtro];
 // float buffer_filtro_acelZ[ordem_filtro];
 
-/*
 float buffer_media_acelX[NRO_MEDIA_AQUISICAO];
 float buffer_media_acelY[NRO_MEDIA_AQUISICAO];
 float buffer_media_acelZ[NRO_MEDIA_AQUISICAO];
@@ -155,7 +154,6 @@ float buffer_media_acelZ[NRO_MEDIA_AQUISICAO];
 float buffer_media_gyroX[NRO_MEDIA_AQUISICAO];
 float buffer_media_gyroY[NRO_MEDIA_AQUISICAO];
 float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
-*/
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
@@ -324,9 +322,9 @@ void processar_acelerometro()
 	acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
 	acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
 
-	//acelerometro_adxl345[acel_x] = media_rotativa(acelerometro_adxl345[acel_x], buffer_media_acelX, NRO_MEDIA_AQUISICAO);
-	//acelerometro_adxl345[acel_y] = media_rotativa(acelerometro_adxl345[acel_y], buffer_media_acelY, NRO_MEDIA_AQUISICAO);
-	//acelerometro_adxl345[acel_z] = media_rotativa(acelerometro_adxl345[acel_z], buffer_media_acelZ, NRO_MEDIA_AQUISICAO);
+    acelerometro_adxl345[acel_x] = media_rotativa(acelerometro_adxl345[acel_x], buffer_media_acelX, NRO_MEDIA_AQUISICAO);
+    acelerometro_adxl345[acel_y] = media_rotativa(acelerometro_adxl345[acel_y], buffer_media_acelY, NRO_MEDIA_AQUISICAO);
+    acelerometro_adxl345[acel_z] = media_rotativa(acelerometro_adxl345[acel_z], buffer_media_acelZ, NRO_MEDIA_AQUISICAO);
 
 
 }
@@ -360,9 +358,9 @@ void processar_giroscopio()
     saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1]-offset_gyro[1])*0.0174532925;
     saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2]-offset_gyro[2])*0.0174532925;
 
-	//saida_gyro_dps_pf[0] = media_rotativa(saida_gyro_dps_pf[0], buffer_media_gyroX, NRO_MEDIA_AQUISICAO);
-	//saida_gyro_dps_pf[1] = media_rotativa(saida_gyro_dps_pf[1], buffer_media_gyroY, NRO_MEDIA_AQUISICAO);
-	//saida_gyro_dps_pf[2] = media_rotativa(saida_gyro_dps_pf[2], buffer_media_gyroZ, NRO_MEDIA_AQUISICAO);
+    saida_gyro_dps_pf[0] = media_rotativa(saida_gyro_dps_pf[0], buffer_media_gyroX, NRO_MEDIA_AQUISICAO);
+    saida_gyro_dps_pf[1] = media_rotativa(saida_gyro_dps_pf[1], buffer_media_gyroY, NRO_MEDIA_AQUISICAO);
+    saida_gyro_dps_pf[2] = media_rotativa(saida_gyro_dps_pf[2], buffer_media_gyroZ, NRO_MEDIA_AQUISICAO);
 	
 }
 
@@ -393,23 +391,19 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 	Acelerometro[1] = acelerometro_adxl345[acel_y];
 	Acelerometro[2] = acelerometro_adxl345[acel_z];
 
-/*
+    Magnetometro[0] = magnetometro[0];
+    Magnetometro[1] = magnetometro[2];
+    Magnetometro[2] = magnetometro[1];
+
+    /*
 	Giroscopio[0] = magnetometro[0]-EstadoFiltroKalman.ultimo_estado[3];
 	Giroscopio[1] = magnetometro[1]-EstadoFiltroKalman.ultimo_estado[4];
 	Giroscopio[2] = magnetometro[2]-EstadoFiltroKalman.ultimo_estado[5];
-*/
 
-/*
-	Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3]*57.295787785569368296750927762044;
+    Giroscopio[0] = EstadoFiltroKalman.ultimo_estado[3]*57.295787785569368296750927762044;
 	Giroscopio[1] = EstadoFiltroKalman.ultimo_estado[4]*57.295787785569368296750927762044;
 	Giroscopio[2] = EstadoFiltroKalman.ultimo_estado[5]*57.295787785569368296750927762044;
 */	
-
-/*
-	Magnetometro[0] = magnetometro[0];
-	Magnetometro[1] = magnetometro[2];
-	Magnetometro[2] = magnetometro[1];
-*/
 }
 
 

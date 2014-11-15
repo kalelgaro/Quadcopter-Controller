@@ -149,7 +149,7 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(60, 15, 15, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(100, 0.5, 15, 50, 1, 15);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
 	setar_parametros_Kalman(1e-6, 5e-10, 0.5, 1.5, 1e-6);						//Ajusta as covariâncias do filtro de Kalman.
@@ -558,19 +558,19 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[0];
+            conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[1];
+            conversor.flutuante_entrada = telemetria_magnetometro[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-			conversor.flutuante_entrada = telemetria_giroscopio[2];
+            conversor.flutuante_entrada = telemetria_magnetometro[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
+            conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
