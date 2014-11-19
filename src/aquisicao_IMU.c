@@ -66,11 +66,11 @@ void I2C_r_start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction)
 	// Send I2C1 START condition
 	I2C_GenerateSTART(I2Cx, ENABLE);
 
-	// wait for I2C1 EV5 --> Slave has acknowledged start condition
-	while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_MODE_SELECT));
+    // wait for I2C1 EV5 --> Slave has acknowledged start condition
+    while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_MODE_SELECT));
 
-	// Send slave Address for write
-	I2C_Send7bitAddress(I2Cx, address, direction);
+    // Send slave Address for write
+    I2C_Send7bitAddress(I2Cx, address, direction);
 
 	/* wait for I2C1 EV6, check if
 	 * either Slave has acknowledged Master transmitter or
@@ -91,14 +91,14 @@ void I2C_r_start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction)
 
 void I2C_start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction)
 {
-	// wait until I2C1 is not busy anymore
-	while(I2C_GetFlagStatus(I2Cx, I2C_FLAG_BUSY));
+    // wait until I2C1 is not busy anymore
+    while(I2C_GetFlagStatus(I2Cx, I2C_FLAG_BUSY));
 
 	// Send I2C1 START condition
 	I2C_GenerateSTART(I2Cx, ENABLE);
 
-	// wait for I2C1 EV5 --> Slave has acknowledged start condition
-	while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_MODE_SELECT));
+    // wait for I2C1 EV5 --> Slave has acknowledged start condition
+    while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_MODE_SELECT));
 
 	// Send slave Address for write
 	I2C_Send7bitAddress(I2Cx, address, direction);
@@ -108,8 +108,6 @@ void I2C_start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction)
 	 * Master receiver mode, depending on the transmission
 	 * direction
 	 */
-
-
 
 	if(direction == I2C_Direction_Transmitter)
 	{

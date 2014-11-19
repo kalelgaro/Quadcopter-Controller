@@ -2,6 +2,9 @@
 
 float ganho;
 
+GPIO_TypeDef* dataRdyIntPort;
+uint16_t dataRdyIntPin;
+
 void HMC5883L_Init(I2C_TypeDef *I2Cx, HMC5883L_InitTypeDef *Configuracoes)
 {
 	uint8_t data_buffer = 0x00;
@@ -32,8 +35,6 @@ void HMC5883L_Init(I2C_TypeDef *I2Cx, HMC5883L_InitTypeDef *Configuracoes)
 			ganho = 2.56e-3;
 		break;
 	}
-
-
 }
 
 float  HMC5883L_Read_Data(I2C_TypeDef *I2Cx, float dados[])
@@ -58,4 +59,26 @@ float  HMC5883L_Read_Data(I2C_TypeDef *I2Cx, float dados[])
 	dados[1] = (buffer_temp)*ganho;
 
 	return 0;
+}
+
+uint8_t HMC5883L_checkDataReadyIntPin() {
+    return GPIO_ReadInputDataBit(dataRdyIntPort, dataRdyIntPin);
+}
+
+void HMC5883L_configIntPin(uint32_t RCC_AHB1Periph, GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) {
+    dataRdyIntPort = GPIOx;
+    dataRdyIntPin = GPIO_Pin;
+
+    //Configuração do PINO para checar se há dados disponíveis.
+    //PINO PD0
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph, ENABLE);
+
+    GPIO_InitTypeDef  GPIO_InitStructure;
+
+    GPIO_InitStructure.GPIO_Pin = dataRdyIntPin;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_Init(dataRdyIntPort, &GPIO_InitStructure);
 }

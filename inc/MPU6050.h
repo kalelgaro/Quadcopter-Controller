@@ -2,7 +2,10 @@
 #define MPU6050_H_
 
 #include "stm32f4xx.h"
+#include "stm32f4xx_rcc.h"
 #include "aquisicao_IMU.h"
+#include "stm32f4xx_gpio.h"
+
     #define MPU6050_ADDRESS 0xD0
 
 	#define SELF_TEST_X		0x0D
@@ -565,10 +568,14 @@
 		uint8_t fifoEnabled;
 		uint8_t sampleRateDivider;
 		uint8_t digitalLowPassConfig;
+        uint8_t interruptsConfig;
+        uint8_t intPinConfig;
 	} MPU6050_InitStruct;
 
     void MPU6050_Init(I2C_TypeDef *I2Cx, MPU6050_InitStruct *initialConfig);
     float MPU6050_readData(I2C_TypeDef* I2Cx, float accelBuffer[3], float gyroBuffer[3]);
+    void MPU6050_configIntPin(uint32_t RCC_AHB1Periph, GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+    uint8_t MPU6050_checkDataReadyIntPin();
 
     uint8_t MPU6050_checkConectivity(I2C_TypeDef *I2Cx);
 #endif /* MPU6050_H_ */

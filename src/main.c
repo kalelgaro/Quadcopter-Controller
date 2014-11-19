@@ -40,6 +40,8 @@
 #include "processo_controle.h"
 #include "processamento_entrada.h"
 
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -138,7 +140,7 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-	setar_parametros_PID(40, 15, 15, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(80, 0, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
 	setar_parametros_Kalman(5e-9, 5e-10, 0.1, 0.75, 1e-6);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
@@ -149,13 +151,13 @@ int main(void)
 
 	SysTick_Config(168e6/10000);		 										//Frequência de 100uS no systick.
 
+    iniciar_ESC();																//Inicia PWM para controle dos ESCS.
+
+    ajustar_velocidade(15,0);													//15 -> 0b1111 -> todos os motores -> Velocidade 0 -> Motores parados.
+
     //blinkDebugLeds();															//Pisca os leds
 	
-	iniciar_ESC();																//Inicia PWM para controle dos ESCS.
-
-	ajustar_velocidade(15,0);													//15 -> 0b1111 -> todos os motores -> Velocidade 0 -> Motores parados.
-
-	delay_startup();															//Delay de inicialização dos ESCS.
+    delay_startup();															//Delay de inicialização dos ESCS.
 
 	iniciar_RF();																//Inicar a placa nRF24L01p
 
@@ -163,7 +165,7 @@ int main(void)
 
     iniciarMPU6050Imu();
 
-	configurar_bussola();														//Inicia o magnetômetro.
+    configurar_bussola();														//Inicia o magnetômetro.
 	
 	//iniciar_timer_controle();													//Timer responsável por checar se houve recepção de controel nos últimos 2 segundos.
 
@@ -173,7 +175,7 @@ int main(void)
 
     configurar_timers_PWM_I();													//Configura os timers utilizados para PWMinput do controle.
 
-	iniciar_estado_Kalman();
+    iniciar_estado_Kalman();
 
 	iniciar_timer_processamento();												//Iniciar o timer responsável pelo controle do PID -> TIM6.
 
@@ -211,7 +213,7 @@ int main(void)
 
 					switch(buffer_dados_rx[0])									//Primeiro caractér do vetor recebido determina a operação à ser realizada.
 					{
-						case 't':
+                        case 't':
 							GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
 						break;
 
@@ -494,7 +496,7 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-			conversor.flutuante_entrada = telemetria_magnetometro[0];
+            conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -603,6 +605,7 @@ void blinkDebugLeds() {
 void iniciarMPU6050Imu() {
     MPU6050_InitStruct initialConfig;
 
+    //Configurações dos sensores.
     initialConfig.accelFullScale = AFS_8G;              //Fundo de escala de 8G.
     initialConfig.gyroFullScale = FS500DPS;             //Fundo de escala de 500 graus por segundo.
     initialConfig.clockSource = CLK_GYRO_X_PLL;         //Fonte de clock no oscilador do eixo X do giroscópio.
@@ -610,7 +613,13 @@ void iniciarMPU6050Imu() {
     initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual à do Gyro
     initialConfig.temperatureSensorDisabled = 0;        //Sensor de temperatura ligado.
     initialConfig.powerMode = 0;                        //Sem modo de energia especial;
-    initialConfig.digitalLowPassConfig = 0x04;
+    initialConfig.interruptsConfig = 0x01;              //Ativa a interrupção de Data Ready;
+    initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
+
+    //initialConfig.digitalLowPassConfig = 0x04;          //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
+    initialConfig.digitalLowPassConfig = 0x03;          //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    //initialConfig.digitalLowPassConfig = 0x02;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 3ms)
+
 
     MPU6050_Init(I2C3, &initialConfig);
 
@@ -621,8 +630,13 @@ void iniciarMPU6050Imu() {
 
     delay(1000);
 
+    MPU6050_configIntPin(RCC_AHB1Periph_GPIOD, GPIOD, GPIO_Pin_0);
+
+    //Carregar valores de "parado" (Offsets).
     uint16_t counterOffsetAquisition = 1000;
     while(counterOffsetAquisition--) {
+        while(MPU6050_checkDataReadyIntPin() == Bit_RESET);
+
         MPU6050_readData(I2C3, temp_accel, temp_gyro);
         GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
 
@@ -664,6 +678,10 @@ void configurar_bussola()
 	configuracao_inicial.HS_I2C = 0;
 	
 	HMC5883L_Init(I2C3, &configuracao_inicial);
+
+    HMC5883L_configIntPin(RCC_AHB1Periph_GPIOC, GPIOC, GPIO_Pin_7);
+
+    while(HMC5883L_checkDataReadyIntPin() == Bit_SET);
 }
 
 //Inicia o timer principal utilizado na aquisição de dados (TIM6)

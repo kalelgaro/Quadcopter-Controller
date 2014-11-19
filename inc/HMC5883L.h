@@ -2,6 +2,9 @@
 #define HMC5883L_H_
 
 #include "stm32f4xx.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
+
 #include "aquisicao_IMU.h"
 #include "arm_math.h"
 
@@ -78,5 +81,8 @@
 
 	void HMC5883L_Init(I2C_TypeDef*, HMC5883L_InitTypeDef*);
 	float HMC5883L_Read_Data(I2C_TypeDef*, float []);
+
+    uint8_t HMC5883L_checkDataReadyIntPin();
+    void HMC5883L_configIntPin(uint32_t RCC_AHB1Periph, GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 
 #endif 

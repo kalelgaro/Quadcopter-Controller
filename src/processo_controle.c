@@ -4,7 +4,6 @@
 #define pitch 1
 #define roll 0
 
-
 #define acel_x 0
 #define acel_y 1
 #define acel_z 2
@@ -323,6 +322,8 @@ void setar_offset_acel(float offset[3])
 //Aquisição dos sensores.
 
 void processar_mpu6050() {
+    //Checa a disponibilidade de novos dados para leitura.
+    while(MPU6050_checkDataReadyIntPin() == Bit_RESET);
     MPU6050_readData(I2C3, acelerometro_adxl345, saida_gyro_dps_pf);
 
     saida_gyro_dps_pf[0] -= offset_gyro[0];
@@ -344,7 +345,6 @@ void processar_magnetometro()
 
 	//Leitura do registrador de STATUS do magnetômetro
 	I2C_ler_registradores(I2C3, end_HMC5883L, STATUS_MG, 1, &status);
-
 
 	//Chega no registrador de status se há leituras prontas no magnetômetro.
 	if((status&0x01)==0x01)
