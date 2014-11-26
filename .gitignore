@@ -13,3 +13,6 @@ lib/*.o
 lib/libstm32f4.a
 *.pro.user
 *.map
+.settings/language.settings.xml
+Quadcoptero.pro.user*
+log.txt
