@@ -72,20 +72,20 @@ void configurar_timers_PWM_I(void)
 
   /*Configuração do interrupção.*/
   NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   	
   NVIC_InitStructure.NVIC_IRQChannel = TIM5_IRQn;
   NVIC_Init(&NVIC_InitStructure);
 
   NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
-	NVIC_Init(&NVIC_InitStructure);
+  NVIC_Init(&NVIC_InitStructure);
 
   NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
-	NVIC_Init(&NVIC_InitStructure);
+  NVIC_Init(&NVIC_InitStructure);
 
-	NVIC_InitStructure.NVIC_IRQChannel = TIM1_BRK_TIM9_IRQn;
-	NVIC_Init(&NVIC_InitStructure);
+  NVIC_InitStructure.NVIC_IRQChannel = TIM1_BRK_TIM9_IRQn;
+  NVIC_Init(&NVIC_InitStructure);
 
   /*Configuração dos registradores de "capture" do timer 5*/
   TIM_ICInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;

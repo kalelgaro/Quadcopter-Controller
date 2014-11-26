@@ -20,7 +20,7 @@
 
 /*-------Tempo de amostragem------------*/
 
-#define dt 0.0025
+#define dt 0.01
 
 /*-------Taxa de rotação constante--------*/
 
@@ -99,18 +99,6 @@ float saida_yaw_pid_final =   0;
 float roll_pos_filtro;
 float pitch_pos_filtro;
 float yaw_pos_filtro;
-
-//Variáveis com os bias do giroscópio testes para serem inseridos
-
-float bx = 0.0;
-float by = 0.0;
-float bz = 0.0;
-
-//Variáveis com os bias do magnetômetro testes para serem inseridos
-
-float bmx = 0.0;
-float bmy = 0.0;
-float bmz = 0.0;
 
 //Buffers para o filtro FIR do acelerômetro.
 	//Filtro com banda de passagem de 4Hz e atenuação de 0.1 dB e banda de parada de 40 Hz com atenuação de 120 dB( Filter Builder)
@@ -222,10 +210,10 @@ void iniciar_estado_Kalman() {
 
 	while(counter--) {
 		do {
-			I2C_ler_registradores(I2C3, end_HMC5883L, STATUS_MG, 1, &status);
+            status = TM_I2C_Read(I2C3, end_HMC5883L, STATUS_MG);
 			//Aguarda enquanto não houverem novos dados dentro dos registradores de leitura.
 			GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
-		}while((status&0x01)!=0x01);
+        }while((status&0x01)!= 0x01);
 
 		HMC5883L_Read_Data(I2C3, mag_init);
 
@@ -238,8 +226,8 @@ void iniciar_estado_Kalman() {
 	mag_init_buffer[1] = mag_init_buffer[1]/(float)400;
 	mag_init_buffer[2] = mag_init_buffer[2]/(float)400;
 
-	yaw_init_buffer += calcular_orientacao(mag_init_buffer, 0, 0);
-	//EstadoFiltroKalman.ultimo_estado[2] = yaw_init;
+    yaw_init_buffer += calcular_orientacao(mag_init_buffer, 0, 0);
+    EstadoFiltroKalman.ultimo_estado[2] = yaw_init_buffer;
 	
 	EstadoFiltroKalman.MagInicial[0] = mag_init_buffer[0];
 	EstadoFiltroKalman.MagInicial[1] = mag_init_buffer[1];
@@ -344,16 +332,16 @@ void processar_magnetometro()
 	uint8_t status;
 
 	//Leitura do registrador de STATUS do magnetômetro
-	I2C_ler_registradores(I2C3, end_HMC5883L, STATUS_MG, 1, &status);
+    status = TM_I2C_Read(I2C3, end_HMC5883L, STATUS_MG);
 
 	//Chega no registrador de status se há leituras prontas no magnetômetro.
 	if((status&0x01)==0x01)
 	{
 		HMC5883L_Read_Data(I2C3, magnetometro);
 		//normalizar_vetor_R3(magnetometro);
-		magnetometro[0] = magnetometro[0] + bmx;
-		magnetometro[1] = magnetometro[1] + bmy;
-		magnetometro[2] = magnetometro[2] + bmz;
+        magnetometro[0] = magnetometro[0];
+        magnetometro[1] = magnetometro[1];
+        magnetometro[2] = magnetometro[2];
 
 	}
 }
@@ -439,12 +427,17 @@ void processo_controle()
 
 	static uint8_t flag_inicializacao = 0;
 
+    uint16_t delayCounter = 10;
+
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
     processar_mpu6050();
 
     processar_magnetometro();
 
     contador_aquisicao++;
+
+    //Reinicia o contador de segurança.
+    TIM_SetCounter(TIM7, 0);
 
     if(contador_aquisicao == NRO_AQUISICOES_PRE_KF) {
 
@@ -513,10 +506,8 @@ void processo_controle()
 
 				flag_inicializacao = 1;
 			}
-				
-			
 		}
 		//Salva valores de interesse nas estrutura que é enviada para telemetria.
 	}
-	GPIO_ResetBits(GPIOD, GPIO_Pin_12); 
+    GPIO_ResetBits(GPIOD, GPIO_Pin_12);
 }

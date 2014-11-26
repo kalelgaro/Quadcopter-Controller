@@ -1,6 +1,7 @@
 #include "stm32f4_discovery.h"
+#include "stm32f4xx_tim.h"
 
-#include "aquisicao_IMU.h"
+#include "tm_stm32f4_i2c.h"
 #include "MPU6050.h"
 #include "HMC5883L.h"
 

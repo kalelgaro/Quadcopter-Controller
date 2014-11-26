@@ -9,37 +9,46 @@ uint16_t dataRdyIntPin;
 void MPU6050_Init(I2C_TypeDef *I2Cx, MPU6050_InitStruct *initialConfig) {
 	uint8_t i2cDataBuffer = 0x00;
 
+    //Reinicia o dispotivio;
+    i2cDataBuffer = MPU6050_DEVICE_RESET | MPU6050_SLEEP;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, i2cDataBuffer);
+
+    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1) - Mantém em modo SLEEP;
+    i2cDataBuffer = initialConfig->clockSource | initialConfig->temperatureSensorDisabled | MPU6050_SLEEP;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, i2cDataBuffer);
+
     //Configuração do filtro passa baixa e da frequência de aquisição do gyro (Base do accel).
     i2cDataBuffer = initialConfig->digitalLowPassConfig;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, CONFIG_MPU6050, 1, &i2cDataBuffer);
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, CONFIG_MPU6050, i2cDataBuffer);
 
     //Configuração da frequência de amostragem do acelerômetro.
     i2cDataBuffer = initialConfig->sampleRateDivider;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, SMPLRT_DIV, 1, &i2cDataBuffer);
-
-    //Configuração do fundo de escala do giroscópio.
-    i2cDataBuffer = initialConfig->gyroFullScale;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, GYRO_CONFIG, 1, &i2cDataBuffer);
-
-    //Configuração do fundo de escala do acelerômetro
-    i2cDataBuffer = initialConfig->accelFullScale;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, ACCEL_CONFIG, 1, &i2cDataBuffer);
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, SMPLRT_DIV, i2cDataBuffer);
 
     //Configuração do estado das FIFOS
     i2cDataBuffer = initialConfig->fifoEnabled;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, USER_CTRL, 1, &i2cDataBuffer);
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, USER_CTRL, i2cDataBuffer);
 
     //Configuração das interrupções.
     i2cDataBuffer = initialConfig->interruptsConfig;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, INT_ENABLE_MPU6050, 1, &i2cDataBuffer);
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, INT_ENABLE_MPU6050, i2cDataBuffer);
 
     //Configuração do pino de interurpção.
     i2cDataBuffer = initialConfig->intPinConfig;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, INT_PIN_CFG, 1, &i2cDataBuffer);
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, INT_PIN_CFG, i2cDataBuffer);
 
-    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1);
-    i2cDataBuffer = initialConfig->clockSource | initialConfig->powerMode | initialConfig->temperatureSensorDisabled;
-    I2C_escrever_registrador(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, 1, &i2cDataBuffer);
+    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1) - Retira a do modo SLEEP;
+    i2cDataBuffer = initialConfig->clockSource | initialConfig->temperatureSensorDisabled;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, i2cDataBuffer);
+
+    //Configuração do fundo de escala do giroscópio.
+    i2cDataBuffer = initialConfig->gyroFullScale;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, GYRO_CONFIG, i2cDataBuffer);
+
+    //Configuração do fundo de escala do acelerômetro
+    i2cDataBuffer = initialConfig->accelFullScale;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, ACCEL_CONFIG, i2cDataBuffer);
+
 
 //FIXME: Modificações teste - Testar se necessita de escrita no PWR_MGMT_1 neste ponto, após todas as configurações.
 //    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1);
@@ -86,14 +95,15 @@ void MPU6050_Init(I2C_TypeDef *I2Cx, MPU6050_InitStruct *initialConfig) {
 uint8_t MPU6050_checkConectivity(I2C_TypeDef* I2Cx)
 {
     uint8_t readData;
-    I2C_ler_registradores(I2Cx, MPU6050_ADDRESS, WHO_AM_I_MPU6050, 1, &readData);
+    readData = TM_I2C_Read(I2Cx, MPU6050_ADDRESS, WHO_AM_I_MPU6050);
 
     return readData;
 }
 
 float MPU6050_readData(I2C_TypeDef* I2Cx, float accelBuffer[3], float gyroBuffer[3]) {
     uint8_t tempReadData[14];
-    I2C_ler_registradores(I2Cx, MPU6050_ADDRESS, ACCEL_XOUT_H, 14, tempReadData);
+
+    TM_I2C_ReadMulti(I2Cx, MPU6050_ADDRESS, ACCEL_XOUT_H, tempReadData, 14);
 
     accelBuffer[0] = (int16_t)((tempReadData[0]*256)|(tempReadData[1]));
     accelBuffer[1] = (int16_t)((tempReadData[2]*256)|(tempReadData[3]));

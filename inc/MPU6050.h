@@ -3,7 +3,7 @@
 
 #include "stm32f4xx.h"
 #include "stm32f4xx_rcc.h"
-#include "aquisicao_IMU.h"
+#include "tm_stm32f4_i2c.h"
 #include "stm32f4xx_gpio.h"
 
     #define MPU6050_ADDRESS 0xD0
@@ -534,17 +534,17 @@
 	/*--------------------Register 107 – Power Management 1-------------
 	-----------------------------PWR_MGMT_1----------------------------*/
 
-	#define DEVICE_RESET 0x80
-	#define SLEEP 0x40
-	#define CYCLE 0x20
-	#define TEMP_DIS 0x08
+    #define MPU6050_DEVICE_RESET 0x80
+    #define MPU6050_SLEEP 0x40
+    #define MPU6050_CYCLE 0x20
+    #define MPU6050_TEMP_DIS 0x08
 
-    #define CLK_INTERNAL_8MHZ_OSC       0x00
-    #define CLK_GYRO_X_PLL              0x01
-    #define CLK_GYRO_Y_PLL              0x02
-    #define CLK_GYRO_Z_PLL              0x03
-    #define CLK_EXTERNAL_32768HZ_OSC    0x04
-    #define CLK_EXTERNAL_192MHZ_OSC     0x05
+    #define MPU6050_CLK_INTERNAL_8MHZ_OSC       0x00
+    #define MPU6050_CLK_GYRO_X_PLL              0x01
+    #define MPU6050_CLK_GYRO_Y_PLL              0x02
+    #define MPU6050_CLK_GYRO_Z_PLL              0x03
+    #define MPU6050_CLK_EXTERNAL_32768HZ_OSC    0x04
+    #define MPU6050_CLK_EXTERNAL_192MHZ_OSC     0x05
 
 	/*-----------------Register 108 – Power Management 2 ----------------
 	----------------------------PWR_MGMT_2------------------------------*/
@@ -562,7 +562,6 @@
 	typedef struct {
 		uint8_t gyroFullScale;
 		uint8_t accelFullScale;
-		uint8_t powerMode;	
         uint8_t temperatureSensorDisabled   ;
 		uint8_t clockSource;
 		uint8_t fifoEnabled;

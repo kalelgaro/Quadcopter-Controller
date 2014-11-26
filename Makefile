@@ -1,9 +1,10 @@
 # put your *.o targets here, make should handle the rest!
 
-SRCS =  main.c 				stm32f4xx_it.c 		system_stm32f4xx.c 	aquisicao_IMU.c 
-SRCS += controle_motores.c 	L3G4200D.c 			ADXL345.c 			nRF24l01.c
-SRCS += funcoes_spi.c 		array_functions.c 	tratamento_sinal.c 	processamento_entrada.c
-SRCS += kalman_filter.c 	processo_controle.c HMC5883L.c 			MPU6050.c	
+SRCS =  main.c 			stm32f4xx_it.c 		system_stm32f4xx.c          MPU6050.c
+SRCS += controle_motores.c 	nRF24l01.c              processamento_entrada.c
+SRCS += funcoes_spi.c 		array_functions.c 	tratamento_sinal.c
+SRCS += kalman_filter.c 	processo_controle.c     HMC5883L.c
+SRCS += tm_stm32f4_i2c.c
 
 # all the files will be generated with this name (main.elf, main.bin, main.hex, etc)
 

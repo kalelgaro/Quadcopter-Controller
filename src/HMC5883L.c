@@ -11,18 +11,18 @@ void HMC5883L_Init(I2C_TypeDef *I2Cx, HMC5883L_InitTypeDef *Configuracoes)
 
 	/* Configuração do registrador A */
 	data_buffer = (Configuracoes->Samples | Configuracoes->Output_DataRate | Configuracoes->Meas_mode);
-	I2C_escrever_registrador(I2Cx, end_HMC5883L, CONFIG_A, 1, &data_buffer);
+    TM_I2C_Write(I2Cx, end_HMC5883L, CONFIG_A, data_buffer);
 
 	/* Configuração do registrador B */
 	data_buffer = 0x00;
 	data_buffer = (Configuracoes->Gain);
-	I2C_escrever_registrador(I2Cx, end_HMC5883L, CONFIG_B, 1, &data_buffer);
+    TM_I2C_Write(I2Cx, end_HMC5883L, CONFIG_B, data_buffer);
 
 	/*Configuração do registrador de movo */
 	data_buffer = 0x00;
 	data_buffer = (Configuracoes->HS_I2C | Configuracoes->Mode);
 	
-	I2C_escrever_registrador(I2Cx, end_HMC5883L, MODE, 1, &data_buffer);
+    TM_I2C_Write(I2Cx, end_HMC5883L, MODE, data_buffer);
 
 	switch(Configuracoes->Gain)	
 	{
@@ -43,7 +43,7 @@ float  HMC5883L_Read_Data(I2C_TypeDef *I2Cx, float dados[])
 	
 	int16_t buffer_temp;
 	
-	I2C_ler_registradores(I2Cx, end_HMC5883L, 0x03, 6, buffer_dados);
+    TM_I2C_ReadMulti(I2Cx, end_HMC5883L, 0x03, buffer_dados, 6);
 
 	buffer_temp = (int16_t)(buffer_dados[0]*256);
 	buffer_temp = (int16_t)(buffer_temp | buffer_dados[1]);

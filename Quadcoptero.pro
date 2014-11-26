@@ -93,14 +93,12 @@ SOURCES += \
     lib/src/peripherals/stm32f4xx_wwdg.c \
     lib/src/stm32f4_discovery.c \
     lib/src/system_stm32f4xx.c \
-    src/ADXL345.c \
     src/aquisicao_IMU.c \
     src/array_functions.c \
     src/controle_motores.c \
     src/funcoes_spi.c \
     src/HMC5883L.c \
     src/kalman_filter.c \
-    src/L3G4200D.c \
     src/main.c \
     src/MPU6050.c \
     src/nRF24l01.c \
@@ -110,17 +108,16 @@ SOURCES += \
     src/stm32f4_discovery_lis302dl.c \
     src/stm32f4xx_it.c \
     src/system_stm32f4xx.c \
-    src/tratamento_sinal.c
+    src/tratamento_sinal.c \
+    src/tm_tm_stm32f4_i2c.c
 
 HEADERS += \
-    inc/ADXL345.h \
     inc/aquisicao_IMU.h \
     inc/array_functions.h \
     inc/controle_motores.h \
     inc/funcoes_spi.h \
     inc/HMC5883L.h \
     inc/kalman_filter.h \
-    inc/L3G4200D.h \
     inc/MPU6050.h \
     inc/nRF24l01.h \
     inc/processamento_entrada.h \
@@ -130,6 +127,7 @@ HEADERS += \
     inc/stm32f4xx_conf.h \
     inc/stm32f4xx_it.h \
     inc/tratamento_sinal.h \
+    inc/tm_stm32f4_i2c.h \
     lib/inc/core/arm_common_tables.h \
     lib/inc/core/arm_math.h \
     lib/inc/core/core_cm0.h \
@@ -170,7 +168,7 @@ HEADERS += \
     lib/inc/pdm_filter.h \
     lib/inc/stm32f4_discovery.h \
     lib/inc/stm32f4xx.h \
-    lib/inc/system_stm32f4xx.h
+    lib/inc/system_stm32f4xx.h \
 
 OTHER_FILES += \
     Makefile
