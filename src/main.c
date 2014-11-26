@@ -140,14 +140,16 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-    setar_parametros_PID(80, 0, 20, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(40, 25, 10, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
-	setar_parametros_Kalman(5e-9, 5e-10, 0.1, 0.75, 1e-6);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(5e-9, 5e-10, 0.1, 10.75, 1e-9);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
 	uint8_t status_RF = 0;														//Variável que aloca o estado do link RF.
+
+    NVIC_SetPriorityGrouping(5);
 
 	SysTick_Config(168e6/10000);		 										//Frequência de 100uS no systick.
 
@@ -161,13 +163,14 @@ int main(void)
 
 	iniciar_RF();																//Inicar a placa nRF24L01p
 
-	configurar_I2C();															//Configurar o periférico I²C da placa.
+//	configurar_I2C();															//Configurar o periférico I²C da placa.
+    TM_I2C_Init(I2C3, TM_I2C_PinsPack_1, 400000);
 
     iniciarMPU6050Imu();
 
     configurar_bussola();														//Inicia o magnetômetro.
 	
-	//iniciar_timer_controle();													//Timer responsável por checar se houve recepção de controel nos últimos 2 segundos.
+    iniciar_timer_controle();													//Timer responsável por checar se houve recepção de controel nos últimos 2 segundos.
 
 	escrita_dados(SPI2, (uint8_t *)"Iniciado.", 32);							//Mensagem que informa que o procimento de inicialização foi concluído.
 
@@ -177,7 +180,7 @@ int main(void)
 
     iniciar_estado_Kalman();
 
-	iniciar_timer_processamento();												//Iniciar o timer responsável pelo controle do PID -> TIM6.
+    iniciar_timer_processamento();												//Iniciar o timer responsável pelo controle do PID -> TIM6.
 
 	while (1)																	//Processo contínuo de checagem do transmissor RF.
 	{
@@ -484,19 +487,19 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
-            conversor.flutuante_entrada = telemetria_giroscopio[0];
+            conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 13, 4);
 
 
-            conversor.flutuante_entrada = telemetria_giroscopio[1];
+            conversor.flutuante_entrada = telemetria_magnetometro[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 17, 4);
 
 
-            conversor.flutuante_entrada = telemetria_giroscopio[2];
+            conversor.flutuante_entrada = telemetria_magnetometro[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-            conversor.flutuante_entrada = telemetria_magnetometro[0];
+            conversor.flutuante_entrada = telemetria_giroscopio[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -607,18 +610,17 @@ void iniciarMPU6050Imu() {
 
     //Configurações dos sensores.
     initialConfig.accelFullScale = AFS_8G;              //Fundo de escala de 8G.
-    initialConfig.gyroFullScale = FS500DPS;             //Fundo de escala de 500 graus por segundo.
-    initialConfig.clockSource = CLK_GYRO_X_PLL;         //Fonte de clock no oscilador do eixo X do giroscópio.
+    initialConfig.gyroFullScale = FS_2000DPS;             //Fundo de escala de 500 graus por segundo.
+    initialConfig.clockSource = MPU6050_CLK_GYRO_X_PLL; //Fonte de clock no oscilador do eixo X do giroscópio.
     initialConfig.fifoEnabled = 0;                      //Fifo desligada;
     initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual à do Gyro
     initialConfig.temperatureSensorDisabled = 0;        //Sensor de temperatura ligado.
-    initialConfig.powerMode = 0;                        //Sem modo de energia especial;
     initialConfig.interruptsConfig = 0x01;              //Ativa a interrupção de Data Ready;
     initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
 
-    //initialConfig.digitalLowPassConfig = 0x04;          //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
-    initialConfig.digitalLowPassConfig = 0x03;          //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
-    //initialConfig.digitalLowPassConfig = 0x02;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 3ms)
+    //initialConfig.digitalLowPassConfig = 0x02;          //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
+    //initialConfig.digitalLowPassConfig = 0x03;          //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    initialConfig.digitalLowPassConfig = 0x04;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 3ms)
 
 
     MPU6050_Init(I2C3, &initialConfig);
@@ -633,7 +635,7 @@ void iniciarMPU6050Imu() {
     MPU6050_configIntPin(RCC_AHB1Periph_GPIOD, GPIOD, GPIO_Pin_0);
 
     //Carregar valores de "parado" (Offsets).
-    uint16_t counterOffsetAquisition = 1000;
+    uint16_t counterOffsetAquisition = 2000;
     while(counterOffsetAquisition--) {
         while(MPU6050_checkDataReadyIntPin() == Bit_RESET);
 
@@ -648,16 +650,16 @@ void iniciarMPU6050Imu() {
         offset_gyro[1] += temp_gyro[1];
         offset_gyro[2] += temp_gyro[2];
 
-        delay(50);
+        delay(20);
     }
 
-    offset_accel[0] = offset_accel[0]/((float)(1000));
-    offset_accel[1] = offset_accel[1]/((float)(1000));
-    offset_accel[2] = offset_accel[2]/((float)(1000));
+    offset_accel[0] = offset_accel[0]/((float)(2000));
+    offset_accel[1] = offset_accel[1]/((float)(2000));
+    offset_accel[2] = offset_accel[2]/((float)(2000));
 
-    offset_gyro[0] = offset_gyro[0]/((float)(1000));
-    offset_gyro[1] = offset_gyro[1]/((float)(1000));
-    offset_gyro[2] = offset_gyro[2]/((float)(1000));
+    offset_gyro[0] = offset_gyro[0]/((float)(2000));
+    offset_gyro[1] = offset_gyro[1]/((float)(2000));
+    offset_gyro[2] = offset_gyro[2]/((float)(2000));
 
     setar_offset_acel(offset_accel);
     setar_offset_gyro(offset_gyro);
@@ -681,11 +683,11 @@ void configurar_bussola()
 
     HMC5883L_configIntPin(RCC_AHB1Periph_GPIOC, GPIOC, GPIO_Pin_7);
 
-    while(HMC5883L_checkDataReadyIntPin() == Bit_SET);
+    //while(HMC5883L_checkDataReadyIntPin() == Bit_SET);
 }
 
 //Inicia o timer principal utilizado na aquisição de dados (TIM6)
-//A frequência de interrupção é de 400 Hz (2,5mS)
+//A frequência de interrupção é de 100 Hz (10mS)
 void iniciar_timer_processamento()
 {
 
@@ -694,7 +696,7 @@ void iniciar_timer_processamento()
 
   	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;		//100.000 Contagens por segundo
 
-    TIM_TimeBaseStructure.TIM_Period = 250;											//(1/100.000)*250 segundos por "overflow" -> 0.0025 segundos por overflow
+    TIM_TimeBaseStructure.TIM_Period = 1000;											//(1/100.000)*250 segundos por "overflow" -> 0.0025 segundos por overflow
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -703,8 +705,8 @@ void iniciar_timer_processamento()
   	NVIC_InitTypeDef NVIC_InitStructure;
   	/* Enable the TIM6 gloabal Interrupt */
   	NVIC_InitStructure.NVIC_IRQChannel = TIM6_DAC_IRQn;
-  	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-  	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
   	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   	NVIC_Init(&NVIC_InitStructure);
 
@@ -726,7 +728,7 @@ void iniciar_timer_controle()
 
 	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 10000) - 1;		//10000 Contagens por segundo
 
-	TIM_TimeBaseStructure.TIM_Period = 20000;										//(1/10000)*20000 segundos por "overflow" -> 0.5 Segundos
+    TIM_TimeBaseStructure.TIM_Period = 300;										//(1/10000)*300 segundos por "overflow" -> 0,03 Segundos
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;							//Insere o prescale calculo acima
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;								
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;						//Apena conta de maneira ascendente -> Overflow ao atingir o fim do contador.
@@ -736,14 +738,14 @@ void iniciar_timer_controle()
   	NVIC_InitTypeDef NVIC_InitStructure;
   	/* Enable the TIM7 gloabal Interrupt */
   	NVIC_InitStructure.NVIC_IRQChannel = TIM7_IRQn;
-  	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
-  	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
   	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   	NVIC_Init(&NVIC_InitStructure);
 
   	TIM_ITConfig(TIM7, TIM_IT_Update, ENABLE);
   	/* TIM7 enable counter */
-	TIM_Cmd(TIM7, ENABLE);
+    TIM_Cmd(TIM7, ENABLE);
 }
 
 //Rotina de pausa inicial para estabilização dos PWMS utilizados nos ESCS.

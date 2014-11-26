@@ -5,8 +5,10 @@
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
 
-#include "aquisicao_IMU.h"
+#include "tm_stm32f4_i2c.h"
 #include "arm_math.h"
+
+    #define end_HMC5883L 	0x3C
 
 	/*Endereço dos endereços de configuração*/
 	#define WHO_AM_I_MG				10

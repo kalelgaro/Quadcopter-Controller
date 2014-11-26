@@ -241,8 +241,6 @@ void TIM6_DAC_IRQHandler(void)
 
 
 //Timer de erro da recepção.
-//Overflow deste timer indica que houveram 2 segundos, ou mais, sem a recepção de dados através
-//da placa nRF24l01p -> Inicia a rotina de desligamento dos motores.
 
 void TIM7_IRQHandler(void)
 {
