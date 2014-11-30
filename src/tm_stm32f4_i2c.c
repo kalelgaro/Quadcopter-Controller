@@ -203,17 +203,15 @@ uint8_t TM_I2C_Read(I2C_TypeDef* I2Cx, uint8_t address, uint8_t reg) {
 }
 
 void TM_I2C_Write(I2C_TypeDef* I2Cx, uint8_t address, uint8_t reg, uint8_t data) {
-	TM_I2C_Start(I2Cx, address, I2C_Direction_Transmitter, 0);
+    TM_I2C_Start(I2Cx, address, I2C_Direction_Transmitter, 0);
     TM_I2C_WriteData(I2Cx, reg);
 	TM_I2C_WriteData(I2Cx, data);
 	TM_I2C_Stop(I2Cx);
 }
 
 void TM_I2C_ReadMulti(I2C_TypeDef* I2Cx, uint8_t address, uint8_t reg, uint8_t* data, uint16_t count) {
-	uint8_t i;
-    i = 100;
-    while(i--);
-	TM_I2C_Start(I2Cx, address, I2C_Direction_Transmitter, 1);
+    uint16_t i;
+    TM_I2C_Start(I2Cx, address, I2C_Direction_Transmitter, 1);
 	TM_I2C_WriteData(I2Cx, reg);
 	TM_I2C_Stop(I2Cx);
 	TM_I2C_Start(I2Cx, address, I2C_Direction_Receiver, 1);
@@ -228,10 +226,8 @@ void TM_I2C_ReadMulti(I2C_TypeDef* I2Cx, uint8_t address, uint8_t reg, uint8_t* 
 }
 
 void TM_I2C_WriteMulti(I2C_TypeDef* I2Cx, uint8_t address, uint8_t reg, uint8_t* data, uint16_t count) {
-	uint8_t i;
-    i = 100;
-    while(i--);
-	TM_I2C_Start(I2Cx, address, I2C_Direction_Transmitter, 0);
+    uint16_t i;
+    TM_I2C_Start(I2Cx, address, I2C_Direction_Transmitter, 0);
 	TM_I2C_WriteData(I2Cx, reg);
 	for (i = 0; i < count; i++) {
 		TM_I2C_WriteData(I2Cx, data[i]);
@@ -240,6 +236,9 @@ void TM_I2C_WriteMulti(I2C_TypeDef* I2Cx, uint8_t address, uint8_t reg, uint8_t*
 }
 
 int16_t TM_I2C_Start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction, uint8_t ack) {
+    uint16_t i;
+    i = START_DELAY;
+    while(i--);
 	I2C_GenerateSTART(I2Cx, ENABLE);
 	
 	TM_I2C_Timeout = TM_I2C_TIMEOUT;

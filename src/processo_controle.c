@@ -419,8 +419,6 @@ void calculate_Yaw_Ref(float yaw_Rate) {
 //Procedimento de controle principal executado no overflow no Timer 3 à cada 1,25mS (800 Hz)
 void processo_controle()
 {
-	GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
-
 	static uint8_t contador_aquisicao = 0;
 
 	static uint16_t contador_ativacao = 0;
@@ -430,9 +428,11 @@ void processo_controle()
     uint16_t delayCounter = 10;
 
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
-    processar_mpu6050();
-
     processar_magnetometro();
+    GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
+
+    processar_mpu6050();
+    GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
     contador_aquisicao++;
 
@@ -502,12 +502,11 @@ void processo_controle()
 				
 			if(contador_ativacao == nro_contagem_ativacao)
 			{
-				GPIO_SetBits(GPIOD, GPIO_Pin_14);
-
 				flag_inicializacao = 1;
 			}
 		}
 		//Salva valores de interesse nas estrutura que é enviada para telemetria.
 	}
     GPIO_ResetBits(GPIOD, GPIO_Pin_12);
+    GPIO_ResetBits(GPIOD, GPIO_Pin_14);
 }

@@ -109,7 +109,7 @@ SOURCES += \
     src/stm32f4xx_it.c \
     src/system_stm32f4xx.c \
     src/tratamento_sinal.c \
-    src/tm_tm_stm32f4_i2c.c
+    src/tm_stm32f4_i2c.c
 
 HEADERS += \
     inc/aquisicao_IMU.h \

@@ -83,6 +83,11 @@
 #define TM_I2C_TIMEOUT					20000
 #endif
 
+//Start Delay
+#ifndef START_DELAY
+#define START_DELAY                     100
+#endif
+
 //I2C1 settings, change them in defines.h project file
 #ifndef TM_I2C1_ACKNOWLEDGED_ADDRESS
 #define TM_I2C1_ACKNOWLEDGED_ADDRESS	I2C_AcknowledgedAddress_7bit
