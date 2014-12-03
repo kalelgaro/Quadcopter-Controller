@@ -352,7 +352,6 @@ float f_sec(float angle) {
 }
 
 //Função tem por objetivo conter o ângulo de YAW entre o intervalo de -180º e 180º
-
 float tratar_intervalo_Angulo(float angles) {
 	float temp = fmod(angles, 6.283185);
 
@@ -362,4 +361,19 @@ float tratar_intervalo_Angulo(float angles) {
 		temp += 6.283185;
 
 	return temp;
+}
+
+//Converter Quaternion para angulos de Euler
+EulerAngles getEulerFromQuaternion(float quaternion[]) {
+    float q0 = quaternion[0];
+    float q1 = quaternion[1];
+    float q2 = quaternion[2];
+    float q3 = quaternion[3];
+
+    EulerAngles tempAngles;
+    tempAngles.theta = -asin(2*q1*q3 - 2*q0*q2);
+    tempAngles.phi = -atan2f((2*q2*q3+2*q0*q1), (2*powf(q0,2) + 2*powf(q3,2) - 1));
+    tempAngles.psi = -atan2f((2*q1*q2+2*q0*q3), (2*powf(q0,2) + 2*powf(q1,2) - 1));
+
+    return tempAngles;
 }

@@ -33,6 +33,13 @@
 		float buffer_saida;
 	} PID_state;
 
+    typedef struct {
+        float phi;
+        float theta;
+        float psi;
+    }EulerAngles;
+
 	double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_pid, float dt);
+    EulerAngles getEulerFromQuaternion(float quaternion[]);
 
 #endif /* TRATAMENTO_SINAL_H_ */

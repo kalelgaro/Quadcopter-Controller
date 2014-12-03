@@ -143,7 +143,7 @@ int main(void)
     setar_parametros_PID(40, 25, 10, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
-    setar_parametros_Kalman(5e-9, 5e-10, 0.1, 10.75, 1e-9);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(5e-9, 5e-6, 5e-6, 1e-3, 1e4);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -696,7 +696,7 @@ void iniciar_timer_processamento()
 
   	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;		//100.000 Contagens por segundo
 
-    TIM_TimeBaseStructure.TIM_Period = 1000;											//(1/100.000)*250 segundos por "overflow" -> 0.0025 segundos por overflow
+    TIM_TimeBaseStructure.TIM_Period = 1000;											//(1/100.000)*1000 segundos por "overflow" -> 0.01 segundos por overflow
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;

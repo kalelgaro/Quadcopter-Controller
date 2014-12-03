@@ -137,16 +137,20 @@ float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0}, 
+kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0,0,0,0},
 
-									  {100,		0,		0,		0,		0,		0,
-									   0,		100,	0,		0,		0,		0,
-									   0,		0,		1e-3,	0,		0,		0,
-									   0,		0,		0,		100,	0,		0,
-									   0,		0,		0,		0,		100,	0,
-									   0,		0,		0,		0,		0,		100}, 
+                                      {100,	0,		0,		0,		0,		0,      0,      0,      0,      0,
+                                       0,		100,	0,		0,		0,		0,      0,      0,      0,      0,
+                                       0,		0,		100,	0,		0,		0,      0,      0,      0,      0,
+                                       0,		0,		0,		100,	0,		0,      0,      0,      0,      0,
+                                       0,		0,		0,		0,		100,	0,      0,      0,      0,      0,
+                                       0,		0,		0,		0,		0,		100,    0,      0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      100,    0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      100,    0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      100,    0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      100},
 
-							           5e-7, 1e-2, 45, 45, 1e-10, dt, {0.14, 0.05, -0.0155}};
+                                       5e-7, 1e-2, 1e-3, 45, 45, dt, {0.14, 0.05, -0.0155}};
 
 //Erros utilizados nos controladores PID
 									  
@@ -249,14 +253,14 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 }
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
-void setar_parametros_Kalman(float32_t Q_angulos, float32_t Q_biasmag, float32_t R_acelerometro, float32_t R_magnetometro, float32_t R_orthogonal)
+void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasacel, float32_t Q_biasmag, float32_t R_acelerometro, float32_t R_magnetometro)
 {
-	EstadoFiltroKalman.Q_ang = Q_angulos;
+    EstadoFiltroKalman.Q_quat = Q_quat;
+    EstadoFiltroKalman.Q_bias_acel = Q_biasacel;
 	EstadoFiltroKalman.Q_bias_mag = Q_biasmag;
 	
 	EstadoFiltroKalman.R_acel = R_acelerometro;
 	EstadoFiltroKalman.R_mag = R_magnetometro;
-	EstadoFiltroKalman.R_orth = R_orthogonal;
 }
 
 //Retorna o offset que foi obtido para o acelerometro
@@ -278,11 +282,11 @@ void retornar_parametros_pid(float *Kp, float *Ki, float *Kd)
 
 //Retrona os parametros utilizados no Filtro de Kalman (Telemetria)
 
-void retornar_parametros_Kalman(float32_t *Q_acelerometro, float32_t *Q_magnetometro, float32_t *Q_bias, float32_t *R_acelerometro, float32_t *R_magnetometro)
+void retornar_parametros_Kalman(float32_t *Q_quaternion, float32_t *Q_biasacel, float32_t *Q_biasmag, float32_t *R_acelerometro, float32_t *R_magnetometro)
 {
-	*Q_acelerometro = EstadoFiltroKalman.Q_ang;
-	*Q_magnetometro = EstadoFiltroKalman.Q_bias_mag;
-	*Q_bias = 0;
+    *Q_quaternion = EstadoFiltroKalman.Q_quat;
+    *Q_biasmag = EstadoFiltroKalman.Q_bias_mag;
+    *Q_biasacel = EstadoFiltroKalman.Q_bias_acel;
 
 	*R_acelerometro = EstadoFiltroKalman.R_acel;
 	*R_magnetometro = EstadoFiltroKalman.R_mag;
@@ -445,10 +449,11 @@ void processo_controle()
 	       
 	    //Insere os valores da leituras dentro do filtro de Kalman.
 		kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);	
+        EulerAngles angles = getEulerFromQuaternion(EstadoFiltroKalman.ultimo_estado);
 
-		angulos_inclinacao[roll] = 57.3*EstadoFiltroKalman.ultimo_estado[0];
-		angulos_inclinacao[pitch] = 57.3*EstadoFiltroKalman.ultimo_estado[1];
-		orientacao = 57.3*EstadoFiltroKalman.ultimo_estado[2];
+        angulos_inclinacao[roll] = 57.3*angles.theta;
+        angulos_inclinacao[pitch] = 57.3*angles.phi;
+        orientacao = 57.3*angles.psi;
 
 		if(flag_inicializacao == 1 && controlador_ligado == 1)
 		{
