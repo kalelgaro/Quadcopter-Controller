@@ -25,6 +25,9 @@
 	float f_tan(float);
 	float f_sec(float);
 	float tratar_intervalo_Angulo(float angles);
+    float getVectorModulus(const float vector[], u8 numberOfElements);
+    void normalizeVector(float vector[], u8 numberOfElements);
+
 
 	typedef struct 
 	{

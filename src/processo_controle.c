@@ -20,7 +20,7 @@
 
 /*-------Tempo de amostragem------------*/
 
-#define dt 0.01
+#define dt 0.005
 
 /*-------Taxa de rotação constante--------*/
 
@@ -139,16 +139,16 @@ float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
 
 kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0,0,0,0},
 
-                                      {100,	0,		0,		0,		0,		0,      0,      0,      0,      0,
-                                       0,		100,	0,		0,		0,		0,      0,      0,      0,      0,
-                                       0,		0,		100,	0,		0,		0,      0,      0,      0,      0,
-                                       0,		0,		0,		100,	0,		0,      0,      0,      0,      0,
-                                       0,		0,		0,		0,		100,	0,      0,      0,      0,      0,
-                                       0,		0,		0,		0,		0,		100,    0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      100,    0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      100,    0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      100,    0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      100},
+                                      {1e-8,    0,		0,		0,		0,		0,      0,      0,      0,      0,
+                                       0,		1e-8,	0,		0,		0,		0,      0,      0,      0,      0,
+                                       0,		0,		1e-8,	0,		0,		0,      0,      0,      0,      0,
+                                       0,		0,		0,		1e-8,	0,		0,      0,      0,      0,      0,
+                                       0,		0,		0,		0,		1e-8,	0,      0,      0,      0,      0,
+                                       0,		0,		0,		0,		0,		1e-8,   0,      0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      1e-8,   0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      1e-8,   0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-8,   0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      1e-8},
 
                                        5e-7, 1e-2, 1e-3, 45, 45, dt, {0.14, 0.05, -0.0155}};
 
@@ -231,13 +231,13 @@ void iniciar_estado_Kalman() {
 	mag_init_buffer[2] = mag_init_buffer[2]/(float)400;
 
     yaw_init_buffer += calcular_orientacao(mag_init_buffer, 0, 0);
-    EstadoFiltroKalman.ultimo_estado[2] = yaw_init_buffer;
+    //EstadoFiltroKalman.ultimo_estado[2] = yaw_init_buffer;
 	
 	EstadoFiltroKalman.MagInicial[0] = mag_init_buffer[0];
 	EstadoFiltroKalman.MagInicial[1] = mag_init_buffer[1];
 	EstadoFiltroKalman.MagInicial[2] = mag_init_buffer[2];
 
-	EstadoFiltroKalman.ultimo_estado[2] = yaw_init_buffer;
+    //EstadoFiltroKalman.ultimo_estado[2] = yaw_init_buffer;
 }
 
 //Altera as contastes do controlador PID. - Roll, Pitch e Yaw.
@@ -433,10 +433,9 @@ void processo_controle()
 
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
     processar_magnetometro();
-    GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
+    //GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
 
     processar_mpu6050();
-    GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
     contador_aquisicao++;
 
@@ -451,8 +450,8 @@ void processo_controle()
 		kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante);	
         EulerAngles angles = getEulerFromQuaternion(EstadoFiltroKalman.ultimo_estado);
 
-        angulos_inclinacao[roll] = 57.3*angles.theta;
-        angulos_inclinacao[pitch] = 57.3*angles.phi;
+        angulos_inclinacao[roll] = 57.3*angles.phi;
+        angulos_inclinacao[pitch] = 57.3*angles.theta;
         orientacao = 57.3*angles.psi;
 
 		if(flag_inicializacao == 1 && controlador_ligado == 1)

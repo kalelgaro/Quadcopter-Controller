@@ -372,8 +372,34 @@ EulerAngles getEulerFromQuaternion(float quaternion[]) {
 
     EulerAngles tempAngles;
     tempAngles.theta = -asin(2*q1*q3 - 2*q0*q2);
-    tempAngles.phi = -atan2f((2*q2*q3+2*q0*q1), (2*powf(q0,2) + 2*powf(q3,2) - 1));
-    tempAngles.psi = -atan2f((2*q1*q2+2*q0*q3), (2*powf(q0,2) + 2*powf(q1,2) - 1));
+    tempAngles.phi = atanf((2*q2*q3+2*q0*q1)/(2*powf(q0,2) + 2*powf(q3,2) - 1));
+    tempAngles.psi = atanf((2*q1*q2+2*q0*q3)/(2*powf(q0,2) + 2*powf(q1,2) - 1));
 
     return tempAngles;
+}
+
+
+float getVectorModulus(const float vector[], u8 numberOfElements)
+{
+    u8 i = 0;
+    float temp = 0.0;
+    for(i = 0; i < numberOfElements; i++) {
+        temp += powf(vector[i], 2);
+    }
+
+    arm_sqrt_f32(temp, &temp);
+
+    return temp;
+}
+
+
+void normalizeVector(float vector[], u8 numberOfElements)
+{
+    float modulus = getVectorModulus(vector, numberOfElements);
+
+    u8 i;
+    for(i = 0; i < numberOfElements; i++) {
+        vector[i] = vector[i]/modulus;
+    }
+
 }
