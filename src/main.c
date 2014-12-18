@@ -140,10 +140,11 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-    setar_parametros_PID(40, 25, 10, 100, 1, 30);								//Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(60, 5, 10, 50, 1, 0);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
-    setar_parametros_Kalman(0.0032, 5e-100, 5e-100, 1e-2, 8e-1);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    //setar_parametros_Kalman(0.0032, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(1e-8, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -404,7 +405,7 @@ int main(void)
 							R_magnetometro = conversor.flutuante_entrada;							
 
 							//Qang, Qbias, Qbiasmag, Racel, Rmag
-							setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, R_acelerometro, R_magnetometro, 1e-10); //Insere os parametros no processo de controle.
+                            //setar_parametros_Kalman(Q_acelerometro, Q_magnetometro, R_acelerometro, R_magnetometro, 1e-10); //Insere os parametros no processo de controle.
 
 						break;
 
@@ -619,8 +620,8 @@ void iniciarMPU6050Imu() {
     initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
 
     //initialConfig.digitalLowPassConfig = 0x02;          //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
-    //initialConfig.digitalLowPassConfig = 0x03;          //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
-    initialConfig.digitalLowPassConfig = 0x04;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 3ms)
+    initialConfig.digitalLowPassConfig = 0x03;          //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    //initialConfig.digitalLowPassConfig = 0x04;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 3ms)
 
 
     MPU6050_Init(I2C3, &initialConfig);

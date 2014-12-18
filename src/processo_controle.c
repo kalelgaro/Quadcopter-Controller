@@ -139,18 +139,21 @@ float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
 
 kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0,0,0,0},
 
-                                      {1e-8,    0,		0,		0,		0,		0,      0,      0,      0,      0,
-                                       0,		1e-8,	0,		0,		0,		0,      0,      0,      0,      0,
-                                       0,		0,		1e-8,	0,		0,		0,      0,      0,      0,      0,
-                                       0,		0,		0,		1e-8,	0,		0,      0,      0,      0,      0,
-                                       0,		0,		0,		0,		1e-8,	0,      0,      0,      0,      0,
-                                       0,		0,		0,		0,		0,		1e-8,   0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      1e-8,   0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      1e-8,   0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-8,   0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      1e-8},
+                                      {1e-8,    0,		0,		0,		0,		0,      0,      0,      0,      0,      0,      0,      0,
+                                       0,		1e-8,	0,		0,		0,		0,      0,      0,      0,      0,      0,      0,      0,
+                                       0,		0,		1e-8,	0,		0,		0,      0,      0,      0,      0,      0,      0,      0,
+                                       0,		0,		0,		1e-8,	0,		0,      0,      0,      0,      0,      0,      0,      0,
+                                       0,		0,		0,		0,		1e-8,	0,      0,      0,      0,      0,      0,      0,      0,
+                                       0,		0,		0,		0,		0,		1e-8,   0,      0,      0,      0,      0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      1e-8,   0,      0,      0,      0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      1e-8,   0,      0,      0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-8,   0,      0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      1e-8,   0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      1e-8,   0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1e-8,   0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1e-8},
 
-                                       5e-7, 1e-2, 1e-3, 45, 45, dt, {0.14, 0.05, -0.0155}};
+                                       5e-7, 2e-9, 1e-2, 1e-3, 45, 45, dt, {0, 0, 1} ,{0.14, 0.05, -0.0155}};
 
 //Erros utilizados nos controladores PID
 									  
@@ -233,9 +236,36 @@ void iniciar_estado_Kalman() {
     yaw_init_buffer += calcular_orientacao(mag_init_buffer, 0, 0);
     //EstadoFiltroKalman.ultimo_estado[2] = yaw_init_buffer;
 	
+    processar_mpu6050();
+
+    EstadoFiltroKalman.AcelInicial[0] = 0;
+    EstadoFiltroKalman.AcelInicial[1] = 0;
+    EstadoFiltroKalman.AcelInicial[2] = 1;
+
 	EstadoFiltroKalman.MagInicial[0] = mag_init_buffer[0];
 	EstadoFiltroKalman.MagInicial[1] = mag_init_buffer[1];
 	EstadoFiltroKalman.MagInicial[2] = mag_init_buffer[2];
+
+    //Valor inicial do quaternion
+    EstadoFiltroKalman.ultimo_estado[0] = 1;
+    EstadoFiltroKalman.ultimo_estado[1] = 0;
+    EstadoFiltroKalman.ultimo_estado[2] = 0;
+    EstadoFiltroKalman.ultimo_estado[3] = 0;
+
+    //Valor inicial do bias do Acelerômetro
+    EstadoFiltroKalman.ultimo_estado[4] = offset_accel[0];
+    EstadoFiltroKalman.ultimo_estado[5] = offset_accel[1];
+    EstadoFiltroKalman.ultimo_estado[6] = offset_accel[2];
+
+    //Valor inicial do bias do magnetômetro
+//    EstadoFiltroKalman.ultimo_estado[7] = 1;
+//    EstadoFiltroKalman.ultimo_estado[8] = 0;
+//    EstadoFiltroKalman.ultimo_estado[9] = 0;
+
+    //Valor inicial do bias do giroscópio.
+    EstadoFiltroKalman.ultimo_estado[10] = offset_gyro[0];
+    EstadoFiltroKalman.ultimo_estado[11] = offset_gyro[1];
+    EstadoFiltroKalman.ultimo_estado[12] = offset_gyro[2];
 
     //EstadoFiltroKalman.ultimo_estado[2] = yaw_init_buffer;
 }
@@ -253,11 +283,12 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 }
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
-void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasacel, float32_t Q_biasmag, float32_t R_acelerometro, float32_t R_magnetometro)
+void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasacel, float32_t Q_biasmag, float32_t Q_biasGyro, float32_t R_acelerometro, float32_t R_magnetometro)
 {
     EstadoFiltroKalman.Q_quat = Q_quat;
     EstadoFiltroKalman.Q_bias_acel = Q_biasacel;
 	EstadoFiltroKalman.Q_bias_mag = Q_biasmag;
+    EstadoFiltroKalman.Q_bias_gyro = Q_biasGyro;
 	
 	EstadoFiltroKalman.R_acel = R_acelerometro;
 	EstadoFiltroKalman.R_mag = R_magnetometro;
@@ -296,9 +327,9 @@ void retornar_parametros_Kalman(float32_t *Q_quaternion, float32_t *Q_biasacel, 
 
 void setar_offset_gyro(float offset[3]) 
 {
-	offset_gyro[0] = offset[0];
-	offset_gyro[1] = offset[1];
-	offset_gyro[2] = offset[2];
+    offset_gyro[0] = offset[0]*DEG_TO_RAD;
+    offset_gyro[1] = offset[1]*DEG_TO_RAD;
+    offset_gyro[2] = offset[2]*DEG_TO_RAD;
 }
 
 //Altera o valor de offset do acelerômetro (Zero G Level).
@@ -318,17 +349,17 @@ void processar_mpu6050() {
     while(MPU6050_checkDataReadyIntPin() == Bit_RESET);
     MPU6050_readData(I2C3, acelerometro_adxl345, saida_gyro_dps_pf);
 
-    saida_gyro_dps_pf[0] -= offset_gyro[0];
-    saida_gyro_dps_pf[1] -= offset_gyro[1];
-    saida_gyro_dps_pf[2] -= offset_gyro[2];
+//    saida_gyro_dps_pf[0] -= offset_gyro[0];
+//    saida_gyro_dps_pf[1] -= offset_gyro[1];
+//    saida_gyro_dps_pf[2] -= offset_gyro[2];
 
     saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0])*DEG_TO_RAD;
     saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1])*DEG_TO_RAD;
     saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2])*DEG_TO_RAD;
 
-    acelerometro_adxl345[acel_x] -= offset_accel[acel_x];
-    acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
-    acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
+//    acelerometro_adxl345[acel_x] -= offset_accel[acel_x];
+//    acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
+//    acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
 }
 
 void processar_magnetometro()

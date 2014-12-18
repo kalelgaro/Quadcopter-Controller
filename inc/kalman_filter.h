@@ -15,7 +15,7 @@
 	#define bias 1
 	#define angle 0
 
-    #define NUMBER_OF_STATES 10
+    #define NUMBER_OF_STATES 13
     #define NUMBER_OF_CONTROL_INPUTS 0
     #define NUMBER_OF_MEASURES 6
 
@@ -30,9 +30,11 @@
         float Q_quat;
         float Q_bias_acel;
         float Q_bias_mag;
+        float Q_bias_gyro;
 		float R_acel;
 		float R_mag;
 		float dt;
+        float AcelInicial[3];
 		float MagInicial[3];
 	} kalman_filter_state;
 
