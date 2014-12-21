@@ -28,6 +28,8 @@
     float getVectorModulus(const float vector[], u8 numberOfElements);
     void normalizeVector(float vector[], u8 numberOfElements);
 
+    float max(float previousMax, float newMeasure);
+    float min(float previousMin, float newMeasure);
 
 	typedef struct 
 	{
@@ -42,7 +44,7 @@
         float psi;
     }EulerAngles;
 
-	double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_pid, float dt);
+    double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_pid, float dt, float dErrorCoeficientes[], float dErrorBuffer[], uint16_t dFilterOrder);
     EulerAngles getEulerFromQuaternion(float quaternion[]);
 
 #endif /* TRATAMENTO_SINAL_H_ */

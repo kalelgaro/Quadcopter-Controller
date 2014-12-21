@@ -14,8 +14,9 @@
 
 	void setar_referencia(float Ref_pith, float Ref_roll, float Ref_yaw, float W_cte);
 	void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_yaw, float Kd_yaw);
-    void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasacel, float32_t Q_biasmag, float Q_biasGyro, float32_t R_acelerometro, float32_t R_magnetometro);
+    void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasacel, float32_t Q_biasmag, float32_t Q_biasGyro, float32_t R_acelerometro, float32_t R_magnetometro);
 	void setar_offset_acel(float offset[3]);
+    void setar_offset_mag(float offset[3]);
 	void setar_offset_gyro(float offset[3]);
 	void retornar_parametros_pid(float *Kp, float *Ki, float *Kd);
     void retornar_parametros_Kalman(float32_t *Q_quaternion, float32_t *Q_biasacel, float32_t *Q_biasmag, float32_t *R_acelerometro, float32_t *R_magnetometro);
@@ -26,5 +27,6 @@
 	void calculate_Yaw_Ref(float yaw_Rate);
 	float calcular_orientacao(float leituras_mag[], float Pitch, float Roll);
 	void iniciar_estado_Kalman();
+    void processar_mpu6050();
 
 #endif

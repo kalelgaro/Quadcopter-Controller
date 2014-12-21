@@ -5,8 +5,14 @@
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
 
+#include "tratamento_sinal.h"
 #include "tm_stm32f4_i2c.h"
+#include "funcoes_spi.h"
 #include "arm_math.h"
+
+    #define DEFAULT_SELF_TEXT_XY_FIELD  1160 //Valores em mGauss
+    #define DEFAULT_SELF_TEXT_Z_FIELD   1080 //Valores em mGauss
+
 
     #define end_HMC5883L 	0x3C
 
@@ -60,8 +66,14 @@
 
 	/* Defines do registrador CONFIG_B */
 
-	#define Gain_Default 			0x20
-	#define Gain_5					0xA0
+    #define Gain_0_73               0b00000000
+    #define Gain_0_92				0b00100000
+    #define Gain_1_22				0b01000000
+    #define Gain_1_52				0b01100000
+    #define Gain_2_27				0b10000000
+    #define Gain_2_56				0b10100000
+    #define Gain_3_03				0b11000000
+    #define Gain_4_35				0b11100000
 
 	/* Defines do registrador MODE */
 
@@ -83,8 +95,11 @@
 
 	void HMC5883L_Init(I2C_TypeDef*, HMC5883L_InitTypeDef*);
 	float HMC5883L_Read_Data(I2C_TypeDef*, float []);
+    void HMC5883L_getMagScale(I2C_TypeDef *I2Cx);
+    float* HMC5883L_getMagOffset(I2C_TypeDef *I2Cx);
 
     uint8_t HMC5883L_checkDataReadyIntPin();
+
     void HMC5883L_configIntPin(uint32_t RCC_AHB1Periph, GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 
 #endif 

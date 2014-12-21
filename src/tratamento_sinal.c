@@ -102,8 +102,7 @@ void acel_2_angulos(float acel_x, float acel_y, float acel_z, float angulos[2])
 /*Função para cálculo do controlador PID discreto utilizado */
 //Utilizado para controle de ângulos -> Adequa o erro inserido no intervalo de -180º à 180º para evitar a descontinuidade.
 
-
-double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_pid, float dt)
+double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_pid, float dt, float dErrorCoeficientes[], float dErrorBuffer[], uint16_t dFilterOrder)
 {
 	// float derivacao;
 	// float integracao;
@@ -132,11 +131,11 @@ double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_
 	kd = kd/dt;
 	ki = ki*dt/2;
 
-	float A0 = kp + kd + ki;
-	float A1 = -(kp + 2*kd) +ki;
-	float A2 = kd;
+    float dError = filtro_fir(entrada, dErrorBuffer, dFilterOrder, dErrorCoeficientes);
 
-	temp = buffer_pid[0] + A0*(entrada) + A1*buffer_pid[1] + A2*buffer_pid[2];
+    //temp = buffer_pid[0] + A0*(entrada) + A1*buffer_pid[1] + A2*buffer_pid[2];
+
+    temp = buffer_pid[0] + (kp+ki)*entrada - kp*buffer_pid[1] + kd*(dError - 2*dErrorBuffer[1] + dErrorBuffer[2]);
 
 	buffer_pid[0] = temp;			 //y[n-1] = y[n] -> Próxima iteração
 	buffer_pid[2] = buffer_pid[1];   //x[n-2] = x[n-1];
@@ -203,10 +202,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	if(velocidade_m4 < 0)
 		velocidade_m4 = 0;
 
-	velocidade_m1 = sqrt(velocidade_m1);
-	velocidade_m2 = sqrt(velocidade_m2);
-	velocidade_m3 = sqrt(velocidade_m3);
-	velocidade_m4 = sqrt(velocidade_m4);
+//	velocidade_m1 = sqrt(velocidade_m1);
+//	velocidade_m2 = sqrt(velocidade_m2);
+//	velocidade_m3 = sqrt(velocidade_m3);
+//	velocidade_m4 = sqrt(velocidade_m4);
 
 	//Ajuste da velocidae dos motores calculadas acima.
 	ajustar_velocidade(4, (uint16_t)round((velocidade_m1)));
@@ -402,4 +401,22 @@ void normalizeVector(float vector[], u8 numberOfElements)
         vector[i] = vector[i]/modulus;
     }
 
+}
+
+
+float max(float previousMax, float newMeasure)
+{
+    if(newMeasure > previousMax) {
+        return newMeasure;
+}
+    return previousMax;
+}
+
+
+float min(float previousMin, float newMeasure)
+{
+    if(newMeasure < previousMin) {
+    return newMeasure;
+}
+    return previousMin;
 }

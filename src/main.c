@@ -140,11 +140,11 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-    setar_parametros_PID(60, 5, 10, 50, 1, 0);								//Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(0.014, 1, 0.0007, 0.07, 0.002, 0);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
     //setar_parametros_Kalman(0.0032, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
-    setar_parametros_Kalman(1e-8, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(0.0007, 1e-20, 1e-20, 1e-20, 5e-3, 1e-2);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -476,15 +476,15 @@ int main(void)
 
 			retornar_estado_sensores(telemetria_acelerometro, telemetria_giroscopio, telemetria_magnetometro);
 
-			conversor.flutuante_entrada = telemetria_acelerometro[0];
+            conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 1, 4);
 
 
-			conversor.flutuante_entrada = telemetria_acelerometro[1];
+            conversor.flutuante_entrada = telemetria_magnetometro[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 5, 4);
 
 
-			conversor.flutuante_entrada = telemetria_acelerometro[2];
+            conversor.flutuante_entrada = telemetria_magnetometro[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
@@ -500,7 +500,7 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-            conversor.flutuante_entrada = telemetria_magnetometro[0];
+            conversor.flutuante_entrada = telemetria_acelerometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -671,20 +671,27 @@ void configurar_bussola()
 {	
 	HMC5883L_InitTypeDef configuracao_inicial;
 
-	configuracao_inicial.Samples = _8_samples;
-	configuracao_inicial.Output_DataRate = _75_0_HZ;
-	//configuracao_inicial.Meas_mode = Positive_bias;
-	//configuracao_inicial.Meas_mode = Negative_bias;
-	configuracao_inicial.Meas_mode = Default_Meas;
-	configuracao_inicial.Gain = Gain_5;
-	configuracao_inicial.Mode = Countinuous;
-	configuracao_inicial.HS_I2C = 0;
+    //HMC5883L_getMagScale(I2C3);
+
+    configuracao_inicial.Samples = _8_samples;
+    configuracao_inicial.Output_DataRate = _75_0_HZ;
+    //configuracao_inicial.Meas_mode = Positive_bias;
+    //configuracao_inicial.Meas_mode = Negative_bias;
+    configuracao_inicial.Meas_mode = Default_Meas;
+    configuracao_inicial.Gain = Gain_0_92;
+    configuracao_inicial.Mode = Countinuous;
+    configuracao_inicial.HS_I2C = 0;
 	
-	HMC5883L_Init(I2C3, &configuracao_inicial);
+    HMC5883L_Init(I2C3, &configuracao_inicial);
 
     HMC5883L_configIntPin(RCC_AHB1Periph_GPIOC, GPIOC, GPIO_Pin_7);
 
-    //while(HMC5883L_checkDataReadyIntPin() == Bit_SET);
+    while(HMC5883L_checkDataReadyIntPin() == Bit_SET);
+
+    //float *offset = HMC5883L_getMagOffset(I2C3); //Valores encontrados dinamicamente
+    float offset[] = {0.1233, -0.4267, -0.21};
+
+    setar_offset_mag(offset);
 }
 
 //Inicia o timer principal utilizado na aquisição de dados (TIM6)
