@@ -140,11 +140,11 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-    setar_parametros_PID(0.014, 1, 0.0007, 0.07, 0.002, 0);								//Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(50, 0, 0.012, 25, 0, 00);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
-    //setar_parametros_Kalman(0.0032, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
-    setar_parametros_Kalman(0.0007, 1e-20, 1e-20, 1e-20, 5e-3, 1e-2);						//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    //setar_parametros_Kalman(0.0032, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);		//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(0.04, 1e-15, 1e-15, 1e-15, 0.1, 0.5);  			//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -476,15 +476,15 @@ int main(void)
 
 			retornar_estado_sensores(telemetria_acelerometro, telemetria_giroscopio, telemetria_magnetometro);
 
-            conversor.flutuante_entrada = telemetria_magnetometro[0];
+            conversor.flutuante_entrada = telemetria_acelerometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 1, 4);
 
 
-            conversor.flutuante_entrada = telemetria_magnetometro[1];
+            conversor.flutuante_entrada = telemetria_acelerometro[1];
 			copy_to(buffer_dados_tx, conversor.bytes, 5, 4);
 
 
-            conversor.flutuante_entrada = telemetria_magnetometro[2];
+            conversor.flutuante_entrada = telemetria_acelerometro[2];
 			copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 
@@ -500,7 +500,7 @@ int main(void)
 			copy_to(buffer_dados_tx, conversor.bytes, 21, 4);
 
 
-            conversor.flutuante_entrada = telemetria_acelerometro[0];
+            conversor.flutuante_entrada = telemetria_magnetometro[0];
 			copy_to(buffer_dados_tx, conversor.bytes, 25, 4);
 
 
@@ -611,7 +611,7 @@ void iniciarMPU6050Imu() {
 
     //Configurações dos sensores.
     initialConfig.accelFullScale = AFS_8G;              //Fundo de escala de 8G.
-    initialConfig.gyroFullScale = FS_2000DPS;             //Fundo de escala de 500 graus por segundo.
+    initialConfig.gyroFullScale = FS_1000DPS;             //Fundo de escala de 500 graus por segundo.
     initialConfig.clockSource = MPU6050_CLK_GYRO_X_PLL; //Fonte de clock no oscilador do eixo X do giroscópio.
     initialConfig.fifoEnabled = 0;                      //Fifo desligada;
     initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual à do Gyro
@@ -619,9 +619,9 @@ void iniciarMPU6050Imu() {
     initialConfig.interruptsConfig = 0x01;              //Ativa a interrupção de Data Ready;
     initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
 
-    //initialConfig.digitalLowPassConfig = 0x02;          //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
-    initialConfig.digitalLowPassConfig = 0x03;          //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
-    //initialConfig.digitalLowPassConfig = 0x04;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 3ms)
+    //initialConfig.digitalLowPassConfig = 0x02;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
+    initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    //initialConfig.digitalLowPassConfig = 0x00;            //Frequências de corte em 260Hz e Aquisição em 8Khz. (Delay de aprox 0.98ms)
 
 
     MPU6050_Init(I2C3, &initialConfig);
@@ -704,7 +704,7 @@ void iniciar_timer_processamento()
 
   	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;		//100.000 Contagens por segundo
 
-    TIM_TimeBaseStructure.TIM_Period = 500;											//(1/100.000)*500 segundos por "overflow" -> 0.01 segundos por overflow
+    TIM_TimeBaseStructure.TIM_Period = 500;											//(1/100.000)*500 segundos por "overflow" -> 0.005 segundos por overflow
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;

@@ -6,49 +6,56 @@ uint16_t gyroFullScale;
 GPIO_TypeDef* dataRdyIntPort;
 uint16_t dataRdyIntPin;
 
+
+//Função de inicialização corrigida baseada no código proposto em: http://www.multiwii.com/forum/viewtopic.php?f=8&t=1591
 void MPU6050_Init(I2C_TypeDef *I2Cx, MPU6050_InitStruct *initialConfig) {
 	uint8_t i2cDataBuffer = 0x00;
 
     //Reinicia o dispotivio;
-    i2cDataBuffer = MPU6050_DEVICE_RESET | MPU6050_SLEEP;
+    i2cDataBuffer = MPU6050_DEVICE_RESET;
     TM_I2C_Write(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, i2cDataBuffer);
 
-    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1) - Mantém em modo SLEEP;
-    i2cDataBuffer = initialConfig->clockSource | initialConfig->temperatureSensorDisabled | MPU6050_SLEEP;
-    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, i2cDataBuffer);
-
-    //Configuração do filtro passa baixa e da frequência de aquisição do gyro (Base do accel).
-    i2cDataBuffer = initialConfig->digitalLowPassConfig;
-    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, CONFIG_MPU6050, i2cDataBuffer);
+//    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1) - Mantém em modo SLEEP;
+//    i2cDataBuffer = TM_I2C_Read(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1);
+//    i2cDataBuffer |= initialConfig->clockSource | initialConfig->temperatureSensorDisabled;
+//    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, i2cDataBuffer);
 
     //Configuração da frequência de amostragem do acelerômetro.
     i2cDataBuffer = initialConfig->sampleRateDivider;
     TM_I2C_Write(I2Cx, MPU6050_ADDRESS, SMPLRT_DIV, i2cDataBuffer);
 
-    //Configuração do estado das FIFOS
-    i2cDataBuffer = initialConfig->fifoEnabled;
-    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, USER_CTRL, i2cDataBuffer);
-
-    //Configuração das interrupções.
-    i2cDataBuffer = initialConfig->interruptsConfig;
-    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, INT_ENABLE_MPU6050, i2cDataBuffer);
-
-    //Configuração do pino de interurpção.
-    i2cDataBuffer = initialConfig->intPinConfig;
-    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, INT_PIN_CFG, i2cDataBuffer);
-
-    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1) - Retira a do modo SLEEP;
-    i2cDataBuffer = initialConfig->clockSource | initialConfig->temperatureSensorDisabled;
+    //    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1)
+    i2cDataBuffer |= initialConfig->clockSource | initialConfig->temperatureSensorDisabled;
     TM_I2C_Write(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, i2cDataBuffer);
 
     //Configuração do fundo de escala do giroscópio.
     i2cDataBuffer = initialConfig->gyroFullScale;
     TM_I2C_Write(I2Cx, MPU6050_ADDRESS, GYRO_CONFIG, i2cDataBuffer);
 
+    //Configuração do estado das FIFOS
+    i2cDataBuffer = initialConfig->fifoEnabled;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, USER_CTRL, i2cDataBuffer);
+
+    //Configuração do pino de interurpção.
+    i2cDataBuffer = initialConfig->intPinConfig;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, INT_PIN_CFG, i2cDataBuffer);
+
+    //Configuração do filtro passa baixa e da frequência de aquisição do gyro (Base do accel).
+    i2cDataBuffer = initialConfig->digitalLowPassConfig;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, CONFIG_MPU6050, i2cDataBuffer);
+
     //Configuração do fundo de escala do acelerômetro
     i2cDataBuffer = initialConfig->accelFullScale;
     TM_I2C_Write(I2Cx, MPU6050_ADDRESS, ACCEL_CONFIG, i2cDataBuffer);
+    //Configuração das interrupções.
+    i2cDataBuffer = initialConfig->interruptsConfig;
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, INT_ENABLE_MPU6050, i2cDataBuffer);
 
+    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1) - Retira a do modo SLEEP;
+    i2cDataBuffer = TM_I2C_Read(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1);
+    //Desliga o BIT de SLEEP
+    i2cDataBuffer &= (~MPU6050_SLEEP);
+    TM_I2C_Write(I2Cx, MPU6050_ADDRESS, PWR_MGMT_1, i2cDataBuffer);
 
 //FIXME: Modificações teste - Testar se necessita de escrita no PWR_MGMT_1 neste ponto, após todas as configurações.
 //    //Configuração da fonte de clock e do modo de energia (PWR_MGMT_1);
