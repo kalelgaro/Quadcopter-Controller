@@ -164,6 +164,20 @@ kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0,0,0,0},
                                        0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1e-8,   0,
                                        0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1e-8},
 
+                                          {	1e-10,0,0,0,0,0,0,0,0,0,0,0,0,
+                                            0,1e-10,0,0,0,0,0,0,0,0,0,0,0,
+                                            0,0,1e-10,0,0,0,0,0,0,0,0,0,0,
+                                            0,0,0,1e-10,0,0,0,0,0,0,0,0,0,
+                                            0,0,0,0,1e-10,0,0,0,0,0,0,0,0,
+                                            0,0,0,0,0,1e-10,0,0,0,0,0,0,0,
+                                            0,0,0,0,0,0,1e-10,0,0,0,0,0,0,
+                                            0,0,0,0,0,0,0,1e-10,0,0,0,0,0,
+                                            0,0,0,0,0,0,0,0,1e-10,0,0,0,0,
+                                            0,0,0,0,0,0,0,0,0,1e-10,0,0,0,
+                                            0,0,0,0,0,0,0,0,0,0,1e-10,0,0,
+                                            0,0,0,0,0,0,0,0,0,0,0,1e-10,0,
+                                            0,0,0,0,0,0,0,0,0,0,0,0,1e-10},
+
                                        5e-7, 2e-9, 1e-2, 1e-3, 45, 45, dt, {0, 0, 1} ,{0.14, 0.05, -0.0155}};
 
 //Erros utilizados nos controladores PID
@@ -211,7 +225,7 @@ void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_rate_yaw, float
     {
         controlador_ligado = 1;
         W_cte -= 0.15;
-        rotacao_constante = (W_cte*44); //Insere o valor de rotação dos motores entre 146,25 e 2145
+        rotacao_constante = (W_cte*2500); //Insere o valor de rotação dos motores entre 146,25 e 2145
     }
 }
 
@@ -219,20 +233,14 @@ void iniciar_estado_Kalman() {
 
     uint8_t status;
 
-    float mag_init_buffer[3] = {0.0, 0.0, 0.0};
-    float yaw_init_buffer = 0;
-    float mag_init[3];
+    float mag_init_buffer[3] = {0.0, 0.0, 0.0};   
+    float mag_init[3] = {0.0, 0.0, 0.0};
 
     //Leitura do registrador de STATUS do magnetômetro
     uint16_t counter = 400;
 
     while(counter--) {
-        do {
-            status = TM_I2C_Read(I2C3, end_HMC5883L, STATUS_MG);
-            //Aguarda enquanto não houverem novos dados dentro dos registradores de leitura.
-            GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
-        }while((status&0x01)!= 0x01);
-
+        while(HMC5883L_checkDataReadyIntPin() == Bit_SET)
         HMC5883L_Read_Data(I2C3, mag_init);
 
         mag_init_buffer[0] += (mag_init[0]-offsetMag[0]);
@@ -244,11 +252,9 @@ void iniciar_estado_Kalman() {
     mag_init_buffer[1] = mag_init_buffer[1]/(float)400;
     mag_init_buffer[2] = mag_init_buffer[2]/(float)400;
 
-    //yaw_init_buffer += calcular_orientacao(mag_init_buffer, 0, 0);
-    //EstadoFiltroKalman.ultimo_estado[2] = yaw_init_buffer;
+    counter = 400;
 
-    processar_mpu6050();
-
+    //Acelerometro foi iniciado de forma que o offset é subtraido
     EstadoFiltroKalman.AcelInicial[0] = 0;
     EstadoFiltroKalman.AcelInicial[1] = 0;
     EstadoFiltroKalman.AcelInicial[2] = 1;
@@ -264,19 +270,19 @@ void iniciar_estado_Kalman() {
     EstadoFiltroKalman.ultimo_estado[3] = 0;
 
     //Valor inicial do bias do Acelerômetro
-    EstadoFiltroKalman.ultimo_estado[4] = 0;
-    EstadoFiltroKalman.ultimo_estado[5] = 0;
-    EstadoFiltroKalman.ultimo_estado[6] = 0;
+    EstadoFiltroKalman.ultimo_estado[4] = offset_accel[0];
+    EstadoFiltroKalman.ultimo_estado[5] = offset_accel[1];
+    EstadoFiltroKalman.ultimo_estado[6] = offset_accel[2];
 
     //Valor inicial do bias do magnetômetro - Valores retirados de testes de offset
-    EstadoFiltroKalman.ultimo_estado[7] = 0;
-    EstadoFiltroKalman.ultimo_estado[8] = 0;
-    EstadoFiltroKalman.ultimo_estado[9] = 0;
+    EstadoFiltroKalman.ultimo_estado[7] = offsetMag[0];
+    EstadoFiltroKalman.ultimo_estado[8] = offsetMag[1];
+    EstadoFiltroKalman.ultimo_estado[9] = offsetMag[2];
 
     //Valor inicial do bias do giroscópio.
-    EstadoFiltroKalman.ultimo_estado[10] = offset_gyro[0];
-    EstadoFiltroKalman.ultimo_estado[11] = offset_gyro[1];
-    EstadoFiltroKalman.ultimo_estado[12] = offset_gyro[2];
+    EstadoFiltroKalman.ultimo_estado[10] = offset_gyro[0]*DEG_TO_RAD;
+    EstadoFiltroKalman.ultimo_estado[11] = offset_gyro[1]*DEG_TO_RAD;
+    EstadoFiltroKalman.ultimo_estado[12] = offset_gyro[2]*DEG_TO_RAD;
 }
 
 //Altera as contastes do controlador PID. - Roll, Pitch e Yaw.
@@ -336,9 +342,9 @@ void retornar_parametros_Kalman(float32_t *Q_quaternion, float32_t *Q_biasacel, 
 
 void setar_offset_gyro(float offset[3])
 {
-    offset_gyro[0] = offset[0]*DEG_TO_RAD;
-    offset_gyro[1] = offset[1]*DEG_TO_RAD;
-    offset_gyro[2] = offset[2]*DEG_TO_RAD;
+    offset_gyro[0] = offset[0];
+    offset_gyro[1] = offset[1];
+    offset_gyro[2] = offset[2];
 }
 
 //Altera o valor de offset do acelerômetro (Zero G Level).
@@ -355,35 +361,26 @@ void setar_offset_acel(float offset[3])
 
 void processar_mpu6050() {
     //Checa a disponibilidade de novos dados para leitura.
-    while(MPU6050_checkDataReadyIntPin() == Bit_RESET);
-    MPU6050_readData(I2C3, acelerometro_adxl345, saida_gyro_dps_pf);
+    if(MPU6050_checkDataReadyIntPin() == Bit_SET) {
+        MPU6050_readData(I2C3, acelerometro_adxl345, saida_gyro_dps_pf);
 
-    //Bias do gyroi é retirado no filtro de Kalman.
-//    saida_gyro_dps_pf[0] -= offset_gyro[0];
-//    saida_gyro_dps_pf[1] -= offset_gyro[1];
-//    saida_gyro_dps_pf[2] -= offset_gyro[2];
-
-    saida_gyro_dps_pf[0] = (saida_gyro_dps_pf[0])*DEG_TO_RAD;
-    saida_gyro_dps_pf[1] = (saida_gyro_dps_pf[1])*DEG_TO_RAD;
-    saida_gyro_dps_pf[2] = (saida_gyro_dps_pf[2])*DEG_TO_RAD;
-
-    acelerometro_adxl345[acel_x] -= offset_accel[acel_x];
-    acelerometro_adxl345[acel_y] -= offset_accel[acel_y];
-    acelerometro_adxl345[acel_z] -= offset_accel[acel_z];
+        //Converte as medidas de Graus/Segundo para Radianos/Segundo
+        saida_gyro_dps_pf[0] *= DEG_TO_RAD;
+        saida_gyro_dps_pf[1] *= DEG_TO_RAD;
+        saida_gyro_dps_pf[2] *= DEG_TO_RAD;
+    }
 }
 
 void processar_magnetometro()
 {
-    uint8_t status;
-
+    uint8_t status = 0x00;
     //Chega no registrador de status se há leituras prontas no magnetômetro.
-    if(HMC5883L_checkDataReadyIntPin() == Bit_SET)
+
+    //Lê o registrador de status
+    status = TM_I2C_Read(I2C3, end_HMC5883L, STATUS_MG);
+    if((status & 0x01) == 0x01)
     {
         HMC5883L_Read_Data(I2C3, magnetometro);
-        //normalizar_vetor_R3(magnetometro);
-        magnetometro[0] -= offsetMag[0];
-        magnetometro[1] -= offsetMag[1];
-        magnetometro[2] -= offsetMag[2];
     }
 }
 
@@ -402,9 +399,9 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-    Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[10];
-    Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[11];
-    Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[12];
+    Acelerometro[0] = acelerometro_adxl345[acel_x];
+    Acelerometro[1] = acelerometro_adxl345[acel_y];
+    Acelerometro[2] = acelerometro_adxl345[acel_z];
 
     Giroscopio[0] = saida_gyro_dps_pf[0];
     Giroscopio[1] = saida_gyro_dps_pf[1];
@@ -508,16 +505,16 @@ void processo_controle()
             erro_yaw =   (ref_yaw - orientacao + orientacao_inicial);
 
             //Converte o erro absoluto de ângulos de graus para graus por segundo
-            float pitchRateRef = erro_pitch*3.5; //"1º de erro -> Velocidade de 4,5º por segundo;
-            float rollRateRef = erro_roll*3.5;
-            float yawRateRef = erro_yaw*3.5;
+            float pitchRateRef = erro_pitch*10.5; //"1º de erro -> Velocidade de 4,5º por segundo;
+            float rollRateRef = erro_roll*10.5;
+            float yawRateRef = erro_yaw*10.5;
 
             //Pega o bias do giroscópio estimado pelo filtro de Kalman
             float bgx = EstadoFiltroKalman.ultimo_estado[10];
             float bgy = EstadoFiltroKalman.ultimo_estado[11];
             float bgz = EstadoFiltroKalman.ultimo_estado[12];
 
-            //Pega o giroscópio como feedback de velocidade angular
+            //Pega o giroscópio como feedback de velocidade angular. Retira o novo bias estimado pelo filtro
             float pitchRateFeedback = (saida_gyro_dps_pf[pitch] - bgx)*RAD_TO_DEG;
             float rollRateFeedback = (saida_gyro_dps_pf[roll] - bgy)*RAD_TO_DEG;
             float yawRateFeedback = (saida_gyro_dps_pf[yaw] - bgz)*RAD_TO_DEG;

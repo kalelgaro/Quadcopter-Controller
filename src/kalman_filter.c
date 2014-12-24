@@ -29,7 +29,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     arm_matrix_instance_f32 Sinv;		//Matriz S inversa. [a, a]
     arm_matrix_instance_f32 K;			//Matriz com os ganhos de Kalman [n,a]
 
-		//Matrices intermediàrias para cálculo
+    //Matrices intermediàrias para cálculo
 
     arm_matrix_instance_f32 temp_calc_a1_0;
     arm_matrix_instance_f32 temp_calc_a1_1;
@@ -150,7 +150,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     X_f32[12] = bgz;
 
     //Normaliza o quaternion gerado
-    normalizeVector(X_f32, 4);
+    //normalizeVector(X_f32, 4);
 
     //Retira o quaternion para utilização
     q0 = X_f32[0];
@@ -159,23 +159,23 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     q3 = X_f32[3];
 
     float a11 = 1;
-    float a12 = -(dt*wx)/2;
-    float a13 = -(dt*wy)/2;
-    float a14 = -(dt*wz)/2;
+    float a12 = dt*(bgx/2 - wx/2);
+    float a13 = dt*(bgy/2 - wy/2);
+    float a14 = dt*(bgz/2 - wz/2);
 
-    float a21 = (dt*wx)/2;
+    float a21 = -dt*(bgx/2 - wx/2);
     float a22 = 1;
-    float a23 = -(dt*wz)/2;
-    float a24 = (dt*wy)/2;
+    float a23 = dt*(bgz/2 - wz/2);
+    float a24 = -dt*(bgy/2 - wy/2);
 
-    float a31 = (dt*wy)/2;
-    float a32 = (dt*wz)/2;
+    float a31 = -dt*(bgy/2 - wy/2);
+    float a32 = -dt*(bgz/2 - wz/2);
     float a33 = 1;
-    float a34 = -(dt*wx)/2;
+    float a34 = dt*(bgx/2 - wx/2);
 
-    float a41 = (dt*wz)/2;
-    float a42 = -(dt*wy)/2;
-    float a43 = (dt*wx)/2;
+    float a41 = -dt*(bgz/2 - wz/2);
+    float a42 = dt*(bgy/2 - wy/2);
+    float a43 = -dt*(bgx/2 - wx/2);
     float a44 = 1;
 
     float a111 = (dt*q1)/2;
@@ -236,6 +236,29 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     float qBiasMag = (buffer_filtro->Q_bias_mag);
     float qBiasGyro = (buffer_filtro->Q_bias_gyro);
 
+    /*Matriz de confiabilidade do processo de atualização. */
+    /* Pk|k-1 = Pk-1|k-1 */
+    float P_f32[n*n];
+    arm_copy_f32(buffer_filtro->P, P_f32, n*n);
+    arm_mat_init_f32(&P, n, n, P_f32);
+
+    //temp_calc_nn_0 = F*P
+    if(arm_mat_mult_f32(&F, &P, &temp_calc_nn_0) != ARM_MATH_SUCCESS)
+        while(1);
+
+    //temp_calc_nn_1 = F*P*F'
+    if(arm_mat_mult_f32(&temp_calc_nn_0, &Ft, &temp_calc_nn_1) != ARM_MATH_SUCCESS)
+        while(1);
+
+    //Copia a matriz Q da iteração anterior para a atual.
+    float Q_f32[n*n];
+    arm_mat_init_f32(&Q, n, n, Q_f32);
+    arm_copy_f32(buffer_filtro->Qk, Q_f32, n*n);
+
+    //P = temp_calc_nn_1 + Q = F*P*F' + Q
+    if(arm_mat_add_f32(&temp_calc_nn_1, &Q, &P) != ARM_MATH_SUCCESS)
+        while(1);
+
     float q11, q12, q13, q14;
     float q21, q22, q23, q24;
     float q31, q32, q33, q34;
@@ -263,7 +286,8 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     q43 = -(Qquat*sqrDt*q2*q3)/4;
     q44 = (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4;
 
-    float Q_f32[n*n] = {	q11,	q12,  	q13,  	q14,  	0,          0,          0,          0,          0,          0,          0,          0,          0,
+    //Atualiza a matriz de covariâncias dos processos
+    float newQ_f32[n*n] = {	q11,	q12,  	q13,  	q14,    0,          0,          0,          0,          0,          0,          0,          0,          0,
                             q21,  	q22,	q23,  	q24,  	0,          0,          0,          0,          0,          0,          0,          0,          0,
                             q31,  	q32,  	q33,	q34,  	0,          0,          0,          0,          0,          0,          0,          0,          0,
                             q41,  	q42,  	q43,  	q44,	0,          0,          0,          0,          0,          0,          0,          0,          0,
@@ -277,26 +301,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
                             0,      0,      0,      0,      0,          0,          0,          0,          0,          0,          0,          qBiasGyro,  0,
                             0,      0,      0,      0,      0,          0,          0,          0,          0,          0,          0,          0,          qBiasGyro};
 
-    arm_mat_init_f32(&Q, n, n, Q_f32);
-
-
-	/*Matriz de confiabilidade do processo de atualização. */
-	/* Pk|k-1 = Pk-1|k-1 */
-    float P_f32[n*n];
-    arm_copy_f32(buffer_filtro->P, P_f32, n*n);
-    arm_mat_init_f32(&P, n, n, P_f32);
-
-    //temp_calc_nn_0 = F*P
-    if(arm_mat_mult_f32(&F, &P, &temp_calc_nn_0) != ARM_MATH_SUCCESS)
-        while(1);
-
-    //temp_calc_nn_1 = F*P*F'
-    if(arm_mat_mult_f32(&temp_calc_nn_0, &Ft, &temp_calc_nn_1) != ARM_MATH_SUCCESS)
-        while(1);
-
-    //P = temp_calc_nn_1 + Q = F*P*F' + Q
-    if(arm_mat_add_f32(&temp_calc_nn_1, &Q, &P) != ARM_MATH_SUCCESS)
-        while(1);
+    arm_copy_f32(newQ_f32, buffer_filtro->Qk, n*n);
 
 	/*Estados iniciais do magnetômetro */
     float magRefVector[3];
@@ -410,8 +415,8 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     float magModulus = getVectorModulus(medida_mag, 3);
     float magInitialModulus = getVectorModulus(buffer_filtro->MagInicial, 3);
 
-    Racel += 1e-2*fabsf(1 - acelModulus);
-    Rmag += 1e-2*fabs(magInitialModulus - magModulus);
+    //Racel += 1e-1*fabsf(1 - acelModulus);
+    //Rmag += 1*fabs(magInitialModulus - magModulus);
 
 
     float R_f32[a*a] = {(Racel), 0, 0, 0, 0, 0,
@@ -486,7 +491,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     if(arm_mat_mult_f32(&temp_calc_nn_1, &P, &temp_calc_nn_0) != ARM_MATH_SUCCESS)
         while(1);
 
-
     normalizeVector(X_f32, 4);
 
     arm_copy_f32(X_f32, buffer_filtro->ultimo_estado, n);
@@ -495,6 +499,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
 void getRotMatFromQuaternion(float quaternion[4], arm_matrix_instance_f32 *rotationMatrix) {
     float q0, q1, q2, q3, temp;
+
     q0 = quaternion[0];
     q1 = quaternion[1];
     q2 = quaternion[2];
