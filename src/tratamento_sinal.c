@@ -106,7 +106,7 @@ float constrainAngle(float deegreesAngles)
 {
     if(deegreesAngles < -180)
         deegreesAngles = (deegreesAngles + 360);
-    else if(entrada > 180)
+    else if(deegreesAngles > 180)
         deegreesAngles = -(360-deegreesAngles);
 
     return deegreesAngles;
