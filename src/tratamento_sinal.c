@@ -102,6 +102,16 @@ void acel_2_angulos(float acel_x, float acel_y, float acel_z, float angulos[2])
 /*Função para cálculo do controlador PID discreto utilizado */
 //Utilizado para controle de ângulos -> Adequa o erro inserido no intervalo de -180º à 180º para evitar a descontinuidade.
 
+float constrainAngle(float deegreesAngles)
+{
+    if(deegreesAngles < -180)
+        deegreesAngles = (deegreesAngles + 360);
+    else if(entrada > 180)
+        deegreesAngles = -(360-deegreesAngles);
+
+    return deegreesAngles;
+}
+
 double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_pid, float dt, float dErrorCoeficientes[], float dErrorBuffer[], uint16_t dFilterOrder)
 {
 	// float derivacao;
@@ -120,12 +130,8 @@ double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_
 	//buffer_pid[1] -> Ultima leitura; x[n-1]
 	//buffer_pid[2] -> Penultima leitura; x[n-2]
 
-	// //entrada -> x[n]
-	if(entrada < -180)
-		entrada = (entrada + 360);
-	else if(entrada > 180)
-		entrada = -(360-entrada);
-	
+    // //entrada -> x[n]
+
 	float temp;
 
 	kd = kd/dt;
@@ -202,10 +208,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	if(velocidade_m4 < 0)
 		velocidade_m4 = 0;
 
-//	velocidade_m1 = sqrt(velocidade_m1);
-//	velocidade_m2 = sqrt(velocidade_m2);
-//	velocidade_m3 = sqrt(velocidade_m3);
-//	velocidade_m4 = sqrt(velocidade_m4);
+    velocidade_m1 = sqrt(velocidade_m1);
+    velocidade_m2 = sqrt(velocidade_m2);
+    velocidade_m3 = sqrt(velocidade_m3);
+    velocidade_m4 = sqrt(velocidade_m4);
 
 	//Ajuste da velocidae dos motores calculadas acima.
 	ajustar_velocidade(4, (uint16_t)round((velocidade_m1)));
@@ -391,7 +397,6 @@ float getVectorModulus(const float vector[], u8 numberOfElements)
     return temp;
 }
 
-
 void normalizeVector(float vector[], u8 numberOfElements)
 {
     float modulus = getVectorModulus(vector, numberOfElements);
@@ -403,20 +408,23 @@ void normalizeVector(float vector[], u8 numberOfElements)
 
 }
 
-
 float max(float previousMax, float newMeasure)
 {
     if(newMeasure > previousMax) {
         return newMeasure;
-}
+    }
     return previousMax;
 }
-
 
 float min(float previousMin, float newMeasure)
 {
     if(newMeasure < previousMin) {
     return newMeasure;
-}
+    }
     return previousMin;
+}
+
+void getBodyFrameRates(EulerAngles earthFrameAngles, EulerAngles *bodyFrameAngles)
+{
+
 }

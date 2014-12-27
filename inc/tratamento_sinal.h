@@ -28,8 +28,11 @@
     float getVectorModulus(const float vector[], u8 numberOfElements);
     void normalizeVector(float vector[], u8 numberOfElements);
 
+    //void getBodyFrameRates(EulerAngles earthFrameAngles, EulerAngles *bodyFrameAngles);
+
     float max(float previousMax, float newMeasure);
     float min(float previousMin, float newMeasure);
+    float constrainAngle(float deegreesAngles);
 
 	typedef struct 
 	{

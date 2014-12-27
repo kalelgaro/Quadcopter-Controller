@@ -140,11 +140,11 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-    setar_parametros_PID(50, 0, 0.012, 25, 0, 00);								//Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(52, 0, 0.014, 15, 0, 00);								//Ajusta as constantes do PID para Roll e Pitch.
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
     //setar_parametros_Kalman(0.0032, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);		//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
-    setar_parametros_Kalman(0.04, 1e-15, 1e-15, 1e-15, 0.1, 0.5);  			//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(0.01, 1e-15, 1e-15, 1e-15, 0.15, 0.5);  			//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
