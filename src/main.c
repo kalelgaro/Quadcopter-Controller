@@ -140,12 +140,14 @@ int main(void)
 
 	//teste_filtro_de_kalman();
 
-    setar_parametros_PID(52, 0, 0.014, 15, 0, 00);								//Ajusta as constantes do PID para Roll e Pitch.
+    //setar_parametros_PID(1500, 1000, 60, 126, 2500, 0, 0, 126);                      //Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(1400, 50, 50, 188, 15, 0, 0, 188);                      //Ajusta as constantes do PID para Roll e Pitch.
+    //setar_parametros_PID(900, 1200, 20, 188, 10, 0, 0, 188);                      //Ajusta as constantes do PID para Roll e Pitch.
 
-	//Qang, Qbiasmag, Racel, Rmag, Rorth
-    //setar_parametros_Kalman(0.0032, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);		//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
-    setar_parametros_Kalman(0.01, 1e-15, 1e-15, 1e-15, 0.15, 0.5);  			//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
-	
+    //Melhores parametros obtidos até o momento (05/01/2015) 5e-10 1e-45 1e-45 0.005 0.35 1e-6
+    //Qang, QbiasAcel, Qbiasmag, Racel, Rmag, Rorth
+    setar_parametros_Kalman(1e-8, 1e-15, 1e-15, 2e-18, 1e-1, 5e0, 0.5);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
 	uint8_t status_RF = 0;														//Variável que aloca o estado do link RF.
@@ -277,10 +279,10 @@ int main(void)
 							conversor.flutuante_entrada = kp;
 							copy_to(buffer_dados_tx, conversor.bytes, 1, 4);
 
-							conversor.flutuante_entrada = kd;
+                            conversor.flutuante_entrada = ki;
 							copy_to(buffer_dados_tx, conversor.bytes, 5, 4);
 
-							conversor.flutuante_entrada = ki;
+                            conversor.flutuante_entrada = kd;
 							copy_to(buffer_dados_tx, conversor.bytes, 9, 4);
 
 							escrita_dados(SPI2, buffer_dados_tx, 32);
@@ -293,7 +295,8 @@ int main(void)
 
 							limpar_buffer(buffer_dados_tx,33);
 
-							retornar_parametros_Kalman(&Q_acelerometro, &Q_magnetometro, &Q_bias, &R_acelerometro, &R_magnetometro);
+                            //FIXME: Consertar método para envio dos parâmetros do filtro de Kalman
+                            //retornar_parametros_Kalman(&Q_acelerometro, &Q_magnetometro, &Q_bias, &R_acelerometro, &R_magnetometro);
 
 							buffer_dados_tx[0] = '^';
 
@@ -361,7 +364,8 @@ int main(void)
 
 							ki_yaw = conversor.flutuante_entrada;
 
-							setar_parametros_PID(kp,ki,kd, kp_yaw, ki_yaw, kd_yaw); //Insere os parametros no processo de controle.
+                            //setar_parametros_PID(kp,ki,kd, 126, kp_yaw, ki_yaw, kd_yaw, 126); //Insere os parametros no processo de controle.
+                            setar_parametros_PID(kp,ki,kd, 126, 0, 0, 0, 126); //Insere os parametros no processo de controle.
 
 						break;
 
@@ -611,16 +615,18 @@ void iniciarMPU6050Imu() {
 
     //Configurações dos sensores.
     initialConfig.accelFullScale = AFS_8G;              //Fundo de escala de 8G.
-    initialConfig.gyroFullScale = FS_1000DPS;             //Fundo de escala de 500 graus por segundo.
+    initialConfig.gyroFullScale = FS_2000DPS;             //Fundo de escala de 500 graus por segundo.
     initialConfig.clockSource = MPU6050_CLK_GYRO_X_PLL; //Fonte de clock no oscilador do eixo X do giroscópio.
     initialConfig.fifoEnabled = 0;                      //Fifo desligada;
-    initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual à do Gyro
+    initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual à do Gyro //Taxa de saída de 500 Hz
     initialConfig.temperatureSensorDisabled = 0;        //Sensor de temperatura ligado.
     initialConfig.interruptsConfig = 0x01;              //Ativa a interrupção de Data Ready;
     initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
 
-    //initialConfig.digitalLowPassConfig = 0x02;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
-    initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    //initialConfig.digitalLowPassConfig = 0x01;            //Sem filtro passa baixa
+    initialConfig.digitalLowPassConfig = 0x02;            //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
+    //initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    //initialConfig.digitalLowPassConfig = 0x04;            //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 8,5ms)
     //initialConfig.digitalLowPassConfig = 0x00;            //Frequências de corte em 260Hz e Aquisição em 8Khz. (Delay de aprox 0.98ms)
 
 
@@ -631,12 +637,12 @@ void iniciarMPU6050Imu() {
     float temp_accel[3];
     float temp_gyro[3];  
 
-    delay(1000);
+    delay(10000);
 
     MPU6050_configIntPin(RCC_AHB1Periph_GPIOD, GPIOD, GPIO_Pin_0);
 
     //Carregar valores de "parado" (Offsets).
-    uint16_t counterOffsetAquisition = 2000;
+    uint16_t counterOffsetAquisition = 10000;
     while(counterOffsetAquisition--) {
         while(MPU6050_checkDataReadyIntPin() == Bit_RESET);
 
@@ -650,17 +656,15 @@ void iniciarMPU6050Imu() {
         offset_gyro[0] += temp_gyro[0];
         offset_gyro[1] += temp_gyro[1];
         offset_gyro[2] += temp_gyro[2];
-
-        delay(20);
     }
 
-    offset_accel[0] = offset_accel[0]/((float)(2000));
-    offset_accel[1] = offset_accel[1]/((float)(2000));
-    offset_accel[2] = offset_accel[2]/((float)(2000));
+    offset_accel[0] = offset_accel[0]/((float)(10000));
+    offset_accel[1] = offset_accel[1]/((float)(10000));
+    offset_accel[2] = offset_accel[2]/((float)(10000));
 
-    offset_gyro[0] = offset_gyro[0]/((float)(2000));
-    offset_gyro[1] = offset_gyro[1]/((float)(2000));
-    offset_gyro[2] = offset_gyro[2]/((float)(2000));
+    offset_gyro[0] = offset_gyro[0]/((float)(10000));
+    offset_gyro[1] = offset_gyro[1]/((float)(10000));
+    offset_gyro[2] = offset_gyro[2]/((float)(10000));
 
     setar_offset_acel(offset_accel);
     setar_offset_gyro(offset_gyro);
@@ -704,7 +708,7 @@ void iniciar_timer_processamento()
 
   	uint16_t PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;		//100.000 Contagens por segundo
 
-    TIM_TimeBaseStructure.TIM_Period = 500;											//(1/100.000)*500 segundos por "overflow" -> 0.005 segundos por overflow
+    TIM_TimeBaseStructure.TIM_Period = 250;											//(1/100.000)*500 segundos por "overflow" -> 0.005 segundos por overflow
   	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
   	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
   	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;

@@ -27,19 +27,22 @@
 	float tratar_intervalo_Angulo(float angles);
     float getVectorModulus(const float vector[], u8 numberOfElements);
     void normalizeVector(float vector[], u8 numberOfElements);
+    void complementaryFilter(float angles[], float gyro[], float accel[], float dt, float gain, float accelOffset[]);
 
     //void getBodyFrameRates(EulerAngles earthFrameAngles, EulerAngles *bodyFrameAngles);
 
-    float max(float previousMax, float newMeasure);
-    float min(float previousMin, float newMeasure);
-    float constrainAngle(float deegreesAngles);
+    typedef struct {
+        float Kp;
+        float Ki;
+        float Kd;
+        float N;
+        float Ts;
 
-	typedef struct 
-	{
-		float buffer_erro;
-		float buffer_vel_angular;
-		float buffer_saida;
-	} PID_state;
+        float uk1; //Ação de controle anterior u[k-1];
+        float uk2; //Acção de controle de duas iterações passadas u[k-2];
+        float ek1; //Erro anterior e[k-1];
+        float ek2; //Erro de duas iterações anteriores e[k-2];
+    } PIDControllerState;
 
     typedef struct {
         float phi;
@@ -48,6 +51,13 @@
     }EulerAngles;
 
     double calcular_PID(float entrada, float kp, float ki, float kd, double *buffer_pid, float dt, float dErrorCoeficientes[], float dErrorBuffer[], uint16_t dFilterOrder);
+    float updatePIDController(PIDControllerState *state, float error);
+    void initPIDControllerState(PIDControllerState *state, float kp, float kd, float ki, float N, float dt);
+    void adjustPIDConstants(PIDControllerState *state, float error, float threshold);
     EulerAngles getEulerFromQuaternion(float quaternion[]);
+    float max(float previousMax, float newMeasure);
+    float min(float previousMin, float newMeasure);
+    float constrainAngle(float deegreesAngles);
+
 
 #endif /* TRATAMENTO_SINAL_H_ */

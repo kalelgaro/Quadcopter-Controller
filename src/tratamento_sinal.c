@@ -191,10 +191,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	delta_m3 = (fator_correcao*(-pitch_pid - roll_pid));
 	delta_m4 = (fator_correcao*(-pitch_pid + roll_pid));
 
-	velocidade_m1 = rotacao_constante + delta_m1 + yaw_pid;
-	velocidade_m2 = rotacao_constante + delta_m2 - yaw_pid;
-	velocidade_m3 = rotacao_constante + delta_m3 + yaw_pid;
-	velocidade_m4 = rotacao_constante + delta_m4 - yaw_pid;
+    velocidade_m1 = rotacao_constante + delta_m1;
+    velocidade_m2 = rotacao_constante + delta_m2;
+    velocidade_m3 = rotacao_constante + delta_m3;
+    velocidade_m4 = rotacao_constante + delta_m4;
 
 	if(velocidade_m1 < 0)
 		velocidade_m1 = 0;
@@ -208,10 +208,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	if(velocidade_m4 < 0)
 		velocidade_m4 = 0;
 
-    velocidade_m1 = sqrt(velocidade_m1);
-    velocidade_m2 = sqrt(velocidade_m2);
-    velocidade_m3 = sqrt(velocidade_m3);
-    velocidade_m4 = sqrt(velocidade_m4);
+    velocidade_m1 = sqrt(velocidade_m1) + yaw_pid;
+    velocidade_m2 = sqrt(velocidade_m2) - yaw_pid;
+    velocidade_m3 = sqrt(velocidade_m3) + yaw_pid;
+    velocidade_m4 = sqrt(velocidade_m4) - yaw_pid;
 
 	//Ajuste da velocidae dos motores calculadas acima.
 	ajustar_velocidade(4, (uint16_t)round((velocidade_m1)));
@@ -428,3 +428,90 @@ void getBodyFrameRates(EulerAngles earthFrameAngles, EulerAngles *bodyFrameAngle
 {
 
 }
+
+
+float updatePIDController(PIDControllerState *state, float error)
+{
+    float b0, b1, b2;
+    float a0, a1, a2;
+
+    float Kp = state->Kp;
+    float Ki = state->Ki;
+    float Kd = state->Kd;
+    float N = state->N;
+    float Ts = state->Ts;
+
+    b0 = (1 + N*Ts)*(Kp + Ki*Ts) + Kd*N;
+    b1 = -(Kp*(2 + N*Ts) + Ki*Ts + 2*Kd*N);
+    b2 = Kp + Kd*N;
+
+    a0 = (1 + N*Ts);
+    a1 = -(2 + N*Ts);
+    a2 = 1;
+
+    float k1 = -a1/a0;
+    float k2 = -a2/a0;
+    float k3 = b0/a0;
+    float k4 = b1/a0;
+    float k5 = b2/a0;
+
+    float newControlOutput = k1*state->uk1 + k2*state->uk2 + k3*error + k4*state->ek1 + k5*state->ek2;
+
+    state->uk2 = state->uk1;
+    state->uk1 = newControlOutput;
+    state->ek2 = state->ek1;
+    state->ek1 = error;
+
+    return newControlOutput;
+}
+
+
+void complementaryFilter(float angles[3], float gyro[3], float accel[3], float dt, float gain, float accelOffset[3])
+{
+    float lastRoll = angles[0];
+    float lastPitch = angles[1];
+
+    float rollAccel = atan2f((accel[1]-accelOffset[1]),sqrtf(powf((accel[0]-accelOffset[0]),2) + powf((accel[2]-accelOffset[2]),2)));
+    float pitchAccel = atan2f(-(accel[0]-accelOffset[0]),accel[2]);
+
+    float newRoll = gain*(lastRoll + gyro[0]*dt) + (1-gain)*rollAccel;
+    float newPitch = gain*(lastPitch + gyro[1]*dt) + (1-gain)*pitchAccel;
+
+    angles[0] = newRoll;
+    angles[1] = newPitch;
+}
+
+
+void adjustPIDConstants(PIDControllerState *state, float error, float threshold)
+{
+    if(error < threshold && (state->Kp != 900 && state->Kd != 20 && state->Ki != 1200)) {
+        state->Kp = 900;
+        state->Kd = 20;
+        state->Ki = 1200;
+        state->ek1 = 0;
+        state->ek2 = 0;
+    }else if(error >= threshold && (state->Kp != 1400 && state->Kd != 40 && state->Ki != 0)) {
+        state->Kp = 1400;
+        state->Kd = 40;
+        state->Ki = 0;;
+        state->ek1 = 0;
+        state->ek2 = 0;
+    }
+}
+
+
+void initPIDControllerState(PIDControllerState *state, float kp, float kd, float ki, float N, float dt)
+{
+    state->Kp = kp;
+    state->Kd = kd;
+    state->Ki = ki;
+    state->N = N;
+
+    state->ek1 = 0.0;
+    state->ek2 = 0.0;
+    state->uk1 = 0.0;
+    state->uk2 = 0.0;
+
+    state->Ts = dt;
+}
+

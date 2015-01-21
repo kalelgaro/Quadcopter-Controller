@@ -168,7 +168,7 @@ void HMC5883L_getMagScale(I2C_TypeDef *I2Cx) {
 }
 
 //Calcula o offset nso três eixos do magnetometro. este deve estar inicializado antes de executar este método
-float* HMC5883L_getMagOffset(I2C_TypeDef *I2Cx)
+void HMC5883L_getMagOffset(I2C_TypeDef *I2Cx, float magOffset[])
 {
     //Inicia as variáveis
     float xMax = -5000;     float xMin = 5000;
@@ -205,14 +205,7 @@ float* HMC5883L_getMagOffset(I2C_TypeDef *I2Cx)
         delay(10);
         delayTime--;
     }
-
-    float magOffset[3];
-
     magOffset[0] = ((xMax+xMin)/(float)2);
     magOffset[1] = ((yMax+yMin)/(float)2);
     magOffset[2] = ((zMax+zMin)/(float)2);
-
-    uint8_t teste;
-    teste = 1;
-    return magOffset;
 }

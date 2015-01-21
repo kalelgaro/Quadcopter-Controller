@@ -96,7 +96,7 @@
 	void HMC5883L_Init(I2C_TypeDef*, HMC5883L_InitTypeDef*);
 	float HMC5883L_Read_Data(I2C_TypeDef*, float []);
     void HMC5883L_getMagScale(I2C_TypeDef *I2Cx);
-    float* HMC5883L_getMagOffset(I2C_TypeDef *I2Cx);
+    void HMC5883L_getMagOffset(I2C_TypeDef *I2Cx, float magOffset[]);
 
     uint8_t HMC5883L_checkDataReadyIntPin();
 
