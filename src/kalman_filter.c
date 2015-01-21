@@ -116,30 +116,14 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     float theta = X_f32[1];
     float psi =  X_f32[2];
 
-    float bax = X_f32[3];
-    float bay = X_f32[4];
-    float baz = X_f32[5];
-    float bmx = X_f32[6];
-    float bmy = X_f32[7];
-    float bmz = X_f32[8];
     float bPhi = X_f32[9];
     float bTheta = X_f32[10];
     float bPsi = X_f32[11];
 
-
-    //Atualizar o estado anterior
+    //Atualizar o estado anterior - Apenas os ângulos precisam serm inicializados, uma vez que os bias são atualizados por uma identidade.
     X_f32[0] = phi + (p)*dt + f_sin(phi)*f_tan(theta)*(q)*dt + f_cos(phi)*f_tan(theta)*(r)*dt;
     X_f32[1] = theta + f_cos(phi)*(q)*dt - f_sin(phi)*(r)*dt;
     X_f32[2] = psi + f_sin(phi)*f_sec(theta)*(q)*dt + f_cos(phi)*f_sec(theta)*(r)*dt;
-//    X_f32[3] = bax;
-//    X_f32[4] = bay;
-//    X_f32[5] = baz;
-//    X_f32[6] = bmx;
-//    X_f32[7] = bmy;
-//    X_f32[8] = bmz;
-//    X_f32[9] = bPhi;
-//    X_f32[10] = bTheta;
-//    X_f32[11] = bPsi;
 
     phi = X_f32[0];
     theta = X_f32[1];
@@ -152,7 +136,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     float cos_Theta = f_cos(theta);
     float sin_Theta = f_sin(theta);
     float tan_Theta = f_tan(theta);
-    float sec_Theta = f_sec(theta);
 
     //Elementos da matriz para atualização dos estados (F).
     float F_f32[n*n] = { dt*q*cos_Phi*tan_Theta - dt*r*sin_Phi*tan_Theta + 1,               dt*r*cos_Phi*(pow(tan_Theta,2) + 1) + dt*q*sin_Phi*(pow(tan_Theta,2) + 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -252,17 +235,15 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     //Matriz contendo os valores observados utilizados pra gerar o rezíduo (yk)
     arm_matrix_instance_f32 rotatedMagMatrix;
     arm_matrix_instance_f32 rotatedAcelMatrix;
-    arm_matrix_instance_f32 orthogonalityMatrix;
 
     arm_mat_init_f32(&rotatedAcelMatrix, 3, 1, observatedStateVector);
     arm_mat_init_f32(&rotatedMagMatrix, 3, 1, observatedStateVector+3);
-    arm_mat_init_f32(&orthogonalityMatrix, 3, 1, observatedStateVector+6);
 
     //Matriz de rotação com base nos angulos estimados.
     float rotationVector[9];
     arm_matrix_instance_f32 rotationMatrix;
     arm_mat_init_f32(&rotationMatrix, 3, 3, rotationVector);
-    getCBARotMatFromEulerAngles(phi-bPhi, theta-bTheta, psi-bPsi, &rotationMatrix);
+    getABCRotMatFromEulerAngles(phi-bPhi, theta-bTheta, psi-bPsi, &rotationMatrix);
 
     /* Cálculo das referências com base no magnetômetro e no estado do acelerômetro parado [0; 0; 1]; */
     if(arm_mat_mult_f32(&rotationMatrix, &acelRefMatrix, &rotatedAcelMatrix) != ARM_MATH_SUCCESS)
@@ -270,9 +251,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     if(arm_mat_mult_f32(&rotationMatrix, &magRefMatrix, &rotatedMagMatrix) != ARM_MATH_SUCCESS)
         while(1);
-
-    //Cálculo da ortogonalidade da matriz de rotação
-    getRotMatOrthogonality(&orthogonalityMatrix, &rotationMatrix);
 
     //Vetor com as médidas
     float zkVector[a];
@@ -288,11 +266,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     zkVector[6] = angles[0];
     zkVector[7] = angles[1];
     zkVector[8] = angles[2];
-
-    //Produto escalar dos vetores deve ser zeros para estes serem normais
-//    zkVector[6] = 0;
-//    zkVector[7] = 0;
-//    zkVector[8] = 1;
 
     arm_matrix_instance_f32 zkMatrix;
     arm_mat_init_f32(&zkMatrix, a, 1, zkVector);
@@ -311,9 +284,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     observatedStateVector[5] += X_f32[8];
 
     //Remove o bias estimado pelo filtro
-    float correctedPhi =    X_f32[0] - X_f32[9];
-    float correctedTheta =  X_f32[1] - X_f32[10];
-    float correctedPsi =    X_f32[2] - X_f32[11];
+    float correctedPhi =    -(X_f32[0] - X_f32[9]);
+    float correctedTheta =  -(X_f32[1] - X_f32[10]);
+    float correctedPsi =    -(X_f32[2] - X_f32[11]);
 
     //Com os angulos corrigidos calculados, cálcula os senos e cossenos utilizados para agilizar os processos de cálculo.
     float cos_correctedPhi = f_cos(correctedPhi);
@@ -325,9 +298,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     float cos_correctedPsi = f_cos(correctedPsi);
     float sin_correctedPsi = f_sin(correctedPsi);
     //
-    observatedStateVector[6] = correctedPhi;
-    observatedStateVector[7] = correctedTheta;
-    observatedStateVector[8] = correctedPsi;
+    observatedStateVector[6] = -correctedPhi;
+    observatedStateVector[7] = -correctedTheta;
+    observatedStateVector[8] = -correctedPsi;
 
     if(arm_mat_sub_f32(&zkMatrix, &observatedStateMatrix, &ykMatrix) != ARM_MATH_SUCCESS)
         while(1);
@@ -492,10 +465,7 @@ float arm_mat_get_element(const arm_matrix_instance_f32 *entrada, uint16_t row, 
     return 0;
 }
 
-
-
-
-void getCBARotMatFromEulerAngles(float phi, float theta, float psi, arm_matrix_instance_f32 *rotationMatrix)
+void getABCRotMatFromEulerAngles(float phi, float theta, float psi, arm_matrix_instance_f32 *rotationMatrix)
 {
     float32_t tempRotationVector[9] = {       f_cos(psi)*f_cos(theta),                              f_cos(theta)*f_sin(psi),         -f_sin(theta),
                                               f_cos(psi)*f_sin(phi)*f_sin(theta) - f_cos(phi)*f_sin(psi), f_cos(phi)*f_cos(psi) + f_sin(phi)*f_sin(psi)*f_sin(theta), f_cos(theta)*f_sin(phi),
@@ -503,7 +473,6 @@ void getCBARotMatFromEulerAngles(float phi, float theta, float psi, arm_matrix_i
 
     arm_copy_f32(tempRotationVector, rotationMatrix->pData, 9);
 }
-
 
 void getRotMatOrthogonality(arm_matrix_instance_f32 *output, arm_matrix_instance_f32 *rotationMatrix)
 {

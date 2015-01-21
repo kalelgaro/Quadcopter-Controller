@@ -42,7 +42,7 @@
     void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], float angles[], uint16_t estado_motores);
 
     void getRotMatFromQuaternion(float quaternion[4], arm_matrix_instance_f32 *rotationMatrix);
-    void getCBARotMatFromEulerAngles(float phi, float theta, float psi, arm_matrix_instance_f32 *rotationMatrix);
+    void getABCRotMatFromEulerAngles(float phi, float theta, float psi, arm_matrix_instance_f32 *rotationMatrix);
     void getRotMatOrthogonality(arm_matrix_instance_f32 *output, arm_matrix_instance_f32 *rotationMatrix);
     void arm_mat_set_element(arm_matrix_instance_f32 *entrada, uint16_t row, uint16_t column, float newValue);
     float arm_mat_get_element(const arm_matrix_instance_f32 *entrada, uint16_t row, uint16_t column);

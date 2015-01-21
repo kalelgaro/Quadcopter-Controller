@@ -146,7 +146,7 @@ int main(void)
 
     //Melhores parametros obtidos até o momento (05/01/2015) 5e-10 1e-45 1e-45 0.005 0.35 1e-6
     //Qang, QbiasAcel, Qbiasmag, Racel, Rmag, Rorth
-    setar_parametros_Kalman(1e-8, 1e-15, 1e-15, 2e-18, 1e-1, 5e0, 0.5);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(1e-8, 1e-15, 1e-15, 2e-7, 1e-1, 5e0, 0.5);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
