@@ -141,12 +141,12 @@ int main(void)
 	//teste_filtro_de_kalman();
 
     //setar_parametros_PID(1500, 1000, 60, 126, 2500, 0, 0, 126);                      //Ajusta as constantes do PID para Roll e Pitch.
-    setar_parametros_PID(1400, 50, 50, 188, 15, 0, 0, 188);                      //Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(1400, 25, 50, 188, 15, 0, 0, 188);                      //Ajusta as constantes do PID para Roll e Pitch.
     //setar_parametros_PID(900, 1200, 20, 188, 10, 0, 0, 188);                      //Ajusta as constantes do PID para Roll e Pitch.
 
     //Melhores parametros obtidos até o momento (05/01/2015) 5e-10 1e-45 1e-45 0.005 0.35 1e-6
     //Qang, QbiasAcel, Qbiasmag, Racel, Rmag, Rorth
-    setar_parametros_Kalman(1e-8, 1e-15, 1e-15, 2e-7, 1e-1, 5e0, 0.5);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(2.8e-8, 1e-15, 1e-15, 5e-15, 1e-2, 1e-1, 5e-1);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -623,8 +623,8 @@ void iniciarMPU6050Imu() {
     initialConfig.interruptsConfig = 0x01;              //Ativa a interrupção de Data Ready;
     initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
 
-    //initialConfig.digitalLowPassConfig = 0x01;            //Sem filtro passa baixa
-    initialConfig.digitalLowPassConfig = 0x02;            //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
+    initialConfig.digitalLowPassConfig = 0x01;            //Sem filtro passa baixa
+    //initialConfig.digitalLowPassConfig = 0x02;            //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
     //initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
     //initialConfig.digitalLowPassConfig = 0x04;            //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 8,5ms)
     //initialConfig.digitalLowPassConfig = 0x00;            //Frequências de corte em 260Hz e Aquisição em 8Khz. (Delay de aprox 0.98ms)

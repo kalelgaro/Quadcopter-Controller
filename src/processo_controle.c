@@ -81,6 +81,8 @@ PIDControllerState pitchAngleToRateController;
 PIDControllerState rollAngleToRateController;
 
 //
+uint8_t kalmanFilterInitialized = 0;
+//
 
 float buffer_pid_pitch_media[numero_medias_PID];
 float buffer_pid_roll_media[numero_medias_PID];
@@ -105,8 +107,8 @@ float pitch_pos_filtro;
 float yaw_pos_filtro;
 
 //
-float complementaryFilterAngles[2] = {0.0, 0.0};
-float kalmanFilterMeasureAngles[3] = {0.0, 0.0, 0.0};
+float complementaryFilterAngles[3] = {0.0, 0.0, 0.0};
+float kalmanFilterInputAngles[3] = {0.0, 0.0, 0.0};
 //Buffers para o filtro FIR do acelerômetro.
     //Filtro com banda de passagem de 4Hz e atenuação de 0.1 dB e banda de parada de 40 Hz com atenuação de 120 dB( Filter Builder)
 /*
@@ -231,6 +233,9 @@ void iniciar_estado_Kalman() {
     mag_init_buffer[1] = mag_init_buffer[1]/(float)400;
     mag_init_buffer[2] = mag_init_buffer[2]/(float)400;
 
+    float emptyVector[3] = {0.0, 0.0, 0.0};
+    orientacao_inicial = calcular_orientacao(mag_init_buffer, 0, 0, emptyVector);
+
     counter = 400;
 
     //Acelerometro foi iniciado de forma que o offset é subtraido
@@ -256,6 +261,8 @@ void iniciar_estado_Kalman() {
     EstadoFiltroKalman.ultimo_estado[6] = offsetMag[0];
     EstadoFiltroKalman.ultimo_estado[7] = offsetMag[1];
     EstadoFiltroKalman.ultimo_estado[8] = offsetMag[2];
+
+    kalmanFilterInitialized = 1;
 }
 
 //Altera as contastes do controlador PID. - Roll, Pitch e Yaw.
@@ -366,7 +373,7 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 {
     estado_KF[roll] =  angulos_inclinacao[roll];
     estado_KF[pitch] = angulos_inclinacao[pitch];
-    estado_KF[yaw] =   orientacao - orientacao_inicial;
+    estado_KF[yaw] =   orientacao;
 
 //    estado_PID[roll] = saida_roll_pid;
 //    estado_PID[pitch] = saida_pitch_pid;
@@ -374,7 +381,7 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
     estado_PID[roll] = complementaryFilterAngles[0]*RAD_TO_DEG;
     estado_PID[pitch] = complementaryFilterAngles[1]*RAD_TO_DEG;
-    estado_PID[yaw] = 0;
+    estado_PID[yaw] = complementaryFilterAngles[2]*RAD_TO_DEG - orientacao_inicial*RAD_TO_DEG;
 }
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
@@ -387,6 +394,11 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
     Giroscopio[1] = saida_gyro_dps_pf[1];
     Giroscopio[2] = saida_gyro_dps_pf[2];
 
+//    Giroscopio[0] =  EstadoFiltroKalman.ultimo_estado[3];
+//    Giroscopio[1] =  EstadoFiltroKalman.ultimo_estado[4];
+//    Giroscopio[2] =  EstadoFiltroKalman.ultimo_estado[5];
+
+
     Magnetometro[0] = magnetometro[0] - offsetMag[0];
     Magnetometro[1] = magnetometro[1] - offsetMag[1];
     Magnetometro[2] = magnetometro[2] - offsetMag[2];
@@ -395,41 +407,6 @@ void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Ma
 //    Magnetometro[2] = offsetMag[2];
 //    Magnetometro[0] = offsetMag[0];
 }
-
-//Cálculo do YAW, orientção, com base no documento
-    /*Implementing a Tilt-Compensated eCompass using Accelerometer and Magnetometer Sensors*/
-float calcular_orientacao(float leituras_mag[], float Pitch, float Roll)
-{
-    //Theta -> Pitch
-    //Phi -> Roll
-
-    /*Valores de offset obtidos através do sphereFIT no matlab*/
-    float Vx = -0.1610 ;
-    float Vy = -0.0581;
-    float Vz = 0.0872;
-
-    float MagX = leituras_mag[0]-Vx;
-    float MagY = leituras_mag[1]-Vy;
-    float MagZ = leituras_mag[2]-Vz;
-
-    //Conversão de graus para radianos.
-    Pitch = (Pitch/57.3);
-    Roll = (Roll/57.3);
-
-    /*Graus para Radianos*/
-    float heading;
-
-    float temp1;
-    float temp2;
-
-    temp1 = MagZ*sin(Roll) - MagY*cos(Roll);
-    temp2 = MagX*cos(Pitch) + MagY*sin(Roll)*sin(Pitch) + MagZ*sin(Pitch)*cos(Roll);
-
-    heading = 57.3*atan2(temp1,temp2);
-
-    return heading;
-}
-
 
 //Processar referência do yaw
     //Cálcula a referência de yaw com base na taxa de variação inserida
@@ -458,31 +435,27 @@ void processo_controle()
     //Reinicia o contador de segurança.
     TIM_SetCounter(TIM7, 0);
 
-    if(contador_aquisicao == NRO_AQUISICOES_PRE_KF) {
+    if(contador_aquisicao == NRO_AQUISICOES_PRE_KF && (kalmanFilterInitialized == 1)) {
 
         contador_aquisicao = 0;
 
         //Calcular filtro complementar para comparação.
-        complementaryFilter(complementaryFilterAngles, saida_gyro_dps_pf, acelerometro_adxl345, dt, 0.98, &(EstadoFiltroKalman.ultimo_estado[3]));
+        complementaryFilter(complementaryFilterAngles, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro,dt, 0.98, &(EstadoFiltroKalman.ultimo_estado[3]), &(EstadoFiltroKalman.ultimo_estado[6]));
 
-        kalmanFilterMeasureAngles[0] = complementaryFilterAngles[0];
-        kalmanFilterMeasureAngles[1] = complementaryFilterAngles[1];
-        kalmanFilterMeasureAngles[2] = orientacao;
+        kalmanFilterInputAngles[0] = complementaryFilterAngles[0];
+        kalmanFilterInputAngles[1] = complementaryFilterAngles[1];
+        kalmanFilterInputAngles[2] = constrainAngle(complementaryFilterAngles[2] - orientacao_inicial);
 
         //Insere os valores da leituras dentro do filtro de Kalman.
-        kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, kalmanFilterMeasureAngles, rotacao_constante);
+        kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, kalmanFilterInputAngles, rotacao_constante);
         EulerAngles angles;
         angles.phi = EstadoFiltroKalman.ultimo_estado[0] - EstadoFiltroKalman.ultimo_estado[9];
         angles.theta = EstadoFiltroKalman.ultimo_estado[1] - EstadoFiltroKalman.ultimo_estado[10];
         angles.psi = EstadoFiltroKalman.ultimo_estado[2] - EstadoFiltroKalman.ultimo_estado[11];
 
-        angulos_inclinacao[roll] = 57.3*angles.phi;
-        angulos_inclinacao[pitch] = 57.3*angles.theta;
-        orientacao = 57.3*angles.psi;
-
-        angulos_inclinacao[roll] = constrainAngle(angulos_inclinacao[roll]);
-        angulos_inclinacao[pitch] = constrainAngle(angulos_inclinacao[pitch]);
-        orientacao = constrainAngle(orientacao);
+        angulos_inclinacao[roll] = constrainAngle(57.3*angles.phi);
+        angulos_inclinacao[pitch] = constrainAngle(57.3*angles.theta);
+        orientacao = constrainAngle(57.3*angles.psi);
 
         if(flag_inicializacao == 1 && controlador_ligado == 1)
         {
@@ -496,7 +469,7 @@ void processo_controle()
 
             erro_pitch = (ref_pitch - angulos_inclinacao[pitch]);
             erro_roll =  (ref_roll - angulos_inclinacao[roll]);
-            erro_yaw =   (ref_yaw - orientacao + orientacao_inicial);
+            erro_yaw =   constrainAngle(ref_yaw - orientacao);
 
             //Converte o erro absoluto de ângulos de graus para graus por segundo
             float pitchRateRef = erro_pitch*4.5; //"1º de erro -> Velocidade de 4,5º por segundo;
@@ -561,15 +534,11 @@ void processo_controle()
 
             inserir_ajuster_motores(0, 0, 0, 0);
 
-            if(flag_inicializacao == 0)
-            {
-                contador_ativacao++;
-                orientacao_inicial = orientacao_inicial + orientacao/nro_contagem_ativacao;
-            }
-
             if(contador_ativacao == nro_contagem_ativacao)
             {
                 flag_inicializacao = 1;
+            }else {
+                contador_ativacao++;
             }
         }
         //Salva valores de interesse nas estrutura que é enviada para telemetria.

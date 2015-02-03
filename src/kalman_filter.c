@@ -332,7 +332,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 //    float magModulus = getVectorModulus(medida_mag, 3);
 //    float magInitialModulus = getVectorModulus(buffer_filtro->MagInicial, 3);
 
-    Racel += 100*fabsf(1 - acelModulus);
+    //Racel += 100*fabsf(1 - acelModulus);
     //Rmag += 1*fabs(magInitialModulus - magModulus);
 
 
@@ -344,7 +344,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
                         0, 0, 0, 0, 0, (Rmag), 0, 0, 0,
                         0, 0, 0, 0, 0, 0, (Rangles), 0, 0,
                         0, 0, 0, 0, 0, 0, 0, (Rangles), 0,
-                        0, 0, 0, 0, 0, 0, 0, 0, (1e5)};
+                        0, 0, 0, 0, 0, 0, 0, 0, (Rangles)};
 
     arm_mat_init_f32(&R, a, a, R_f32);
 
