@@ -29,8 +29,6 @@
     void normalizeVector(float vector[], u8 numberOfElements);
     void complementaryFilter(float angles[], float gyro[], float accel[], float mag[], float dt, float gain, float accelOffset[], float magOffset[]);
 
-    //void getBodyFrameRates(EulerAngles earthFrameAngles, EulerAngles *bodyFrameAngles);
-
     typedef struct {
         float Kp;
         float Ki;
@@ -55,6 +53,7 @@
     void initPIDControllerState(PIDControllerState *state, float kp, float kd, float ki, float N, float dt);
     void adjustPIDConstants(PIDControllerState *state, float error, float threshold);
     EulerAngles getEulerFromQuaternion(float quaternion[]);
+    EulerAngles getEarthFrameRates(EulerAngles bodyFrameAngles, EulerAngles angles);
     float max(float previousMax, float newMeasure);
     float min(float previousMin, float newMeasure);
     float constrainAngle(float deegreesAngles);

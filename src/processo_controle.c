@@ -107,6 +107,10 @@ float pitch_pos_filtro;
 float yaw_pos_filtro;
 
 //
+float pitchRateError = 0.0;
+float rollRateError = 0.0;
+float yawRateError = 0.0;
+//
 float complementaryFilterAngles[3] = {0.0, 0.0, 0.0};
 float kalmanFilterInputAngles[3] = {0.0, 0.0, 0.0};
 //Buffers para o filtro FIR do acelerômetro.
@@ -379,6 +383,14 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 //    estado_PID[pitch] = saida_pitch_pid;
 //    estado_PID[yaw] = saida_yaw_pid;
 
+//    estado_PID[roll] = pitchRateError;
+//    estado_PID[pitch] = rollRateError;
+//    estado_PID[yaw] = yawRateError;
+
+//    estado_PID[roll] = erro_pitch;
+//    estado_PID[pitch] = erro_roll;
+//    estado_PID[yaw] = erro_yaw;
+
     estado_PID[roll] = complementaryFilterAngles[0]*RAD_TO_DEG;
     estado_PID[pitch] = complementaryFilterAngles[1]*RAD_TO_DEG;
     estado_PID[yaw] = complementaryFilterAngles[2]*RAD_TO_DEG - orientacao_inicial*RAD_TO_DEG;
@@ -472,9 +484,9 @@ void processo_controle()
             erro_yaw =   constrainAngle(ref_yaw - orientacao);
 
             //Converte o erro absoluto de ângulos de graus para graus por segundo
-            float pitchRateRef = erro_pitch*4.5; //"1º de erro -> Velocidade de 4,5º por segundo;
-            float rollRateRef = erro_roll*4.5;
-            float yawRateRef = erro_yaw*4.5;
+            float pitchRateRef = erro_pitch*3.0; //"1º de erro -> Velocidade de 4,5º por segundo;
+            float rollRateRef = erro_roll*3.0;
+            float yawRateRef = erro_yaw*3.0;
 
             //Converte as unidades
             pitchRateRef *= DEG_TO_RAD;
@@ -486,10 +498,26 @@ void processo_controle()
             float rollRateFeedback = (saida_gyro_dps_pf[roll]);
             float yawRateFeedback = (saida_gyro_dps_pf[yaw]);
 
+            EulerAngles bodyFrameRates;
+            bodyFrameRates.phi = pitchRateFeedback;
+            bodyFrameRates.theta = rollRateFeedback;
+            bodyFrameRates.psi = yawRateFeedback;
+
+            EulerAngles angles;
+            angles.phi = angulos_inclinacao[pitch]/57.3;
+            angles.theta = angulos_inclinacao[roll]/57.3;
+            angles.psi = angulos_inclinacao[yaw]/57.3;
+
+            EulerAngles earthFrameRate = getEarthFrameRates(bodyFrameRates, angles);
+
+            pitchRateFeedback = earthFrameRate.phi;
+            rollRateFeedback = earthFrameRate.theta;
+            yawRateFeedback = earthFrameRate.psi;
+
             //Cálcula os erros dos controladores de velocidade
-            float pitchRateError = pitchRateRef - pitchRateFeedback;
-            float rollRateError = rollRateRef - rollRateFeedback;
-            float yawRateError = yawRateRef - yawRateFeedback;
+            pitchRateError = pitchRateRef - pitchRateFeedback;
+            rollRateError = rollRateRef - rollRateFeedback;
+            yawRateError = yawRateRef - yawRateFeedback;
 
             //adjustPIDConstants(&pitchTransitionController, pitchRateError, 1.5*3.5*DEG_TO_RAD);
             //adjustPIDConstants(&rollTransitionController, rollRateError, 1.5*3.5*DEG_TO_RAD);

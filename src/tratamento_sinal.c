@@ -424,11 +424,20 @@ float min(float previousMin, float newMeasure)
     return previousMin;
 }
 
-void getBodyFrameRates(EulerAngles earthFrameAngles, EulerAngles *bodyFrameAngles)
+EulerAngles getEarthFrameRates(EulerAngles bodyFrameAngles, EulerAngles angles)
 {
+    float p = bodyFrameAngles.phi;
+    float q = bodyFrameAngles.theta;
+    float r = bodyFrameAngles.psi;
 
+    EulerAngles earthFrameAngles;
+
+    earthFrameAngles.phi = p + q*f_sin(angles.phi)*f_tan(angles.theta) + r*f_cos(angles.phi)*f_tan(angles.theta);
+    earthFrameAngles.theta = q*f_cos(angles.phi) - r*f_sin(angles.phi);
+    earthFrameAngles.psi = q*f_sin(angles.phi)*f_cos(angles.theta) + r*f_cos(angles.phi)*f_cos(angles.theta);
+
+    return earthFrameAngles;
 }
-
 
 float updatePIDController(PIDControllerState *state, float error)
 {
