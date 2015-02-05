@@ -27,7 +27,7 @@
 	float tratar_intervalo_Angulo(float angles);
     float getVectorModulus(const float vector[], u8 numberOfElements);
     void normalizeVector(float vector[], u8 numberOfElements);
-    void complementaryFilter(float angles[], float gyro[], float accel[], float mag[], float dt, float gain, float accelOffset[], float magOffset[]);
+    void complementaryFilter(float angles[], float gyro[], float accel[], float mag[], float dt, float gain, float magOffset[]);
 
     typedef struct {
         float Kp;

@@ -112,32 +112,32 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     arm_copy_f32(buffer_filtro->ultimo_estado, X_f32, n);
 
-    float phi =  X_f32[0];
-    float theta = X_f32[1];
-    float psi =  X_f32[2];
+    float phi =     X_f32[0];
+    float theta =   X_f32[1];
+    float psi =     X_f32[2];
 
-    float bPhi = X_f32[9];
-    float bTheta = X_f32[10];
-    float bPsi = X_f32[11];
+    float bPhi =    X_f32[6];
+    float bTheta =  X_f32[7];
+    float bPsi =    X_f32[8];
 
     //Atualizar o estado anterior - Apenas os ângulos precisam serm inicializados, uma vez que os bias são atualizados por uma identidade.
 
-    X_f32[0] = phi + dt*(p*cos(psi) - q*sin(psi));;
-    X_f32[1] = theta + dt*((q*cos(psi))/cos(phi) + (p*sin(psi))/cos(phi));
-    X_f32[2] = psi + dt*(r + q*cos(psi)*tan(phi) + p*sin(psi)*tan(phi));
+    X_f32[0] = phi + dt*(p + r*cos(psi)*tan(theta) + q*sin(psi)*tan(theta));
+    X_f32[1] =                         theta + dt*(q*cos(psi) - r*sin(psi));
+    X_f32[2] =     psi + dt*((r*cos(psi))/cos(theta) + (q*sin(psi))/cos(theta));
 
     phi = X_f32[0];
     theta = X_f32[1];
     psi = X_f32[2];
 
     //Com os angulos calculados, cálcula os senos e cossenos utilizados para agilizar os processos de cálculo.
-    float cos_Phi = f_cos(phi);
-    float sin_Phi = f_sin(phi);
-    float tan_Phi = f_tan(phi);
+    //float cos_Phi = f_cos(phi);
+    //float sin_Phi = f_sin(phi);
+    //float tan_Phi = f_tan(phi);
 
-//    float cos_Theta = f_cos(theta);
-//    float sin_Theta = f_sin(theta);
-//    float tan_Theta = f_tan(theta);
+    float cos_Theta = f_cos(theta);
+    float sin_Theta = f_sin(theta);
+    float tan_Theta = f_tan(theta);
 
     float cos_Psi = f_cos(psi);
     float sin_Psi = f_sin(psi);
@@ -145,19 +145,16 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     //Elementos da matriz para atualização dos estados (F).
     float F_f32[n*n] = {
-        1, 0,                      -dt*(q*cos_Psi + p*sin_Psi), 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         dt*((q*cos_Psi*sin_Phi)/pow(cos_Phi,2) + (p*sin_Phi*sin_Psi)/pow(cos_Phi,2)), 1, dt*((p*cos_Psi)/cos_Phi - (q*sin_Psi)/cos_Phi), 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                   dt*(q*cos_Psi*(pow(tan_Phi,2) + 1) + p*sin_Psi*(pow(tan_Phi,2) + 1)), 0, dt*(p*cos_Psi*tan_Phi - q*sin_Psi*tan_Phi) + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                                                0, 0,                                                  0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                                                0, 0,                                                  0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-                                                                                0, 0,                                                  0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-                                                                                0, 0,                                                  0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-                                                                                0, 0,                                                  0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-                                                                                0, 0,                                                  0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-                                                                                0, 0,                                                  0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-                                                                                0, 0,                                                  0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-                                                                                0, 0,                                                  0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-};
+         1,               dt*(r*cos_Psi*(pow(tan_Theta,2) + 1) + q*sin_Psi*(pow(tan_Theta,2) + 1)),         dt*(q*cos_Psi*tan_Theta - r*sin_Psi*tan_Theta), 0, 0, 0, 0, 0, 0,
+         0,                                                                                1,                              -dt*(r*cos_Psi + q*sin_Psi), 0, 0, 0, 0, 0, 0,
+         0, dt*((r*cos_Psi*sin_Theta)/pow(cos_Theta,2) + (q*sin_Psi*sin_Theta)/pow(cos_Theta,2)), dt*((q*cos_Psi)/cos_Theta - (r*sin_Psi)/cos_Theta) + 1, 0, 0, 0, 0, 0, 0,
+         0,                                                                                0,                                                          0, 1, 0, 0, 0, 0, 0,
+         0,                                                                                0,                                                          0, 0, 1, 0, 0, 0, 0,
+         0,                                                                                0,                                                          0, 0, 0, 1, 0, 0, 0,
+         0,                                                                                0,                                                          0, 0, 0, 0, 1, 0, 0,
+         0,                                                                                0,                                                          0, 0, 0, 0, 0, 1, 0,
+         0,                                                                                0,                                                          0, 0, 0, 0, 0, 0, 1,
+    };
 
     arm_mat_init_f32(&F, n, n, F_f32);
 
@@ -170,7 +167,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
 	//Matriz de covariâncias do processo de atualização (Q).
     float qAngles = (buffer_filtro->Q_angles);
-    float qBiasAcel = (buffer_filtro->Q_bias_acel);
     float qBiasMag = (buffer_filtro->Q_bias_mag);
     float qBiasAngles = (buffer_filtro->Q_bias_angle);
 
@@ -190,18 +186,15 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
 
     //Atualiza a matriz de covariâncias dos processos
-    float Q_f32[n*n] = {	qAngles,   0,           0,          0,          0,          0,          0,          0,          0,          0,          0,              0,
-                            0,          qAngles,    0,          0,          0,          0,          0,          0,          0,          0,          0,              0,
-                            0,          0,          qAngles,	0,          0,          0,          0,          0,          0,          0,          0,              0,
-                            0,          0,          0,          qBiasAcel,  0,          0,          0,          0,          0,          0,          0,              0,
-                            0,          0,          0,          0,          qBiasAcel,  0,          0,          0,          0,          0,          0,              0,
-                            0,          0,      	0,          0,          0,          qBiasAcel,  0,          0,          0,          0,          0,              0,
-                            0,          0,          0,          0,          0,          0,          qBiasMag,   0,          0,          0,          0,              0,
-                            0,          0,          0,          0,          0,          0,          0,          qBiasMag,   0,          0,          0,              0,
-                            0,          0,          0,          0,          0,          0,          0,          0,          qBiasMag,   0,          0,              0,
-                            0,          0,          0,          0,          0,          0,          0,          0,          0,          qBiasAngles, 0,             0,
-                            0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          qBiasAngles,    0,
-                            0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,              qBiasAngles};
+    float Q_f32[n*n] = {	qAngles,   0,           0,          0,          0,          0,          0,          0,              0,
+                            0,          qAngles,    0,          0,          0,          0,          0,          0,              0,
+                            0,          0,          qAngles,	0,          0,          0,          0,          0,              0,
+                            0,          0,          0,          qBiasMag,   0,          0,          0,          0,              0,
+                            0,          0,          0,          0,          qBiasMag,   0,          0,          0,              0,
+                            0,          0,          0,          0,          0,          qBiasMag,   0,          0,              0,
+                            0,          0,          0,          0,          0,          0,          qBiasAngles, 0,             0,
+                            0,          0,          0,          0,          0,          0,          0,          qBiasAngles,    0,
+                            0,          0,          0,          0,          0,          0,          0,          0,              qBiasAngles};
 
     arm_mat_init_f32(&Q, n, n, Q_f32);
 
@@ -284,17 +277,14 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     arm_mat_init_f32(&ykMatrix, a, 1, ykVector);
 
     //Adiciona os bias estimados pelo filtro
-    observatedStateVector[0] += X_f32[3];
-    observatedStateVector[1] += X_f32[4];
-    observatedStateVector[2] += X_f32[5];
-    observatedStateVector[3] += X_f32[6];
-    observatedStateVector[4] += X_f32[7];
-    observatedStateVector[5] += X_f32[8];
+    observatedStateVector[3] += X_f32[3];
+    observatedStateVector[4] += X_f32[4];
+    observatedStateVector[5] += X_f32[5];
 
     //Remove o bias estimado pelo filtro
-    float correctedPhi =    -(X_f32[0] - X_f32[9]);
-    float correctedTheta =  -(X_f32[1] - X_f32[10]);
-    float correctedPsi =    -(X_f32[2] - X_f32[11]);
+    float correctedPhi =    -(X_f32[0] - X_f32[6]);
+    float correctedTheta =  -(X_f32[1] - X_f32[7]);
+    float correctedPsi =    -(X_f32[2] - X_f32[8]);
 
     //Com os angulos corrigidos calculados, cálcula os senos e cossenos utilizados para agilizar os processos de cálculo.
     float cos_correctedPhi = f_cos(correctedPhi);
@@ -314,15 +304,15 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
         while(1);
 
     float H_f32[a*n] = {
-         - ay*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - az*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), ax*sin_correctedTheta*cos_correctedPsi - az*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - ay*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, ay*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - az*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + ax*sin_correctedPsi*cos_correctedTheta, 1, 0, 0, 0, 0, 0,   ay*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) + az*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), az*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - ax*sin_correctedTheta*cos_correctedPsi + ay*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, az*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - ay*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - ax*sin_correctedPsi*cos_correctedTheta,
-           ay*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + az*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), ax*sin_correctedPsi*sin_correctedTheta - az*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - ay*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, ay*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) - az*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - ax*cos_correctedPsi*cos_correctedTheta, 0, 1, 0, 0, 0, 0, - ay*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - az*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), az*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - ax*sin_correctedPsi*sin_correctedTheta + ay*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, az*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - ay*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) + ax*cos_correctedPsi*cos_correctedTheta,
-                                                                                                                   az*sin_correctedPhi*cos_correctedTheta - ay*cos_correctedPhi*cos_correctedTheta,                                                 ax*cos_correctedTheta + az*sin_correctedTheta*cos_correctedPhi + ay*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0, 0, 0, 1, 0, 0, 0,                                                                                                           ay*cos_correctedPhi*cos_correctedTheta - az*sin_correctedPhi*cos_correctedTheta,                                               - ax*cos_correctedTheta - az*sin_correctedTheta*cos_correctedPhi - ay*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0,
-         - hy*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hz*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), hx*sin_correctedTheta*cos_correctedPsi - hz*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - hy*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, hy*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - hz*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + hx*sin_correctedPsi*cos_correctedTheta, 0, 0, 0, 1, 0, 0,   hy*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) + hz*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), hz*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - hx*sin_correctedTheta*cos_correctedPsi + hy*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, hz*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - hy*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - hx*sin_correctedPsi*cos_correctedTheta,
-           hy*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + hz*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), hx*sin_correctedPsi*sin_correctedTheta - hz*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - hy*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, hy*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) - hz*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hx*cos_correctedPsi*cos_correctedTheta, 0, 0, 0, 0, 1, 0, - hy*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - hz*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), hz*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - hx*sin_correctedPsi*sin_correctedTheta + hy*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, hz*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hy*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) + hx*cos_correctedPsi*cos_correctedTheta,
-                                                                                                                   hz*sin_correctedPhi*cos_correctedTheta - hy*cos_correctedPhi*cos_correctedTheta,                                                 hx*cos_correctedTheta + hz*sin_correctedTheta*cos_correctedPhi + hy*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0, 0, 0, 0, 0, 0, 1,                                                                                                           hy*cos_correctedPhi*cos_correctedTheta - hz*sin_correctedPhi*cos_correctedTheta,                                               - hx*cos_correctedTheta - hz*sin_correctedTheta*cos_correctedPhi - hy*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0,
-                                                                                                                                                                                                 1,                                                                                                                                                        0,                                                                                                                                                                                                                                0, 0, 0, 0, 0, 0, 0,                                                                                                                                                                                        -1,                                                                                                                                                        0,                                                                                                                                                                                                                                0,
-                                                                                                                                                                                                 0,                                                                                                                                                        1,                                                                                                                                                                                                                                0, 0, 0, 0, 0, 0, 0,                                                                                                                                                                                         0,                                                                                                                                                       -1,                                                                                                                                                                                                                                0,
-                                                                                                                                                                                                 0,                                                                                                                                                        0,                                                                                                                                                                                                                                1, 0, 0, 0, 0, 0, 0,                                                                                                                                                                                         0,                                                                                                                                                        0,                                                                                                                                                                                                                               -1,
+         - ay*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - az*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), ax*sin_correctedTheta*cos_correctedPsi - az*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - ay*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, ay*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - az*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + ax*sin_correctedPsi*cos_correctedTheta, 0, 0, 0,   ay*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) + az*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), az*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - ax*sin_correctedTheta*cos_correctedPsi + ay*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, az*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - ay*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - ax*sin_correctedPsi*cos_correctedTheta,
+           ay*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + az*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), ax*sin_correctedPsi*sin_correctedTheta - az*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - ay*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, ay*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) - az*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - ax*cos_correctedPsi*cos_correctedTheta, 0, 0, 0, - ay*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - az*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), az*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - ax*sin_correctedPsi*sin_correctedTheta + ay*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, az*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - ay*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) + ax*cos_correctedPsi*cos_correctedTheta,
+                                                                                                                   az*sin_correctedPhi*cos_correctedTheta - ay*cos_correctedPhi*cos_correctedTheta,                                                 ax*cos_correctedTheta + az*sin_correctedTheta*cos_correctedPhi + ay*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0, 0, 0, 0,                                                                                                           ay*cos_correctedPhi*cos_correctedTheta - az*sin_correctedPhi*cos_correctedTheta,                                               - ax*cos_correctedTheta - az*sin_correctedTheta*cos_correctedPhi - ay*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0,
+         - hy*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hz*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), hx*sin_correctedTheta*cos_correctedPsi - hz*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - hy*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, hy*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - hz*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + hx*sin_correctedPsi*cos_correctedTheta, 1, 0, 0,   hy*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) + hz*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), hz*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - hx*sin_correctedTheta*cos_correctedPsi + hy*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, hz*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - hy*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - hx*sin_correctedPsi*cos_correctedTheta,
+           hy*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + hz*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), hx*sin_correctedPsi*sin_correctedTheta - hz*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - hy*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, hy*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) - hz*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hx*cos_correctedPsi*cos_correctedTheta, 0, 1, 0, - hy*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - hz*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), hz*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - hx*sin_correctedPsi*sin_correctedTheta + hy*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, hz*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hy*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) + hx*cos_correctedPsi*cos_correctedTheta,
+                                                                                                                   hz*sin_correctedPhi*cos_correctedTheta - hy*cos_correctedPhi*cos_correctedTheta,                                                 hx*cos_correctedTheta + hz*sin_correctedTheta*cos_correctedPhi + hy*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0, 0, 0, 1,                                                                                                           hy*cos_correctedPhi*cos_correctedTheta - hz*sin_correctedPhi*cos_correctedTheta,                                               - hx*cos_correctedTheta - hz*sin_correctedTheta*cos_correctedPhi - hy*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0,
+                                                                                                                                                                                                 1,                                                                                                                                                        0,                                                                                                                                                                                                                                0, 0, 0, 0,                                                                                                                                                                                        -1,                                                                                                                                                        0,                                                                                                                                                                                                                                0,
+                                                                                                                                                                                                 0,                                                                                                                                                        1,                                                                                                                                                                                                                                0, 0, 0, 0,                                                                                                                                                                                         0,                                                                                                                                                       -1,                                                                                                                                                                                                                                0,
+                                                                                                                                                                                                 0,                                                                                                                                                        0,                                                                                                                                                                                                                                1, 0, 0, 0,                                                                                                                                                                                         0,                                                                                                                                                        0,                                                                                                                                                                                                                               -1,
     };
 
     arm_mat_init_f32(&H, a, n, H_f32);
@@ -351,7 +341,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
                         0, 0, (Racel), 0, 0, 0, 0, 0, 0,
                         0, 0, 0, (Rmag),  0, 0, 0, 0, 0,
                         0, 0, 0, 0, (Rmag),	 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, (Rmag), 0, 0, 0,
+                        0, 0, 0, 0, 0, (Rmag),  0, 0, 0,
                         0, 0, 0, 0, 0, 0, (Rangles), 0, 0,
                         0, 0, 0, 0, 0, 0, 0, (Rangles), 0,
                         0, 0, 0, 0, 0, 0, 0, 0, (Rangles)};
@@ -396,18 +386,15 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	//P = (I-K*H)*P
 	
 	//Matriz identidade para atualização da matriz P à posteriori.
-    float I_f32[n*n] = {	1,0,0,0,0,0,0,0,0,0,0,0,
-                            0,1,0,0,0,0,0,0,0,0,0,0,
-                            0,0,1,0,0,0,0,0,0,0,0,0,
-                            0,0,0,1,0,0,0,0,0,0,0,0,
-                            0,0,0,0,1,0,0,0,0,0,0,0,
-                            0,0,0,0,0,1,0,0,0,0,0,0,
-                            0,0,0,0,0,0,1,0,0,0,0,0,
-                            0,0,0,0,0,0,0,1,0,0,0,0,
-                            0,0,0,0,0,0,0,0,1,0,0,0,
-                            0,0,0,0,0,0,0,0,0,1,0,0,
-                            0,0,0,0,0,0,0,0,0,0,1,0,
-                            0,0,0,0,0,0,0,0,0,0,0,1};
+    float I_f32[n*n] = {	1,0,0,0,0,0,0,0,0,
+                            0,1,0,0,0,0,0,0,0,
+                            0,0,1,0,0,0,0,0,0,
+                            0,0,0,1,0,0,0,0,0,
+                            0,0,0,0,1,0,0,0,0,
+                            0,0,0,0,0,1,0,0,0,
+                            0,0,0,0,0,0,1,0,0,
+                            0,0,0,0,0,0,0,1,0,
+                            0,0,0,0,0,0,0,0,1};
 
     arm_mat_init_f32(&I, n, n, I_f32);
 

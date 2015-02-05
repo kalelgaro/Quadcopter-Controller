@@ -151,22 +151,19 @@ float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0,0,0,0,0,0,0},
+kalman_filter_state EstadoFiltroKalman = {{0,0,0,0,0,0,0,0,0},
 
-                                      {1e-15,   0,		0,		0,		0,		0,      0,      0,      0,      0,      0,      0,
-                                       0,		1e-15,  0,		0,		0,		0,      0,      0,      0,      0,      0,      0,
-                                       0,		0,		1e-15,	0,		0,		0,      0,      0,      0,      0,      0,      0,
-                                       0,		0,		0,		1e-15, 	0,		0,      0,      0,      0,      0,      0,      0,
-                                       0,		0,		0,		0,		1e-15, 	0,      0,      0,      0,      0,      0,      0,
-                                       0,		0,		0,		0,		0,		1e-15,  0,      0,      0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      1e-15,  0,      0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      1e-15,  0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-15,  0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-15,  1e-15,  0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-15,  0,      1e-15,  0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-15,  0,      0,      1e-15},
+                                      {1e-15,   0,		0,		0,		0,		0,      0,      0,      0,
+                                       0,		1e-15,  0,		0,		0,		0,      0,      0,      0,
+                                       0,		0,		1e-15,	0,		0,		0,      0,      0,      0,
+                                       0,		0,		0,		1e-15, 	0,		0,      0,      0,      0,
+                                       0,		0,		0,		0,		1e-15, 	0,      0,      0,      0,
+                                       0,		0,		0,		0,		0,		1e-15,  0,      0,      0,
+                                       0,       0,      0,      0,      0,      0,      1e-15,  0,      0,
+                                       0,       0,      0,      0,      0,      0,      0,      1e-15,  0,
+                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-15},
 
-                                       5e-7, 2e-9, 1e-2, 1e-6, 1e-3, 1e-3, 1e-6, dt, {0, 0, 1} ,{0.14, 0.05, -0.0155}};
+                                       5e-7, 2e-9, 1e-2, 1e-3, 1e-3, 1e-6, dt, {0, 0, 1} ,{0.14, 0.05, -0.0155}};
 
 //Erros utilizados nos controladores PID
 
@@ -256,15 +253,14 @@ void iniciar_estado_Kalman() {
     EstadoFiltroKalman.ultimo_estado[1] = 0;
     EstadoFiltroKalman.ultimo_estado[2] = 0;
 
-    //Valor inicial do bias do Acelerômetro
-    EstadoFiltroKalman.ultimo_estado[3] = offset_accel[0];
-    EstadoFiltroKalman.ultimo_estado[4] = offset_accel[1];
-    EstadoFiltroKalman.ultimo_estado[5] = offset_accel[2];
-
     //Valor inicial do bias do magnetômetro - Valores retirados de testes de offset
-    EstadoFiltroKalman.ultimo_estado[6] = offsetMag[0];
-    EstadoFiltroKalman.ultimo_estado[7] = offsetMag[1];
-    EstadoFiltroKalman.ultimo_estado[8] = offsetMag[2];
+    EstadoFiltroKalman.ultimo_estado[3] = offsetMag[0];
+    EstadoFiltroKalman.ultimo_estado[4] = offsetMag[1];
+    EstadoFiltroKalman.ultimo_estado[5] = offsetMag[2];
+
+    EstadoFiltroKalman.ultimo_estado[6] = 0;
+    EstadoFiltroKalman.ultimo_estado[7] = 0;
+    EstadoFiltroKalman.ultimo_estado[8] = 0;
 
     kalmanFilterInitialized = 1;
 }
@@ -279,10 +275,9 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float N, float Kp_yaw, f
 }
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
-void setar_parametros_Kalman(float32_t Q_angles, float32_t Q_biasacel, float32_t Q_biasmag, float32_t Q_biasAngle, float32_t R_acelerometro, float32_t R_magnetometro, float32_t R_angles)
+void setar_parametros_Kalman(float32_t Q_angles, float32_t Q_biasmag, float32_t Q_biasAngle, float32_t R_acelerometro, float32_t R_magnetometro, float32_t R_angles)
 {
     EstadoFiltroKalman.Q_angles = Q_angles;
-    EstadoFiltroKalman.Q_bias_acel = Q_biasacel;
     EstadoFiltroKalman.Q_bias_mag = Q_biasmag;
     EstadoFiltroKalman.Q_bias_angle = Q_biasAngle;
 
@@ -314,7 +309,6 @@ void retornar_parametros_Kalman(float32_t *Q_angles, float32_t *Q_biasacel, floa
 {
     *Q_angles = EstadoFiltroKalman.Q_angles;
     *Q_biasmag = EstadoFiltroKalman.Q_bias_mag;
-    *Q_biasacel = EstadoFiltroKalman.Q_bias_acel;
 
     *R_acelerometro = EstadoFiltroKalman.R_acel;
     *R_magnetometro = EstadoFiltroKalman.R_mag;
@@ -350,6 +344,10 @@ void processar_mpu6050() {
         saida_gyro_dps_pf[0] -= offset_gyro[0];
         saida_gyro_dps_pf[1] -= offset_gyro[1];
         saida_gyro_dps_pf[2] -= offset_gyro[2];
+        //
+        acelerometro_adxl345[0] -= offset_accel[0];
+        acelerometro_adxl345[1] -= offset_accel[1];
+        acelerometro_adxl345[2] -= offset_accel[2];
         //
         //Converte as medidas de Graus/Segundo para Radianos/Segundo
         saida_gyro_dps_pf[0] *= DEG_TO_RAD;
@@ -452,7 +450,7 @@ void processo_controle()
         contador_aquisicao = 0;
 
         //Calcular filtro complementar para comparação.
-        complementaryFilter(complementaryFilterAngles, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro,dt, 0.98, &(EstadoFiltroKalman.ultimo_estado[3]), &(EstadoFiltroKalman.ultimo_estado[6]));
+        complementaryFilter(complementaryFilterAngles, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro,dt, 0.98, &(EstadoFiltroKalman.ultimo_estado[3]));
 
         kalmanFilterInputAngles[0] = complementaryFilterAngles[0];
         kalmanFilterInputAngles[1] = complementaryFilterAngles[1];
@@ -461,9 +459,9 @@ void processo_controle()
         //Insere os valores da leituras dentro do filtro de Kalman.
         kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, kalmanFilterInputAngles, rotacao_constante);
         EulerAngles angles;
-        angles.phi = EstadoFiltroKalman.ultimo_estado[0] - EstadoFiltroKalman.ultimo_estado[9];
-        angles.theta = EstadoFiltroKalman.ultimo_estado[1] - EstadoFiltroKalman.ultimo_estado[10];
-        angles.psi = EstadoFiltroKalman.ultimo_estado[2] - EstadoFiltroKalman.ultimo_estado[11];
+        angles.phi = EstadoFiltroKalman.ultimo_estado[0] - EstadoFiltroKalman.ultimo_estado[6];
+        angles.theta = EstadoFiltroKalman.ultimo_estado[1] - EstadoFiltroKalman.ultimo_estado[7];
+        angles.psi = EstadoFiltroKalman.ultimo_estado[2] - EstadoFiltroKalman.ultimo_estado[8];
 
         angulos_inclinacao[roll] = constrainAngle(57.3*angles.phi);
         angulos_inclinacao[pitch] = constrainAngle(57.3*angles.theta);

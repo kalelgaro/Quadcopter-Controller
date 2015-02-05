@@ -475,14 +475,14 @@ float updatePIDController(PIDControllerState *state, float error)
 }
 
 
-void complementaryFilter(float angles[3], float gyro[3], float accel[3], float mag[3], float dt, float gain, float accelOffset[3], float magOffset[3])
+void complementaryFilter(float angles[3], float gyro[3], float accel[3], float mag[3], float dt, float gain, float magOffset[3])
 {
     float lastRoll = angles[0];
     float lastPitch = angles[1];
     float lastYaw = angles[2];
 
-    float rollAccel = atan2f((accel[1]-accelOffset[1]),sqrtf(powf((accel[0]-accelOffset[0]),2) + powf((accel[2]-accelOffset[2]),2)));
-    float pitchAccel = atan2f(-(accel[0]-accelOffset[0]),accel[2]);
+    float rollAccel = atan2f((accel[1]),sqrtf(powf((accel[0]),2) + powf((accel[2]),2)));
+    float pitchAccel = atan2f(-(accel[0]),accel[2]);
 
     float newRoll = gain*(lastRoll + gyro[0]*dt) + (1-gain)*rollAccel;
     float newPitch = gain*(lastPitch + gyro[1]*dt) + (1-gain)*pitchAccel;

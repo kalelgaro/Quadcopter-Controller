@@ -15,7 +15,7 @@
 	#define bias 1
 	#define angle 0
 
-    #define NUMBER_OF_STATES 12
+    #define NUMBER_OF_STATES 9
     #define NUMBER_OF_CONTROL_INPUTS 0
     #define NUMBER_OF_MEASURES 9
 
@@ -28,7 +28,6 @@
         float ultimo_estado[n];     //Salva o estado da ultima iteração do filtro Xk-1|k-1
         float P[n*n];               //Matriz de Covariância do erro da ultima iterção (Pk|k-1)
         float Q_angles;
-        float Q_bias_acel;
         float Q_bias_mag;
         float Q_bias_angle;
 		float R_acel;
