@@ -15,7 +15,7 @@
 	#define bias 1
 	#define angle 0
 
-    #define NUMBER_OF_STATES 13
+    #define NUMBER_OF_STATES 7
     #define NUMBER_OF_CONTROL_INPUTS 0
     #define NUMBER_OF_MEASURES 6
 
@@ -29,9 +29,7 @@
         float P[n*n];               //Matriz de Covariância do erro da ultima iterção (Pk|k-1)
         float Qk[n*n];              //Matriz de covariâncias de processo salvas ao final de cada iteração.
         float Q_quat;
-        float Q_bias_acel;
         float Q_bias_mag;
-        float Q_bias_gyro;
 		float R_acel;
 		float R_mag;
 		float dt;

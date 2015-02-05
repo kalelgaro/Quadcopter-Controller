@@ -148,37 +148,25 @@ float yawDErrorBuffer[D_FILTER_ORDER];
 
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0,0,0,0},
+kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0},
 
-                                      {1e-20,   0,		0,		0,		0,		0,      0,      0,      0,      0,      0,      0,      0,
-                                       0,		1e-20,	0,		0,		0,		0,      0,      0,      0,      0,      0,      0,      0,
-                                       0,		0,		1e-20,	0,		0,		0,      0,      0,      0,      0,      0,      0,      0,
-                                       0,		0,		0,		1e-20,	0,		0,      0,      0,      0,      0,      0,      0,      0,
-                                       0,		0,		0,		0,		1e-20,	0,      0,      0,      0,      0,      0,      0,      0,
-                                       0,		0,		0,		0,		0,		1e-20,  0,      0,      0,      0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      1e-20,  0,      0,      0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      1e-20,  0,      0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      1e-20,  0,      0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      1e-20,  0,      0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      1e-20,  0,      0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1e-20,  0,
-                                       0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1e-20},
+                                      {1e-10,   0,		0,		0,		0,		0,      0,
+                                       0,		1e-10,	0,		0,		0,		0,      0,
+                                       0,		0,		1e-10,	0,		0,		0,      0,
+                                       0,		0,		0,		1e-10,	0,		0,      0,
+                                       0,		0,		0,		0,		1e-10,	0,      0,
+                                       0,		0,		0,		0,		0,		1e-10,  0,
+                                       0,       0,      0,      0,      0,      0,      1e-10},
 
-                                          {	1e-10,0,0,0,0,0,0,0,0,0,0,0,0,
-                                            0,1e-10,0,0,0,0,0,0,0,0,0,0,0,
-                                            0,0,1e-10,0,0,0,0,0,0,0,0,0,0,
-                                            0,0,0,1e-10,0,0,0,0,0,0,0,0,0,
-                                            0,0,0,0,1e-10,0,0,0,0,0,0,0,0,
-                                            0,0,0,0,0,1e-10,0,0,0,0,0,0,0,
-                                            0,0,0,0,0,0,1e-10,0,0,0,0,0,0,
-                                            0,0,0,0,0,0,0,1e-10,0,0,0,0,0,
-                                            0,0,0,0,0,0,0,0,1e-10,0,0,0,0,
-                                            0,0,0,0,0,0,0,0,0,1e-10,0,0,0,
-                                            0,0,0,0,0,0,0,0,0,0,1e-10,0,0,
-                                            0,0,0,0,0,0,0,0,0,0,0,1e-10,0,
-                                            0,0,0,0,0,0,0,0,0,0,0,0,1e-10},
+                                          {	1e-10,0,0,0,0,0,0,
+                                            0,1e-10,0,0,0,0,0,
+                                            0,0,1e-10,0,0,0,0,
+                                            0,0,0,1e-10,0,0,0,
+                                            0,0,0,0,1e-10,0,0,
+                                            0,0,0,0,0,1e-10,0,
+                                            0,0,0,0,0,0,1e-10},
 
-                                       5e-7, 2e-9, 1e-2, 1e-3, 45, 45, dt, {0, 0, 1} ,{0.14, 0.05, -0.0155}};
+                                       5e-7, 2e-9, 1e-3, 45, dt, {0, 0, 1} ,{0.14, 0.05, -0.0155}};
 
 //Erros utilizados nos controladores PID
 
@@ -269,20 +257,10 @@ void iniciar_estado_Kalman() {
     EstadoFiltroKalman.ultimo_estado[2] = 0;
     EstadoFiltroKalman.ultimo_estado[3] = 0;
 
-    //Valor inicial do bias do Acelerômetro
-    EstadoFiltroKalman.ultimo_estado[4] = offset_accel[0];
-    EstadoFiltroKalman.ultimo_estado[5] = offset_accel[1];
-    EstadoFiltroKalman.ultimo_estado[6] = offset_accel[2];
-
     //Valor inicial do bias do magnetômetro - Valores retirados de testes de offset
-    EstadoFiltroKalman.ultimo_estado[7] = offsetMag[0];
-    EstadoFiltroKalman.ultimo_estado[8] = offsetMag[1];
-    EstadoFiltroKalman.ultimo_estado[9] = offsetMag[2];
-
-    //Valor inicial do bias do giroscópio.
-    EstadoFiltroKalman.ultimo_estado[10] = offset_gyro[0]*DEG_TO_RAD;
-    EstadoFiltroKalman.ultimo_estado[11] = offset_gyro[1]*DEG_TO_RAD;
-    EstadoFiltroKalman.ultimo_estado[12] = offset_gyro[2]*DEG_TO_RAD;
+    EstadoFiltroKalman.ultimo_estado[4] = offsetMag[0];
+    EstadoFiltroKalman.ultimo_estado[5] = offsetMag[1];
+    EstadoFiltroKalman.ultimo_estado[6] = offsetMag[2];
 }
 
 //Altera as contastes do controlador PID. - Roll, Pitch e Yaw.
@@ -298,12 +276,10 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float Kp_yaw, float Ki_y
 }
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
-void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasacel, float32_t Q_biasmag, float32_t Q_biasGyro, float32_t R_acelerometro, float32_t R_magnetometro)
+void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasmag, float32_t R_acelerometro, float32_t R_magnetometro)
 {
     EstadoFiltroKalman.Q_quat = Q_quat;
-    EstadoFiltroKalman.Q_bias_acel = Q_biasacel;
     EstadoFiltroKalman.Q_bias_mag = Q_biasmag;
-    EstadoFiltroKalman.Q_bias_gyro = Q_biasGyro;
 
     EstadoFiltroKalman.R_acel = R_acelerometro;
     EstadoFiltroKalman.R_mag = R_magnetometro;
@@ -328,11 +304,10 @@ void retornar_parametros_pid(float *Kp, float *Ki, float *Kd)
 
 //Retrona os parametros utilizados no Filtro de Kalman (Telemetria)
 
-void retornar_parametros_Kalman(float32_t *Q_quaternion, float32_t *Q_biasacel, float32_t *Q_biasmag, float32_t *R_acelerometro, float32_t *R_magnetometro)
+void retornar_parametros_Kalman(float32_t *Q_quaternion, float32_t *Q_biasmag, float32_t *R_acelerometro, float32_t *R_magnetometro)
 {
     *Q_quaternion = EstadoFiltroKalman.Q_quat;
     *Q_biasmag = EstadoFiltroKalman.Q_bias_mag;
-    *Q_biasacel = EstadoFiltroKalman.Q_bias_acel;
 
     *R_acelerometro = EstadoFiltroKalman.R_acel;
     *R_magnetometro = EstadoFiltroKalman.R_mag;
@@ -363,6 +338,14 @@ void processar_mpu6050() {
     //Checa a disponibilidade de novos dados para leitura.
     if(MPU6050_checkDataReadyIntPin() == Bit_SET) {
         MPU6050_readData(I2C3, acelerometro_adxl345, saida_gyro_dps_pf);
+
+        saida_gyro_dps_pf[0] -= offset_gyro[0];
+        saida_gyro_dps_pf[1] -= offset_gyro[1];
+        saida_gyro_dps_pf[2] -= offset_gyro[2];
+
+        acelerometro_adxl345[0] -= offset_accel[0];
+        acelerometro_adxl345[1] -= offset_accel[1];
+        acelerometro_adxl345[2] -= offset_accel[2];
 
         //Converte as medidas de Graus/Segundo para Radianos/Segundo
         saida_gyro_dps_pf[0] *= DEG_TO_RAD;
@@ -505,19 +488,14 @@ void processo_controle()
             erro_yaw =   (ref_yaw - orientacao + orientacao_inicial);
 
             //Converte o erro absoluto de ângulos de graus para graus por segundo
-            float pitchRateRef = erro_pitch*10.5; //"1º de erro -> Velocidade de 4,5º por segundo;
-            float rollRateRef = erro_roll*10.5;
-            float yawRateRef = erro_yaw*10.5;
-
-            //Pega o bias do giroscópio estimado pelo filtro de Kalman
-            float bgx = EstadoFiltroKalman.ultimo_estado[10];
-            float bgy = EstadoFiltroKalman.ultimo_estado[11];
-            float bgz = EstadoFiltroKalman.ultimo_estado[12];
+            float pitchRateRef = erro_pitch*3.5; //"1º de erro -> Velocidade de 4,5º por segundo;
+            float rollRateRef = erro_roll*3.5;
+            float yawRateRef = erro_yaw*3.5;
 
             //Pega o giroscópio como feedback de velocidade angular. Retira o novo bias estimado pelo filtro
-            float pitchRateFeedback = (saida_gyro_dps_pf[pitch] - bgx)*RAD_TO_DEG;
-            float rollRateFeedback = (saida_gyro_dps_pf[roll] - bgy)*RAD_TO_DEG;
-            float yawRateFeedback = (saida_gyro_dps_pf[yaw] - bgz)*RAD_TO_DEG;
+            float pitchRateFeedback = (saida_gyro_dps_pf[pitch])*RAD_TO_DEG;
+            float rollRateFeedback = (saida_gyro_dps_pf[roll])*RAD_TO_DEG;
+            float yawRateFeedback = (saida_gyro_dps_pf[yaw])*RAD_TO_DEG;
 
             //Cálcula os erros dos controladores de velocidade
             float pitchRateError = pitchRateRef - pitchRateFeedback;

@@ -144,7 +144,7 @@ int main(void)
 
 	//Qang, Qbiasmag, Racel, Rmag, Rorth
     //setar_parametros_Kalman(0.0032, 2e-15, 2e-15, 2e-8 , 1e-2, 7.5e-1);		//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
-    setar_parametros_Kalman(0.01, 1e-15, 1e-15, 1e-15, 0.15, 0.5);  			//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(0.0085, 1e-15, 0.075, 1.5);  			//Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
 	
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -293,7 +293,7 @@ int main(void)
 
 							limpar_buffer(buffer_dados_tx,33);
 
-							retornar_parametros_Kalman(&Q_acelerometro, &Q_magnetometro, &Q_bias, &R_acelerometro, &R_magnetometro);
+                            retornar_parametros_Kalman(&Q_acelerometro, &Q_magnetometro, &R_acelerometro, &R_magnetometro);
 
 							buffer_dados_tx[0] = '^';
 
@@ -611,7 +611,7 @@ void iniciarMPU6050Imu() {
 
     //Configurações dos sensores.
     initialConfig.accelFullScale = AFS_8G;              //Fundo de escala de 8G.
-    initialConfig.gyroFullScale = FS_1000DPS;             //Fundo de escala de 500 graus por segundo.
+    initialConfig.gyroFullScale = FS_2000DPS;             //Fundo de escala de 500 graus por segundo.
     initialConfig.clockSource = MPU6050_CLK_GYRO_X_PLL; //Fonte de clock no oscilador do eixo X do giroscópio.
     initialConfig.fifoEnabled = 0;                      //Fifo desligada;
     initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual à do Gyro
@@ -619,8 +619,9 @@ void iniciarMPU6050Imu() {
     initialConfig.interruptsConfig = 0x01;              //Ativa a interrupção de Data Ready;
     initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
 
+    initialConfig.digitalLowPassConfig = 0x00;          //Frequências de corte em 260Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
     //initialConfig.digitalLowPassConfig = 0x02;          //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
-    initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    //initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
     //initialConfig.digitalLowPassConfig = 0x00;            //Frequências de corte em 260Hz e Aquisição em 8Khz. (Delay de aprox 0.98ms)
 
 

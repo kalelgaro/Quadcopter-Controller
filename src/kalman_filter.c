@@ -122,32 +122,18 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     float q2 = X_f32[2];
     float q3 = X_f32[3];
 
-    float bax = X_f32[4];
-    float bay = X_f32[5];
-    float baz = X_f32[6];
-
-    float bmx = X_f32[7];
-    float bmy = X_f32[8];
-    float bmz = X_f32[9];
-
-    float bgx = X_f32[10];
-    float bgy = X_f32[11];
-    float bgz = X_f32[12];
+    float bmx = X_f32[4];
+    float bmy = X_f32[5];
+    float bmz = X_f32[6];
 
     //Atualizar o estado anterior
-    X_f32[0] = q0 + dt*q1*(bgx/2 - wx/2) + dt*q2*(bgy/2 - wy/2) + dt*q3*(bgz/2 - wz/2);
-    X_f32[1] = q1 - dt*q0*(bgx/2 - wx/2) - dt*q3*(bgy/2 - wy/2) + dt*q2*(bgz/2 - wz/2);
-    X_f32[2] = q2 + dt*q3*(bgx/2 - wx/2) - dt*q0*(bgy/2 - wy/2) - dt*q1*(bgz/2 - wz/2);
-    X_f32[3] = q3 - dt*q2*(bgx/2 - wx/2) + dt*q1*(bgy/2 - wy/2) - dt*q0*(bgz/2 - wz/2);
-    X_f32[4] = bax;
-    X_f32[5] = bay;
-    X_f32[6] = baz;
-    X_f32[7] = bmx;
-    X_f32[8] = bmy;
-    X_f32[9] = bmz;
-    X_f32[10] = bgx;
-    X_f32[11] = bgy;
-    X_f32[12] = bgz;
+    X_f32[0] = q0 - dt*q1*(wx/2) - dt*q2*(wy/2) - dt*q3*(wz/2);
+    X_f32[1] = q1 + dt*q0*(wx/2) + dt*q3*(wy/2) - dt*q2*(wz/2);
+    X_f32[2] = q2 - dt*q3*(wx/2) + dt*q0*(wy/2) + dt*q1*(wz/2);
+    X_f32[3] = q3 + dt*q2*(wx/2) - dt*q1*(wy/2) + dt*q0*(wz/2);
+    X_f32[4] = bmx;
+    X_f32[5] = bmy;
+    X_f32[6] = bmz;
 
     //Normaliza o quaternion gerado
     //normalizeVector(X_f32, 4);
@@ -159,72 +145,44 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     q3 = X_f32[3];
 
     float a11 = 1;
-    float a12 = dt*(bgx/2 - wx/2);
-    float a13 = dt*(bgy/2 - wy/2);
-    float a14 = dt*(bgz/2 - wz/2);
+    float a12 = -dt*(wx/2);
+    float a13 = -dt*(wy/2);
+    float a14 = -dt*(wz/2);
 
-    float a21 = -dt*(bgx/2 - wx/2);
+    float a21 = +dt*(wx/2);
     float a22 = 1;
-    float a23 = dt*(bgz/2 - wz/2);
-    float a24 = -dt*(bgy/2 - wy/2);
+    float a23 = -dt*(wz/2);
+    float a24 = +dt*(wy/2);
 
-    float a31 = -dt*(bgy/2 - wy/2);
-    float a32 = -dt*(bgz/2 - wz/2);
+    float a31 = +dt*(wy/2);
+    float a32 = +dt*(wz/2);
     float a33 = 1;
-    float a34 = dt*(bgx/2 - wx/2);
+    float a34 = -dt*(wx/2);
 
-    float a41 = -dt*(bgz/2 - wz/2);
-    float a42 = dt*(bgy/2 - wy/2);
-    float a43 = -dt*(bgx/2 - wx/2);
+    float a41 = +dt*(wz/2);
+    float a42 = -dt*(wy/2);
+    float a43 = +dt*(wx/2);
     float a44 = 1;
 
-    float a111 = (dt*q1)/2;
-    float a112 = (dt*q2)/2;
-    float a113 = (dt*q3)/2;
-
-    float a211 = -(dt*q0)/2;
-    float a212 = -(dt*q3)/2;
-    float a213 = (dt*q2)/2;
-
-    float a311 = (dt*q3)/2;
-    float a312 = -(dt*q0)/2;
-    float a313 = -(dt*q1)/2;
-
-    float a411 = -(dt*q2)/2;
-    float a412 = (dt*q1)/2;
-    float a413 = -(dt*q0)/2;
-
     //Elementos da matriz para atualização dos estados (F).
-    float F_f32[n*n] = {	a11,	a12,	a13,	a14,	0,		0,      0,      0,      0,      0,      a111,   a112,   a113,
-                            a21,	a22,	a23,	a24,	0,		0,      0,      0,      0,      0,      a211,   a212,   a213,
-                            a31,	a32,	a33,	a34,	0,		0,      0,      0,      0,      0,      a311,   a312,   a313,
-                            a41,	a42,	a43,	a44,	0,		0,      0,      0,      0,      0,      a411,   a412,   a413,
-                            0,		0,		0,		0,		1,		0,      0,      0,      0,      0,      0,      0,      0,
-                            0,		0,		0,		0,		0,		1,      0,      0,      0,      0,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      1,      0,      0,      0,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      0,      1,      0,      0,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      0,      0,      1,      0,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      0,      0,      0,      1,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1,      0,      0,
-                            0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1,      0,
-                            0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      1};
+    float F_f32[n*n] = {	a11,	a12,	a13,	a14,    0,      0,      0,
+                            a21,	a22,	a23,	a24,    0,      0,      0,
+                            a31,	a32,	a33,	a34,    0,      0,      0,
+                            a41,	a42,	a43,	a44,    0,      0,      0,
+                            0,      0,      0,      0,      1,      0,      0,
+                            0,      0,      0,      0,      0,      1,      0,
+                            0,      0,      0,      0,      0,      0,      1};
 
     arm_mat_init_f32(&F, n, n, F_f32);
 
 	//Matriz Jacobiana transposta para atualização de P.
-    float Ft_f32[n*n] =	{	a11,	a21,	a31,	a41,	0,		0,      0,      0,      0,      0,      0,      0,      0,
-                            a12,	a22,	a32,	a42,	0,		0,      0,      0,      0,      0,      0,      0,      0,
-                            a13,	a23,	a33,	a43,	0,		0,      0,      0,      0,      0,      0,      0,      0,
-                            a14,	a24,	a34,	a44,	0,		0,      0,      0,      0,      0,      0,      0,      0,
-                            0,		0,		0,		0,		1,		0,      0,      0,      0,      0,      0,      0,      0,
-                            0,		0,		0,		0,		0,		1,      0,      0,      0,      0,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      1,      0,      0,      0,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      0,      1,      0,      0,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      0,      0,      1,      0,      0,      0,      0,
-                            0,      0,      0,      0,      0,      0,      0,      0,      0,      1,      0,      0,      0,
-                            a111,   a211,   a311,   a411,   0,      0,      0,      0,      0,      0,      1,      0,      0,
-                            a112,   a212,   a312,   a412,   0,      0,      0,      0,      0,      0,      0,      1,      0,
-                            a113,   a213,   a313,   a413,   0,      0,      0,      0,      0,      0,      0,      0,      1};
+    float Ft_f32[n*n] =	{	a11,	a21,	a31,	a41,    0,      0,      0,
+                            a12,	a22,	a32,	a42,    0,      0,      0,
+                            a13,	a23,	a33,	a43,    0,      0,      0,
+                            a14,	a24,	a34,	a44,    0,      0,      0,
+                            0,      0,      0,      0,      1,      0,      0,
+                            0,      0,      0,      0,      0,      1,      0,
+                            0,      0,      0,      0,      0,      0,      1};
 
     arm_mat_init_f32(&Ft, n, n, Ft_f32);
 
@@ -232,9 +190,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
 	//Matriz de covariâncias do processo de atualização (Q).
     float Qquat = (buffer_filtro->Q_quat);
-    float qBiasAcel = (buffer_filtro->Q_bias_acel);
     float qBiasMag = (buffer_filtro->Q_bias_mag);
-    float qBiasGyro = (buffer_filtro->Q_bias_gyro);
 
     /*Matriz de confiabilidade do processo de atualização. */
     /* Pk|k-1 = Pk-1|k-1 */
@@ -287,19 +243,13 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     q44 = (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4;
 
     //Atualiza a matriz de covariâncias dos processos
-    float newQ_f32[n*n] = {	q11,	q12,  	q13,  	q14,    0,          0,          0,          0,          0,          0,          0,          0,          0,
-                            q21,  	q22,	q23,  	q24,  	0,          0,          0,          0,          0,          0,          0,          0,          0,
-                            q31,  	q32,  	q33,	q34,  	0,          0,          0,          0,          0,          0,          0,          0,          0,
-                            q41,  	q42,  	q43,  	q44,	0,          0,          0,          0,          0,          0,          0,          0,          0,
-                            0,		0,		0,		0,		qBiasAcel,  0,          0,          0,          0,          0,          0,          0,          0,
-                            0,		0,		0,		0,		0,          qBiasAcel,  0,          0,          0,          0,          0,          0,          0,
-                            0,      0,      0,      0,      0,          0,          qBiasAcel,  0,          0,          0,          0,          0,          0,
-                            0,      0,      0,      0,      0,          0,          0,          qBiasMag,   0,          0,          0,          0,          0,
-                            0,      0,      0,      0,      0,          0,          0,          0,          qBiasMag,   0,          0,          0,          0,
-                            0,      0,      0,      0,      0,          0,          0,          0,          0,          qBiasMag,   0,          0,          0,
-                            0,      0,      0,      0,      0,          0,          0,          0,          0,          0,          qBiasGyro,  0,          0,
-                            0,      0,      0,      0,      0,          0,          0,          0,          0,          0,          0,          qBiasGyro,  0,
-                            0,      0,      0,      0,      0,          0,          0,          0,          0,          0,          0,          0,          qBiasGyro};
+    float newQ_f32[n*n] = {	q11,	q12,  	q13,  	q14,    0,          0,          0,
+                            q21,  	q22,	q23,  	q24,  	0,          0,          0,
+                            q31,  	q32,  	q33,	q34,  	0,          0,          0,
+                            q41,  	q42,  	q43,  	q44,	0,          0,          0,
+                            0,      0,      0,      0,      qBiasMag,   0,          0,
+                            0,      0,      0,      0,      0,          qBiasMag,   0,
+                            0,      0,      0,      0,      0,          0,          qBiasMag};
 
     arm_copy_f32(newQ_f32, buffer_filtro->Qk, n*n);
 
@@ -371,22 +321,19 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     arm_matrix_instance_f32 ykMatrix;
     arm_mat_init_f32(&ykMatrix, a, 1, ykVector);
 
-    observatedStateVector[0] += X_f32[4];
-    observatedStateVector[1] += X_f32[5];
-    observatedStateVector[2] += X_f32[6];
-    observatedStateVector[3] += X_f32[7];
-    observatedStateVector[4] += X_f32[8];
-    observatedStateVector[5] += X_f32[9];
+    observatedStateVector[3] += X_f32[4];
+    observatedStateVector[4] += X_f32[5];
+    observatedStateVector[5] += X_f32[6];
 
     if(arm_mat_sub_f32(&zkMatrix, &observatedStateMatrix, &ykMatrix) != ARM_MATH_SUCCESS)
         while(1);
 
-    float H_f32[a*n] = {    2*gy*q3 - 2*gz*q2,           2*gy*q2 + 2*gz*q3, 2*gy*q1 - 4*gx*q2 - 2*gz*q0, 2*gy*q0 - 4*gx*q3 + 2*gz*q1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-                            2*gz*q1 - 2*gx*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gz*q2 - 4*gy*q3 - 2*gx*q0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-                            2*gx*q2 - 2*gy*q1, 2*gx*q3 - 2*gy*q0 - 4*gz*q1, 2*gx*q0 + 2*gy*q3 - 4*gz*q2,           2*gx*q1 + 2*gy*q2, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-                            2*hy*q3 - 2*hz*q2,           2*hy*q2 + 2*hz*q3, 2*hy*q1 - 4*hx*q2 - 2*hz*q0, 2*hy*q0 - 4*hx*q3 + 2*hz*q1, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-                            2*hz*q1 - 2*hx*q3, 2*hx*q2 - 4*hy*q1 + 2*hz*q0,           2*hx*q1 + 2*hz*q3, 2*hz*q2 - 4*hy*q3 - 2*hx*q0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-                            2*hx*q2 - 2*hy*q1, 2*hx*q3 - 2*hy*q0 - 4*hz*q1, 2*hx*q0 + 2*hy*q3 - 4*hz*q2,           2*hx*q1 + 2*hy*q2, 0, 0, 0, 0, 0, 1, 0, 0, 0};
+    float H_f32[a*n] = {    2*gy*q3 - 2*gz*q2,           2*gy*q2 + 2*gz*q3, 2*gy*q1 - 4*gx*q2 - 2*gz*q0, 2*gy*q0 - 4*gx*q3 + 2*gz*q1, 0, 0, 0,
+                            2*gz*q1 - 2*gx*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gz*q2 - 4*gy*q3 - 2*gx*q0, 0, 0, 0,
+                            2*gx*q2 - 2*gy*q1, 2*gx*q3 - 2*gy*q0 - 4*gz*q1, 2*gx*q0 + 2*gy*q3 - 4*gz*q2,           2*gx*q1 + 2*gy*q2, 0, 0, 0,
+                            2*hy*q3 - 2*hz*q2,           2*hy*q2 + 2*hz*q3, 2*hy*q1 - 4*hx*q2 - 2*hz*q0, 2*hy*q0 - 4*hx*q3 + 2*hz*q1, 1, 0, 0,
+                            2*hz*q1 - 2*hx*q3, 2*hx*q2 - 4*hy*q1 + 2*hz*q0,           2*hx*q1 + 2*hz*q3, 2*hz*q2 - 4*hy*q3 - 2*hx*q0, 0, 1, 0,
+                            2*hx*q2 - 2*hy*q1, 2*hx*q3 - 2*hy*q0 - 4*hz*q1, 2*hx*q0 + 2*hy*q3 - 4*hz*q2,           2*hx*q1 + 2*hy*q2, 0, 0, 1};
 
     arm_mat_init_f32(&H, a, n, H_f32);
 
@@ -395,15 +342,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
                             2*gy*q2 + 2*gz*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0, 2*gx*q3 - 2*gy*q0 - 4*gz*q1,           2*hy*q2 + 2*hz*q3, 2*hx*q2 - 4*hy*q1 + 2*hz*q0, 2*hx*q3 - 2*hy*q0 - 4*hz*q1,
                             2*gy*q1 - 4*gx*q2 - 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gx*q0 + 2*gy*q3 - 4*gz*q2, 2*hy*q1 - 4*hx*q2 - 2*hz*q0,           2*hx*q1 + 2*hz*q3, 2*hx*q0 + 2*hy*q3 - 4*hz*q2,
                             2*gy*q0 - 4*gx*q3 + 2*gz*q1, 2*gz*q2 - 4*gy*q3 - 2*gx*q0,           2*gx*q1 + 2*gy*q2, 2*hy*q0 - 4*hx*q3 + 2*hz*q1, 2*hz*q2 - 4*hy*q3 - 2*hx*q0,           2*hx*q1 + 2*hy*q2,
-                            1,                           0,                           0,                           0,                           0,                           0,
-                            0,                           1,                           0,                           0,                           0,                           0,
-                            0,                           0,                           1,                           0,                           0,                           0,
                             0,                           0,                           0,                           1,                           0,                           0,
                             0,                           0,                           0,                           0,                           1,                           0,
-                            0,                           0,                           0,                           0,                           0,                           1,
-                            0,                           0,                           0,                           0,                           0,                           0,
-                            0,                           0,                           0,                           0,                           0,                           0,
-                            0,                           0,                           0,                           0,                           0,                           0};
+                            0,                           0,                           0,                           0,                           0,                           1};
 
     arm_mat_init_f32(&Ht, n, a, Ht_f32);
 
@@ -411,9 +352,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	float Racel = buffer_filtro->R_acel;
 	float Rmag = buffer_filtro->R_mag;	 //Variância inicial do magnetômetro.
 
-    float acelModulus = getVectorModulus(medida_accel, 3);
-    float magModulus = getVectorModulus(medida_mag, 3);
-    float magInitialModulus = getVectorModulus(buffer_filtro->MagInicial, 3);
+//    float acelModulus = getVectorModulus(medida_accel, 3);
+//    float magModulus = getVectorModulus(medida_mag, 3);
+//    float magInitialModulus = getVectorModulus(buffer_filtro->MagInicial, 3);
 
     //Racel += 1e-1*fabsf(1 - acelModulus);
     //Rmag += 1*fabs(magInitialModulus - magModulus);
@@ -465,19 +406,13 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	//P = (I-K*H)*P
 	
 	//Matriz identidade para atualização da matriz P à posteriori.
-    float I_f32[n*n] = {	1,0,0,0,0,0,0,0,0,0,0,0,0,
-                            0,1,0,0,0,0,0,0,0,0,0,0,0,
-                            0,0,1,0,0,0,0,0,0,0,0,0,0,
-                            0,0,0,1,0,0,0,0,0,0,0,0,0,
-                            0,0,0,0,1,0,0,0,0,0,0,0,0,
-                            0,0,0,0,0,1,0,0,0,0,0,0,0,
-                            0,0,0,0,0,0,1,0,0,0,0,0,0,
-                            0,0,0,0,0,0,0,1,0,0,0,0,0,
-                            0,0,0,0,0,0,0,0,1,0,0,0,0,
-                            0,0,0,0,0,0,0,0,0,1,0,0,0,
-                            0,0,0,0,0,0,0,0,0,0,1,0,0,
-                            0,0,0,0,0,0,0,0,0,0,0,1,0,
-                            0,0,0,0,0,0,0,0,0,0,0,0,1};
+    float I_f32[n*n] = {	1,0,0,0,0,0,0,
+                            0,1,0,0,0,0,0,
+                            0,0,1,0,0,0,0,
+                            0,0,0,1,0,0,0,
+                            0,0,0,0,1,0,0,
+                            0,0,0,0,0,1,0,
+                            0,0,0,0,0,0,1};
 
     arm_mat_init_f32(&I, n, n, I_f32);
 
