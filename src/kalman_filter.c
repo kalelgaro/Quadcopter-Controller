@@ -11,10 +11,10 @@
 //Bruno f. M. Callegaro - 20/12/2013
 
 
-void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], float angles[], uint16_t estado_motores)
+void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], uint16_t estado_motores)
 {
     GPIO_ResetBits(GPIOD, GPIO_Pin_14);
-    //Insf_tancias das matrizes utilizadas para o cálculo
+	//Instancias das matrizes utilizadas para o cálculo
     arm_matrix_instance_f32 X;			//Matriz de estados. [n,1]
     arm_matrix_instance_f32 F;			//Matriz de transição de estados. [n,n]
     arm_matrix_instance_f32 Ft;			//Matriz de transição de estados transposta. [n,n]
@@ -101,10 +101,15 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	
 	float dt = buffer_filtro->dt;
 
+	/*Angulos estimados através do filtro. */
+
+	
+    /*Bias do magnetômetro. */
+
 	/*Velocidades angulares subtraídas dos bias. */
-    float p = medida_gyro[0];
-    float q = medida_gyro[1];
-    float r = medida_gyro[2];
+    float wx = medida_gyro[0];
+    float wy = medida_gyro[1];
+    float wz = medida_gyro[2];
 
 	/*Atualização dos estados dos ângulos com base nas velocidades angulares e do bias estimado anteriormente*/
     float X_f32[n];
@@ -112,63 +117,80 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     arm_copy_f32(buffer_filtro->ultimo_estado, X_f32, n);
 
-    float phi =     X_f32[0];
-    float theta =   X_f32[1];
-    float psi =     X_f32[2];
+    float q0 = X_f32[0];
+    float q1 = X_f32[1];
+    float q2 = X_f32[2];
+    float q3 = X_f32[3];
 
-    float bPhi =    X_f32[6];
-    float bTheta =  X_f32[7];
-    float bPsi =    X_f32[8];
+    float bmx = X_f32[4];
+    float bmy = X_f32[5];
+    float bmz = X_f32[6];
 
-    //Atualizar o estado anterior - Apenas os ângulos precisam serm inicializados, uma vez que os bias são atualizados por uma identidade.
+    //Atualizar o estado anterior
+    X_f32[0] = q0 - dt*q1*(wx/2) - dt*q2*(wy/2) - dt*q3*(wz/2);
+    X_f32[1] = q1 + dt*q0*(wx/2) + dt*q3*(wy/2) - dt*q2*(wz/2);
+    X_f32[2] = q2 - dt*q3*(wx/2) + dt*q0*(wy/2) + dt*q1*(wz/2);
+    X_f32[3] = q3 + dt*q2*(wx/2) - dt*q1*(wy/2) + dt*q0*(wz/2);
+    X_f32[4] = bmx;
+    X_f32[5] = bmy;
+    X_f32[6] = bmz;
 
-    X_f32[0] = phi + dt*(p + r*cos(psi)*tan(theta) + q*sin(psi)*tan(theta));
-    X_f32[1] =                         theta + dt*(q*cos(psi) - r*sin(psi));
-    X_f32[2] =     psi + dt*((r*cos(psi))/cos(theta) + (q*sin(psi))/cos(theta));
+    //Normaliza o quaternion gerado
+    //normalizeVector(X_f32, 4);
 
-    phi = X_f32[0];
-    theta = X_f32[1];
-    psi = X_f32[2];
+    //Retira o quaternion para utilização
+    q0 = X_f32[0];
+    q1 = X_f32[1];
+    q2 = X_f32[2];
+    q3 = X_f32[3];
 
-    //Com os angulos calculados, cálcula os senos e cossenos utilizados para agilizar os processos de cálculo.
-    //float cos_Phi = f_cos(phi);
-    //float sin_Phi = f_sin(phi);
-    //float tan_Phi = f_tan(phi);
+    float a11 = 1;
+    float a12 = -dt*(wx/2);
+    float a13 = -dt*(wy/2);
+    float a14 = -dt*(wz/2);
 
-    float cos_Theta = f_cos(theta);
-    float sin_Theta = f_sin(theta);
-    float tan_Theta = f_tan(theta);
+    float a21 = +dt*(wx/2);
+    float a22 = 1;
+    float a23 = -dt*(wz/2);
+    float a24 = +dt*(wy/2);
 
-    float cos_Psi = f_cos(psi);
-    float sin_Psi = f_sin(psi);
+    float a31 = +dt*(wy/2);
+    float a32 = +dt*(wz/2);
+    float a33 = 1;
+    float a34 = -dt*(wx/2);
 
+    float a41 = +dt*(wz/2);
+    float a42 = -dt*(wy/2);
+    float a43 = +dt*(wx/2);
+    float a44 = 1;
 
     //Elementos da matriz para atualização dos estados (F).
-    float F_f32[n*n] = {
-         1,               dt*(r*cos_Psi*(pow(tan_Theta,2) + 1) + q*sin_Psi*(pow(tan_Theta,2) + 1)),         dt*(q*cos_Psi*tan_Theta - r*sin_Psi*tan_Theta), 0, 0, 0, 0, 0, 0,
-         0,                                                                                1,                              -dt*(r*cos_Psi + q*sin_Psi), 0, 0, 0, 0, 0, 0,
-         0, dt*((r*cos_Psi*sin_Theta)/pow(cos_Theta,2) + (q*sin_Psi*sin_Theta)/pow(cos_Theta,2)), dt*((q*cos_Psi)/cos_Theta - (r*sin_Psi)/cos_Theta) + 1, 0, 0, 0, 0, 0, 0,
-         0,                                                                                0,                                                          0, 1, 0, 0, 0, 0, 0,
-         0,                                                                                0,                                                          0, 0, 1, 0, 0, 0, 0,
-         0,                                                                                0,                                                          0, 0, 0, 1, 0, 0, 0,
-         0,                                                                                0,                                                          0, 0, 0, 0, 1, 0, 0,
-         0,                                                                                0,                                                          0, 0, 0, 0, 0, 1, 0,
-         0,                                                                                0,                                                          0, 0, 0, 0, 0, 0, 1,
-    };
+    float F_f32[n*n] = {	a11,	a12,	a13,	a14,    0,      0,      0,
+                            a21,	a22,	a23,	a24,    0,      0,      0,
+                            a31,	a32,	a33,	a34,    0,      0,      0,
+                            a41,	a42,	a43,	a44,    0,      0,      0,
+                            0,      0,      0,      0,      1,      0,      0,
+                            0,      0,      0,      0,      0,      1,      0,
+                            0,      0,      0,      0,      0,      0,      1};
 
     arm_mat_init_f32(&F, n, n, F_f32);
 
 	//Matriz Jacobiana transposta para atualização de P.
-    float Ft_f32[n*n];
+    float Ft_f32[n*n] =	{	a11,	a21,	a31,	a41,    0,      0,      0,
+                            a12,	a22,	a32,	a42,    0,      0,      0,
+                            a13,	a23,	a33,	a43,    0,      0,      0,
+                            a14,	a24,	a34,	a44,    0,      0,      0,
+                            0,      0,      0,      0,      1,      0,      0,
+                            0,      0,      0,      0,      0,      1,      0,
+                            0,      0,      0,      0,      0,      0,      1};
+
     arm_mat_init_f32(&Ft, n, n, Ft_f32);
-    arm_mat_trans_f32(&F, &Ft);
 
 	//Processo à priori para atualização da matriz de confiabilidade P.
 
 	//Matriz de covariâncias do processo de atualização (Q).
-    float qAngles = (buffer_filtro->Q_angles);
+    float Qquat = (buffer_filtro->Q_quat);
     float qBiasMag = (buffer_filtro->Q_bias_mag);
-    float qBiasAngles = (buffer_filtro->Q_bias_angle);
 
     /*Matriz de confiabilidade do processo de atualização. */
     /* Pk|k-1 = Pk-1|k-1 */
@@ -184,23 +206,52 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     if(arm_mat_mult_f32(&temp_calc_nn_0, &Ft, &temp_calc_nn_1) != ARM_MATH_SUCCESS)
         while(1);
 
-
-    //Atualiza a matriz de covariâncias dos processos
-    float Q_f32[n*n] = {	qAngles,   0,           0,          0,          0,          0,          0,          0,              0,
-                            0,          qAngles,    0,          0,          0,          0,          0,          0,              0,
-                            0,          0,          qAngles,	0,          0,          0,          0,          0,              0,
-                            0,          0,          0,          qBiasMag,   0,          0,          0,          0,              0,
-                            0,          0,          0,          0,          qBiasMag,   0,          0,          0,              0,
-                            0,          0,          0,          0,          0,          qBiasMag,   0,          0,              0,
-                            0,          0,          0,          0,          0,          0,          qBiasAngles, 0,             0,
-                            0,          0,          0,          0,          0,          0,          0,          qBiasAngles,    0,
-                            0,          0,          0,          0,          0,          0,          0,          0,              qBiasAngles};
-
+    //Copia a matriz Q da iteração anterior para a atual.
+    float Q_f32[n*n];
     arm_mat_init_f32(&Q, n, n, Q_f32);
+    arm_copy_f32(buffer_filtro->Qk, Q_f32, n*n);
 
     //P = temp_calc_nn_1 + Q = F*P*F' + Q
     if(arm_mat_add_f32(&temp_calc_nn_1, &Q, &P) != ARM_MATH_SUCCESS)
         while(1);
+
+    float q11, q12, q13, q14;
+    float q21, q22, q23, q24;
+    float q31, q32, q33, q34;
+    float q41, q42, q43, q44;
+
+    float sqrDt = powf(dt, 2);
+
+    q11 = (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
+    q12 = -(Qquat*sqrDt*q0*q1)/4;
+    q13 = -(Qquat*sqrDt*q0*q2)/4;
+    q14 = -(Qquat*sqrDt*q0*q3)/4;
+
+    q21 = -(Qquat*sqrDt*q0*q1)/4;
+    q22 = (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q2,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
+    q23 = -(Qquat*sqrDt*q1*q2)/4;
+    q24 = -(Qquat*sqrDt*q1*q3)/4;
+
+    q31 = -(Qquat*sqrDt*q0*q2)/4;
+    q32 = -(Qquat*sqrDt*q1*q2)/4;
+    q33 = (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
+    q34 = -(Qquat*sqrDt*q2*q3)/4;
+
+    q41 = -(Qquat*sqrDt*q0*q3)/4;
+    q42 = -(Qquat*sqrDt*q1*q3)/4;
+    q43 = -(Qquat*sqrDt*q2*q3)/4;
+    q44 = (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4;
+
+    //Atualiza a matriz de covariâncias dos processos
+    float newQ_f32[n*n] = {	q11,	q12,  	q13,  	q14,    0,          0,          0,
+                            q21,  	q22,	q23,  	q24,  	0,          0,          0,
+                            q31,  	q32,  	q33,	q34,  	0,          0,          0,
+                            q41,  	q42,  	q43,  	q44,	0,          0,          0,
+                            0,      0,      0,      0,      qBiasMag,   0,          0,
+                            0,      0,      0,      0,      0,          qBiasMag,   0,
+                            0,      0,      0,      0,      0,          0,          qBiasMag};
+
+    arm_copy_f32(newQ_f32, buffer_filtro->Qk, n*n);
 
 	/*Estados iniciais do magnetômetro */
     float magRefVector[3];
@@ -211,9 +262,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     arm_mat_init_f32(&magRefMatrix, 3, 1, magRefVector);
     arm_mat_init_f32(&acelRefMatrix, 3, 1, acelRefVector);
 
-    float ax = buffer_filtro->AcelInicial[0];
-    float ay = buffer_filtro->AcelInicial[1];
-    float az = buffer_filtro->AcelInicial[2];
+    float gx = buffer_filtro->AcelInicial[0];
+    float gy = buffer_filtro->AcelInicial[1];
+    float gz = buffer_filtro->AcelInicial[2];
 
     float hx = buffer_filtro->MagInicial[0];
     float hy = buffer_filtro->MagInicial[1];
@@ -223,9 +274,9 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     magRefVector[1] = hy;
     magRefVector[2] = hz;
 
-    acelRefVector[0] = ax;
-    acelRefVector[1] = ay;
-    acelRefVector[2] = az;
+    acelRefVector[0] = gx;
+    acelRefVector[1] = gy;
+    acelRefVector[2] = gz;
 
     //Matrizes com o resultado das operações de rotação
     float observatedStateVector[a];
@@ -233,18 +284,16 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     arm_matrix_instance_f32 observatedStateMatrix;
     arm_mat_init_f32(&observatedStateMatrix, a, 1, observatedStateVector);
 
-    //Matriz contendo os valores observados utilizados pra gerar o rezíduo (yk)
     arm_matrix_instance_f32 rotatedMagMatrix;
     arm_matrix_instance_f32 rotatedAcelMatrix;
-
     arm_mat_init_f32(&rotatedAcelMatrix, 3, 1, observatedStateVector);
     arm_mat_init_f32(&rotatedMagMatrix, 3, 1, observatedStateVector+3);
 
-    //Matriz de rotação com base nos angulos estimados.
+    //Matriz de rotação com base no quarternion estimado.
     float rotationVector[9];
     arm_matrix_instance_f32 rotationMatrix;
     arm_mat_init_f32(&rotationMatrix, 3, 3, rotationVector);
-    getCBARotMatFromEulerAngles(phi-bPhi, theta-bTheta, psi-bPsi, &rotationMatrix);
+    getRotMatFromQuaternion(X_f32, &rotationMatrix);
 
     /* Cálculo das referências com base no magnetômetro e no estado do acelerômetro parado [0; 0; 1]; */
     if(arm_mat_mult_f32(&rotationMatrix, &acelRefMatrix, &rotatedAcelMatrix) != ARM_MATH_SUCCESS)
@@ -264,10 +313,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     zkVector[4] = medida_mag[1];
     zkVector[5] = medida_mag[2];
 
-    zkVector[6] = angles[0];
-    zkVector[7] = angles[1];
-    zkVector[8] = angles[2];
-
     arm_matrix_instance_f32 zkMatrix;
     arm_mat_init_f32(&zkMatrix, a, 1, zkVector);
 
@@ -276,75 +321,51 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     arm_matrix_instance_f32 ykMatrix;
     arm_mat_init_f32(&ykMatrix, a, 1, ykVector);
 
-    //Adiciona os bias estimados pelo filtro
-    observatedStateVector[3] += X_f32[3];
-    observatedStateVector[4] += X_f32[4];
-    observatedStateVector[5] += X_f32[5];
-
-    //Remove o bias estimado pelo filtro
-    float correctedPhi =    -(X_f32[0] - X_f32[6]);
-    float correctedTheta =  -(X_f32[1] - X_f32[7]);
-    float correctedPsi =    -(X_f32[2] - X_f32[8]);
-
-    //Com os angulos corrigidos calculados, cálcula os senos e cossenos utilizados para agilizar os processos de cálculo.
-    float cos_correctedPhi = f_cos(correctedPhi);
-    float sin_correctedPhi = f_sin(correctedPhi);
-
-    float cos_correctedTheta = f_cos(correctedTheta);
-    float sin_correctedTheta = f_sin(correctedTheta);
-
-    float cos_correctedPsi = f_cos(correctedPsi);
-    float sin_correctedPsi = f_sin(correctedPsi);
-    //
-    observatedStateVector[6] = -correctedPhi;
-    observatedStateVector[7] = -correctedTheta;
-    observatedStateVector[8] = -correctedPsi;
+    observatedStateVector[3] += X_f32[4];
+    observatedStateVector[4] += X_f32[5];
+    observatedStateVector[5] += X_f32[6];
 
     if(arm_mat_sub_f32(&zkMatrix, &observatedStateMatrix, &ykMatrix) != ARM_MATH_SUCCESS)
         while(1);
 
-    float H_f32[a*n] = {
-         - ay*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - az*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), ax*sin_correctedTheta*cos_correctedPsi - az*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - ay*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, ay*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - az*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + ax*sin_correctedPsi*cos_correctedTheta, 0, 0, 0,   ay*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) + az*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), az*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - ax*sin_correctedTheta*cos_correctedPsi + ay*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, az*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - ay*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - ax*sin_correctedPsi*cos_correctedTheta,
-           ay*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + az*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), ax*sin_correctedPsi*sin_correctedTheta - az*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - ay*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, ay*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) - az*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - ax*cos_correctedPsi*cos_correctedTheta, 0, 0, 0, - ay*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - az*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), az*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - ax*sin_correctedPsi*sin_correctedTheta + ay*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, az*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - ay*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) + ax*cos_correctedPsi*cos_correctedTheta,
-                                                                                                                   az*sin_correctedPhi*cos_correctedTheta - ay*cos_correctedPhi*cos_correctedTheta,                                                 ax*cos_correctedTheta + az*sin_correctedTheta*cos_correctedPhi + ay*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0, 0, 0, 0,                                                                                                           ay*cos_correctedPhi*cos_correctedTheta - az*sin_correctedPhi*cos_correctedTheta,                                               - ax*cos_correctedTheta - az*sin_correctedTheta*cos_correctedPhi - ay*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0,
-         - hy*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hz*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), hx*sin_correctedTheta*cos_correctedPsi - hz*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - hy*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, hy*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - hz*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + hx*sin_correctedPsi*cos_correctedTheta, 1, 0, 0,   hy*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) + hz*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi), hz*cos_correctedPhi*cos_correctedPsi*cos_correctedTheta - hx*sin_correctedTheta*cos_correctedPsi + hy*sin_correctedPhi*cos_correctedPsi*cos_correctedTheta, hz*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - hy*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta) - hx*sin_correctedPsi*cos_correctedTheta,
-           hy*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) + hz*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), hx*sin_correctedPsi*sin_correctedTheta - hz*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - hy*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, hy*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) - hz*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hx*cos_correctedPsi*cos_correctedTheta, 0, 1, 0, - hy*(sin_correctedPhi*cos_correctedPsi - sin_correctedPsi*sin_correctedTheta*cos_correctedPhi) - hz*(cos_correctedPhi*cos_correctedPsi + sin_correctedPhi*sin_correctedPsi*sin_correctedTheta), hz*sin_correctedPsi*cos_correctedPhi*cos_correctedTheta - hx*sin_correctedPsi*sin_correctedTheta + hy*sin_correctedPhi*sin_correctedPsi*cos_correctedTheta, hz*(sin_correctedPhi*sin_correctedPsi + sin_correctedTheta*cos_correctedPhi*cos_correctedPsi) - hy*(sin_correctedPsi*cos_correctedPhi - sin_correctedPhi*sin_correctedTheta*cos_correctedPsi) + hx*cos_correctedPsi*cos_correctedTheta,
-                                                                                                                   hz*sin_correctedPhi*cos_correctedTheta - hy*cos_correctedPhi*cos_correctedTheta,                                                 hx*cos_correctedTheta + hz*sin_correctedTheta*cos_correctedPhi + hy*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0, 0, 0, 1,                                                                                                           hy*cos_correctedPhi*cos_correctedTheta - hz*sin_correctedPhi*cos_correctedTheta,                                               - hx*cos_correctedTheta - hz*sin_correctedTheta*cos_correctedPhi - hy*sin_correctedPhi*sin_correctedTheta,                                                                                                                                                                                                                                0,
-                                                                                                                                                                                                 1,                                                                                                                                                        0,                                                                                                                                                                                                                                0, 0, 0, 0,                                                                                                                                                                                        -1,                                                                                                                                                        0,                                                                                                                                                                                                                                0,
-                                                                                                                                                                                                 0,                                                                                                                                                        1,                                                                                                                                                                                                                                0, 0, 0, 0,                                                                                                                                                                                         0,                                                                                                                                                       -1,                                                                                                                                                                                                                                0,
-                                                                                                                                                                                                 0,                                                                                                                                                        0,                                                                                                                                                                                                                                1, 0, 0, 0,                                                                                                                                                                                         0,                                                                                                                                                        0,                                                                                                                                                                                                                               -1,
-    };
+    float H_f32[a*n] = {    2*gy*q3 - 2*gz*q2,           2*gy*q2 + 2*gz*q3, 2*gy*q1 - 4*gx*q2 - 2*gz*q0, 2*gy*q0 - 4*gx*q3 + 2*gz*q1, 0, 0, 0,
+                            2*gz*q1 - 2*gx*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gz*q2 - 4*gy*q3 - 2*gx*q0, 0, 0, 0,
+                            2*gx*q2 - 2*gy*q1, 2*gx*q3 - 2*gy*q0 - 4*gz*q1, 2*gx*q0 + 2*gy*q3 - 4*gz*q2,           2*gx*q1 + 2*gy*q2, 0, 0, 0,
+                            2*hy*q3 - 2*hz*q2,           2*hy*q2 + 2*hz*q3, 2*hy*q1 - 4*hx*q2 - 2*hz*q0, 2*hy*q0 - 4*hx*q3 + 2*hz*q1, 1, 0, 0,
+                            2*hz*q1 - 2*hx*q3, 2*hx*q2 - 4*hy*q1 + 2*hz*q0,           2*hx*q1 + 2*hz*q3, 2*hz*q2 - 4*hy*q3 - 2*hx*q0, 0, 1, 0,
+                            2*hx*q2 - 2*hy*q1, 2*hx*q3 - 2*hy*q0 - 4*hz*q1, 2*hx*q0 + 2*hy*q3 - 4*hz*q2,           2*hx*q1 + 2*hy*q2, 0, 0, 1};
 
     arm_mat_init_f32(&H, a, n, H_f32);
 
 	/* Matriz Jacobiana transposta para cálculo da confiabilidade do erro . */
-    float Ht_f32[n*a];
-    arm_mat_init_f32(&Ht, n, a, Ht_f32);
+    float Ht_f32[n*a] = {   2*gy*q3 - 2*gz*q2,           2*gz*q1 - 2*gx*q3,           2*gx*q2 - 2*gy*q1,           2*hy*q3 - 2*hz*q2,           2*hz*q1 - 2*hx*q3,           2*hx*q2 - 2*hy*q1,
+                            2*gy*q2 + 2*gz*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0, 2*gx*q3 - 2*gy*q0 - 4*gz*q1,           2*hy*q2 + 2*hz*q3, 2*hx*q2 - 4*hy*q1 + 2*hz*q0, 2*hx*q3 - 2*hy*q0 - 4*hz*q1,
+                            2*gy*q1 - 4*gx*q2 - 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gx*q0 + 2*gy*q3 - 4*gz*q2, 2*hy*q1 - 4*hx*q2 - 2*hz*q0,           2*hx*q1 + 2*hz*q3, 2*hx*q0 + 2*hy*q3 - 4*hz*q2,
+                            2*gy*q0 - 4*gx*q3 + 2*gz*q1, 2*gz*q2 - 4*gy*q3 - 2*gx*q0,           2*gx*q1 + 2*gy*q2, 2*hy*q0 - 4*hx*q3 + 2*hz*q1, 2*hz*q2 - 4*hy*q3 - 2*hx*q0,           2*hx*q1 + 2*hy*q2,
+                            0,                           0,                           0,                           1,                           0,                           0,
+                            0,                           0,                           0,                           0,                           1,                           0,
+                            0,                           0,                           0,                           0,                           0,                           1};
 
-    arm_mat_trans_f32(&H, &Ht);
+    arm_mat_init_f32(&Ht, n, a, Ht_f32);
 
 	//Matriz de variâncias
 	float Racel = buffer_filtro->R_acel;
 	float Rmag = buffer_filtro->R_mag;	 //Variância inicial do magnetômetro.
-    float Rangles = buffer_filtro->R_angles;
 
 //    float acelModulus = getVectorModulus(medida_accel, 3);
 //    float magModulus = getVectorModulus(medida_mag, 3);
 //    float magInitialModulus = getVectorModulus(buffer_filtro->MagInicial, 3);
 
-    //Racel += 100*fabsf(1 - acelModulus);
+    //Racel += 1e-1*fabsf(1 - acelModulus);
     //Rmag += 1*fabs(magInitialModulus - magModulus);
 
 
-    float R_f32[a*a] = {(Racel), 0, 0, 0, 0, 0, 0, 0, 0,
-                        0, (Racel), 0, 0, 0, 0, 0, 0, 0,
-                        0, 0, (Racel), 0, 0, 0, 0, 0, 0,
-                        0, 0, 0, (Rmag),  0, 0, 0, 0, 0,
-                        0, 0, 0, 0, (Rmag),	 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, (Rmag),  0, 0, 0,
-                        0, 0, 0, 0, 0, 0, (Rangles), 0, 0,
-                        0, 0, 0, 0, 0, 0, 0, (Rangles), 0,
-                        0, 0, 0, 0, 0, 0, 0, 0, (Rangles)};
+    float R_f32[a*a] = {(Racel), 0, 0, 0, 0, 0,
+                        0, (Racel), 0, 0, 0, 0,
+                        0, 0, (Racel), 0, 0, 0,
+                        0, 0, 0, (Rmag),  0, 0,
+                        0, 0, 0, 0, (Rmag),	 0,
+                        0, 0, 0, 0, 0, (Rmag)};
 
     arm_mat_init_f32(&R, a, a, R_f32);
 
@@ -360,12 +381,11 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     if(arm_mat_add_f32(&temp_calc_aa_0, &R, &S) != ARM_MATH_SUCCESS)
         while(1);
 
-    //Sinv = inv(S);
-    //if(arm_mat_inverse_f32(&S, &Sinv) == ARM_MATH_SINGULAR)
-    //    while(1);
-    arm_mat_inverse_f32(&S, &Sinv);
+	//Sinv = inv(S);
+    if(arm_mat_inverse_f32(&S, &Sinv) == ARM_MATH_SINGULAR)
+        while(1);
 
-    //Kk = P*Ht*S^(-1)
+	//Kk = P*Ht*S^(-1)
 		//P*Ht
     if(arm_mat_mult_f32(&P, &Ht, &temp_calc_na_0) != ARM_MATH_SUCCESS)
         while(1);
@@ -386,15 +406,13 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	//P = (I-K*H)*P
 	
 	//Matriz identidade para atualização da matriz P à posteriori.
-    float I_f32[n*n] = {	1,0,0,0,0,0,0,0,0,
-                            0,1,0,0,0,0,0,0,0,
-                            0,0,1,0,0,0,0,0,0,
-                            0,0,0,1,0,0,0,0,0,
-                            0,0,0,0,1,0,0,0,0,
-                            0,0,0,0,0,1,0,0,0,
-                            0,0,0,0,0,0,1,0,0,
-                            0,0,0,0,0,0,0,1,0,
-                            0,0,0,0,0,0,0,0,1};
+    float I_f32[n*n] = {	1,0,0,0,0,0,0,
+                            0,1,0,0,0,0,0,
+                            0,0,1,0,0,0,0,
+                            0,0,0,1,0,0,0,
+                            0,0,0,0,1,0,0,
+                            0,0,0,0,0,1,0,
+                            0,0,0,0,0,0,1};
 
     arm_mat_init_f32(&I, n, n, I_f32);
 
@@ -407,6 +425,8 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     if(arm_mat_mult_f32(&temp_calc_nn_1, &P, &temp_calc_nn_0) != ARM_MATH_SUCCESS)
         while(1);
+
+    normalizeVector(X_f32, 4);
 
     arm_copy_f32(X_f32, buffer_filtro->ultimo_estado, n);
     arm_copy_f32(temp_calc_nn_0_f32, buffer_filtro->P, n*n);
@@ -462,54 +482,4 @@ float arm_mat_get_element(const arm_matrix_instance_f32 *entrada, uint16_t row, 
     return 0;
 }
 
-void getABCRotMatFromEulerAngles(float phi, float theta, float psi, arm_matrix_instance_f32 *rotationMatrix)
-{
-    float32_t tempRotationVector[9] = {       f_cos(psi)*f_cos(theta),                              f_cos(theta)*f_sin(psi),         -f_sin(theta),
-                                              f_cos(psi)*f_sin(phi)*f_sin(theta) - f_cos(phi)*f_sin(psi), f_cos(phi)*f_cos(psi) + f_sin(phi)*f_sin(psi)*f_sin(theta), f_cos(theta)*f_sin(phi),
-                                              f_sin(phi)*f_sin(psi) + f_cos(phi)*f_cos(psi)*f_sin(theta), f_cos(phi)*f_sin(psi)*f_sin(theta) - f_cos(psi)*f_sin(phi), f_cos(phi)*f_cos(theta)};
 
-    arm_copy_f32(tempRotationVector, rotationMatrix->pData, 9);
-}
-
-
-void getCBARotMatFromEulerAngles(float phi, float theta, float psi, arm_matrix_instance_f32 *rotationMatrix)
-{
-    float32_t tempRotationVector[9] = {
-          f_cos(psi)*f_cos(theta), f_cos(phi)*f_sin(psi) + f_cos(psi)*f_sin(phi)*f_sin(theta), f_sin(phi)*f_sin(psi) - f_cos(phi)*f_cos(psi)*f_sin(theta),
-         -f_cos(theta)*f_sin(psi), f_cos(phi)*f_cos(psi) - f_sin(phi)*f_sin(psi)*f_sin(theta), f_cos(psi)*f_sin(phi) + f_cos(phi)*f_sin(psi)*f_sin(theta),
-                   f_sin(theta),                             -f_cos(theta)*f_sin(phi),                              f_cos(phi)*f_cos(theta),
-    };
-
-    arm_copy_f32(tempRotationVector, rotationMatrix->pData, 9);
-}
-
-void getRotMatOrthogonality(arm_matrix_instance_f32 *output, arm_matrix_instance_f32 *rotationMatrix)
-{
-    float temp = 0.0;
-
-    float a11, a12, a13;
-    float a21, a22, a23;
-    float a31, a32, a33;
-
-    a11 = arm_mat_get_element(rotationMatrix, 0, 0);
-    a12 = arm_mat_get_element(rotationMatrix, 0, 1);
-    a13 = arm_mat_get_element(rotationMatrix, 0, 2);
-    a21 = arm_mat_get_element(rotationMatrix, 1, 0);
-    a22 = arm_mat_get_element(rotationMatrix, 1, 1);
-    a23 = arm_mat_get_element(rotationMatrix, 1, 2);
-    a31 = arm_mat_get_element(rotationMatrix, 2, 0);
-    a32 = arm_mat_get_element(rotationMatrix, 2, 1);
-    a33 = arm_mat_get_element(rotationMatrix, 2, 2);
-
-    //Produto escalar (Dot Product) entre a primeira e a segunda coluna da matriz de rotação.
-    temp = a12*(a11) + a22*(a21) + a32*(a31);
-    arm_mat_set_element(output, 0, 0, temp);
-
-    //Produto escalar entre a primeira a terceira coluna da matriz de rotação
-    temp = a13*(a11) + a23*(a21) + a33*(a31);
-    arm_mat_set_element(output, 1, 0, temp);
-
-    //Produto vetorial entre a primeira e a segunda coluna para geraro vetor normal à ambos e depois produto escalar entre este novo vetor e a terceira coluna da matriz de rotação.
-    temp = a33*((a11)*(a22) - (a12)*(a21)) - a23*((a11)*(a32) - (a12)*(a31)) + a13*((a21)*(a32) - (a22)*(a31));
-    arm_mat_set_element(output, 2, 0, temp);
-}
