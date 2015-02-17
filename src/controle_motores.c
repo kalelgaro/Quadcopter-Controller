@@ -43,7 +43,7 @@ void configurar_PWM() //Controle de velocidade do ESC.
 	PrescalerValue = (uint16_t) ((SystemCoreClock / 2) / 100000) - 1;
 
 	/* Time base configuration */
-	TIM_TimeBaseStructure.TIM_Period = 500;											//Periodo de 10 ms => 100/(100e3) ->
+    TIM_TimeBaseStructure.TIM_Period = 250;											//Periodo de 10 ms => 100/(100e3) ->
 	TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
 	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -76,10 +76,10 @@ void configurar_PWM() //Controle de velocidade do ESC.
 	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
 	TIM_ARRPreloadConfig(TIM4, ENABLE);
 
-	TIM4->CCR1 = 400;				//Pwm tem 1mS de pulso baixo -> 500 - 400 = 100*1/(100e3Hz)
-	TIM4->CCR2 = 400;
-	TIM4->CCR3 = 400;
-	TIM4->CCR4 = 400;
+    TIM4->CCR1 = 150;				//Pwm tem 1mS de pulso baixo -> 500 - 400 = 100*1/(100e3Hz)
+    TIM4->CCR2 = 150;
+    TIM4->CCR3 = 150;
+    TIM4->CCR4 = 150;
 	/* TIM3 enable counter */
 	TIM_Cmd(TIM4, ENABLE);
 }
@@ -96,16 +96,16 @@ void ajustar_velocidade(uint8_t motor, uint16_t velocidade) {
 
 	//Saída no pwm é invertida, buffer com mosfet source comum, logo pulso é invertido.
 	if((motor&0x01) != 0)
-		TIM4->CCR1 = 400-velocidade;
+        TIM4->CCR1 = 150-velocidade;
 
 	if((motor&0x02) != 0)
-		TIM4->CCR2 = 400-velocidade;
+        TIM4->CCR2 = 150-velocidade;
 
 	if((motor&0x04) != 0)
-		TIM4->CCR3 = 400-velocidade;
+        TIM4->CCR3 = 150-velocidade;
 
 	if((motor&0x08) != 0)
-		TIM4->CCR4 = 400-velocidade;
+        TIM4->CCR4 = 150-velocidade;
 }
 
 
