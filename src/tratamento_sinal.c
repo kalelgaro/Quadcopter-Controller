@@ -186,10 +186,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	float delta_m3 = 0;
 	float delta_m4 = 0;
 
-	delta_m1 = (fator_correcao*(+pitch_pid + roll_pid));
-	delta_m2 = (fator_correcao*(+pitch_pid - roll_pid));
-	delta_m3 = (fator_correcao*(-pitch_pid - roll_pid));
-	delta_m4 = (fator_correcao*(-pitch_pid + roll_pid));
+    delta_m1 = (fator_correcao*(+pitch_pid + roll_pid + yaw_pid));
+    delta_m2 = (fator_correcao*(+pitch_pid - roll_pid - yaw_pid));
+    delta_m3 = (fator_correcao*(-pitch_pid - roll_pid + yaw_pid));
+    delta_m4 = (fator_correcao*(-pitch_pid + roll_pid - yaw_pid));
 
     velocidade_m1 = rotacao_constante + delta_m1;
     velocidade_m2 = rotacao_constante + delta_m2;
@@ -208,10 +208,10 @@ void inserir_ajuster_motores(float pitch_pid, float roll_pid, float yaw_pid, uin
 	if(velocidade_m4 < 0)
 		velocidade_m4 = 0;
 
-    velocidade_m1 = sqrt(velocidade_m1) + yaw_pid;
-    velocidade_m2 = sqrt(velocidade_m2) - yaw_pid;
-    velocidade_m3 = sqrt(velocidade_m3) + yaw_pid;
-    velocidade_m4 = sqrt(velocidade_m4) - yaw_pid;
+    velocidade_m1 = sqrt(velocidade_m1);
+    velocidade_m2 = sqrt(velocidade_m2);
+    velocidade_m3 = sqrt(velocidade_m3);
+    velocidade_m4 = sqrt(velocidade_m4);
 
 	//Ajuste da velocidae dos motores calculadas acima.
 	ajustar_velocidade(4, (uint16_t)round((velocidade_m1)));
@@ -515,7 +515,7 @@ void adjustPIDConstants(PIDControllerState *state, float error, float threshold)
 }
 
 
-void initPIDControllerState(PIDControllerState *state, float kp, float kd, float ki, float N, float dt)
+void initPIDControllerState(PIDControllerState *state, float kp, float ki, float kd, float N, float dt)
 {
     state->Kp = kp;
     state->Kd = kd;
