@@ -24,10 +24,13 @@ OBJCOPY=arm-none-eabi-objcopy
 CFLAGS = 	-DHSE_VALUE=8000000
 CFLAGS += 	-DARM_MATH_CM4=1 -DARM_MATH_MATRIX_CHECK=1 -D__FPU_USED=1 -DUSE_STDPERIPH_DRIVER=1
 
-CFLAGS += -g -Wall -Tstm32_flash.ld 
-CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
-CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
-CFLAGS += -ffunction-sections -fdata-sections -O0  #Retirada do compilador TrueStudio
+#Configuração para Debug (Sem otimizações - Facilita o DEBUG)
+CFLAGS += -ggdb
+#Configuração para versão Release (Liga as otimizações).
+CFLAGS += -Wall -Tstm32_flash.ld
+CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork -mfloat-abi=hard -mfpu=fpv4-sp-d16
+CFLAGS += -ffunction-sections -fdata-sections -O0
+#CFLAGS += -nostdlib
 CFLAGS += -Wl,-Map,a.map #mapa de memória
 
 
