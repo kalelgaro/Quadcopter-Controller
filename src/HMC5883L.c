@@ -75,16 +75,19 @@ float  HMC5883L_Read_Data(I2C_TypeDef *I2Cx, float dados[])
 
 	buffer_temp = (int16_t)(buffer_dados[0]*256);
 	buffer_temp = (int16_t)(buffer_temp | buffer_dados[1]);
-    dados[0] = (buffer_temp)*ganho*magScaleCorrectingFactor[0];
+    dados[0] = (buffer_temp)*ganho;
+    //dados[0] = (buffer_temp)*ganho*magScaleCorrectingFactor[0];
 
 	buffer_temp = (int16_t)(buffer_dados[2]*256);
 	buffer_temp = (int16_t)(buffer_temp | buffer_dados[3]);
-    dados[2] = (buffer_temp)*ganho*magScaleCorrectingFactor[1];
+    dados[2] = (buffer_temp)*ganho;
+    //dados[2] = (buffer_temp)*ganho*magScaleCorrectingFactor[1];
 	
 	
 	buffer_temp = (int16_t)(buffer_dados[4]*256);
 	buffer_temp = (int16_t)(buffer_temp | buffer_dados[5]);
-    dados[1] = (buffer_temp)*ganho*magScaleCorrectingFactor[2];
+    dados[1] = (buffer_temp)*ganho;
+    //dados[2] = (buffer_temp)*ganho*magScaleCorrectingFactor[1];
 
 	return 0;
 }
@@ -165,6 +168,11 @@ void HMC5883L_getMagScale(I2C_TypeDef *I2Cx) {
     //Sai dos modos de excitação
     initialStruct.Meas_mode = Default_Meas;
     HMC5883L_Init(I2Cx, &initialStruct);
+
+    //
+    magScaleCorrectingFactor[0] = 1/magScaleError[0];
+    magScaleCorrectingFactor[1] = 1/magScaleError[1];
+    magScaleCorrectingFactor[2] = 1/magScaleError[2];
 }
 
 //Calcula o offset nso três eixos do magnetometro. este deve estar inicializado antes de executar este método
@@ -209,3 +217,4 @@ void HMC5883L_getMagOffset(I2C_TypeDef *I2Cx, float magOffset[])
     magOffset[1] = ((yMax+yMin)/(float)2);
     magOffset[2] = ((zMax+zMin)/(float)2);
 }
+
