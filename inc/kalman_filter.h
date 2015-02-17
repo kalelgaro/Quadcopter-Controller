@@ -37,7 +37,7 @@
 		float MagInicial[3];
 	} kalman_filter_state;
 
-	void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], uint16_t estado_motores);
+    void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], uint16_t estado_motores, float estimatedMag[]);
 
     void getRotMatFromQuaternion(float quaternion[4], arm_matrix_instance_f32 *rotationMatrix);
     void arm_mat_set_element(arm_matrix_instance_f32 *entrada, uint16_t row, uint16_t column, float newValue);

@@ -11,7 +11,7 @@
 //Bruno f. M. Callegaro - 20/12/2013
 
 
-void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], uint16_t estado_motores)
+void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], float medida_accel[], float medida_mag[], uint16_t estado_motores, float estimatedMag[3])
 {
     GPIO_ResetBits(GPIOD, GPIO_Pin_14);
 	//Instancias das matrizes utilizadas para o cálculo
@@ -135,8 +135,8 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     X_f32[5] = bmy;
     X_f32[6] = bmz;
 
-    //Normaliza o quaternion gerado
-    //normalizeVector(X_f32, 4);
+//    //Normaliza o quaternion gerado
+//    normalizeVector(X_f32, 4);
 
     //Retira o quaternion para utilização
     q0 = X_f32[0];
@@ -222,25 +222,25 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     float sqrDt = powf(dt, 2);
 
-    q11 = (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
+    q11 =  (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
     q12 = -(Qquat*sqrDt*q0*q1)/4;
     q13 = -(Qquat*sqrDt*q0*q2)/4;
     q14 = -(Qquat*sqrDt*q0*q3)/4;
 
     q21 = -(Qquat*sqrDt*q0*q1)/4;
-    q22 = (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q2,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
+    q22 =  (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q2,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
     q23 = -(Qquat*sqrDt*q1*q2)/4;
     q24 = -(Qquat*sqrDt*q1*q3)/4;
 
     q31 = -(Qquat*sqrDt*q0*q2)/4;
     q32 = -(Qquat*sqrDt*q1*q2)/4;
-    q33 = (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
+    q33 =  (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q3,2))/4;
     q34 = -(Qquat*sqrDt*q2*q3)/4;
 
     q41 = -(Qquat*sqrDt*q0*q3)/4;
     q42 = -(Qquat*sqrDt*q1*q3)/4;
     q43 = -(Qquat*sqrDt*q2*q3)/4;
-    q44 = (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4;
+    q44 =  (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4;
 
     //Atualiza a matriz de covariâncias dos processos
     float newQ_f32[n*n] = {	q11,	q12,  	q13,  	q14,    0,          0,          0,
@@ -256,11 +256,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	/*Estados iniciais do magnetômetro */
     float magRefVector[3];
     float acelRefVector[3];
-    arm_matrix_instance_f32 magRefMatrix;
-    arm_matrix_instance_f32 acelRefMatrix;
-
-    arm_mat_init_f32(&magRefMatrix, 3, 1, magRefVector);
-    arm_mat_init_f32(&acelRefMatrix, 3, 1, acelRefVector);
 
     float gx = buffer_filtro->AcelInicial[0];
     float gy = buffer_filtro->AcelInicial[1];
@@ -278,6 +273,12 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     acelRefVector[1] = gy;
     acelRefVector[2] = gz;
 
+    arm_matrix_instance_f32 magRefMatrix;
+    arm_matrix_instance_f32 acelRefMatrix;
+
+    arm_mat_init_f32(&magRefMatrix, 3, 1, magRefVector);
+    arm_mat_init_f32(&acelRefMatrix, 3, 1, acelRefVector);
+
     //Matrizes com o resultado das operações de rotação
     float observatedStateVector[a];
 
@@ -286,14 +287,15 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     arm_matrix_instance_f32 rotatedMagMatrix;
     arm_matrix_instance_f32 rotatedAcelMatrix;
-    arm_mat_init_f32(&rotatedAcelMatrix, 3, 1, observatedStateVector);
-    arm_mat_init_f32(&rotatedMagMatrix, 3, 1, observatedStateVector+3);
+    arm_mat_init_f32(&rotatedAcelMatrix, 3, 1, &(observatedStateVector[0]));
+    arm_mat_init_f32(&rotatedMagMatrix, 3, 1,  &(observatedStateVector[3]));
 
     //Matriz de rotação com base no quarternion estimado.
     float rotationVector[9];
     arm_matrix_instance_f32 rotationMatrix;
     arm_mat_init_f32(&rotationMatrix, 3, 3, rotationVector);
     getRotMatFromQuaternion(X_f32, &rotationMatrix);
+
 
     /* Cálculo das referências com base no magnetômetro e no estado do acelerômetro parado [0; 0; 1]; */
     if(arm_mat_mult_f32(&rotationMatrix, &acelRefMatrix, &rotatedAcelMatrix) != ARM_MATH_SUCCESS)
@@ -325,9 +327,15 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     observatedStateVector[4] += X_f32[5];
     observatedStateVector[5] += X_f32[6];
 
+    estimatedMag[0] = observatedStateVector[3];
+    estimatedMag[1] = observatedStateVector[4];
+    estimatedMag[2] = observatedStateVector[5];
+
+
     if(arm_mat_sub_f32(&zkMatrix, &observatedStateMatrix, &ykMatrix) != ARM_MATH_SUCCESS)
         while(1);
 
+    //Derivada da matriz de rotação não homogenea
     float H_f32[a*n] = {    2*gy*q3 - 2*gz*q2,           2*gy*q2 + 2*gz*q3, 2*gy*q1 - 4*gx*q2 - 2*gz*q0, 2*gy*q0 - 4*gx*q3 + 2*gz*q1, 0, 0, 0,
                             2*gz*q1 - 2*gx*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gz*q2 - 4*gy*q3 - 2*gx*q0, 0, 0, 0,
                             2*gx*q2 - 2*gy*q1, 2*gx*q3 - 2*gy*q0 - 4*gz*q1, 2*gx*q0 + 2*gy*q3 - 4*gz*q2,           2*gx*q1 + 2*gy*q2, 0, 0, 0,
@@ -338,15 +346,11 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     arm_mat_init_f32(&H, a, n, H_f32);
 
 	/* Matriz Jacobiana transposta para cálculo da confiabilidade do erro . */
-    float Ht_f32[n*a] = {   2*gy*q3 - 2*gz*q2,           2*gz*q1 - 2*gx*q3,           2*gx*q2 - 2*gy*q1,           2*hy*q3 - 2*hz*q2,           2*hz*q1 - 2*hx*q3,           2*hx*q2 - 2*hy*q1,
-                            2*gy*q2 + 2*gz*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0, 2*gx*q3 - 2*gy*q0 - 4*gz*q1,           2*hy*q2 + 2*hz*q3, 2*hx*q2 - 4*hy*q1 + 2*hz*q0, 2*hx*q3 - 2*hy*q0 - 4*hz*q1,
-                            2*gy*q1 - 4*gx*q2 - 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gx*q0 + 2*gy*q3 - 4*gz*q2, 2*hy*q1 - 4*hx*q2 - 2*hz*q0,           2*hx*q1 + 2*hz*q3, 2*hx*q0 + 2*hy*q3 - 4*hz*q2,
-                            2*gy*q0 - 4*gx*q3 + 2*gz*q1, 2*gz*q2 - 4*gy*q3 - 2*gx*q0,           2*gx*q1 + 2*gy*q2, 2*hy*q0 - 4*hx*q3 + 2*hz*q1, 2*hz*q2 - 4*hy*q3 - 2*hx*q0,           2*hx*q1 + 2*hy*q2,
-                            0,                           0,                           0,                           1,                           0,                           0,
-                            0,                           0,                           0,                           0,                           1,                           0,
-                            0,                           0,                           0,                           0,                           0,                           1};
+    float Ht_f32[n*a];
 
     arm_mat_init_f32(&Ht, n, a, Ht_f32);
+
+    arm_mat_trans_f32(&H, &Ht);
 
 	//Matriz de variâncias
 	float Racel = buffer_filtro->R_acel;
@@ -440,7 +444,8 @@ void getRotMatFromQuaternion(float quaternion[4], arm_matrix_instance_f32 *rotat
     q2 = quaternion[2];
     q3 = quaternion[3];
 
-    temp = (- 2*powf(q2,2) - 2*powf(q3,2) + 1);
+    //temp = (- 2*powf(q2,2) - 2*powf(q3,2) + 1);
+    temp = powf(q0,2) + powf(q1,2) - powf(q2,2) - powf(q3,2);
     arm_mat_set_element(rotationMatrix, 0, 0, temp);
 
     temp = (2*q0*q3 + 2*q1*q2);
@@ -452,7 +457,8 @@ void getRotMatFromQuaternion(float quaternion[4], arm_matrix_instance_f32 *rotat
     temp = (2*q1*q2 - 2*q0*q3);
     arm_mat_set_element(rotationMatrix, 1, 0, temp);
 
-    temp = (- 2*powf(q1,2) - 2*powf(q3,2) + 1);
+    //temp = (- 2*powf(q1,2) - 2*powf(q3,2) + 1);
+    temp = powf(q0,2) - powf(q1,2) + powf(q2,2) - powf(q3,2);
     arm_mat_set_element(rotationMatrix, 1, 1, temp);
 
     temp = (2*q0*q1 + 2*q2*q3);
@@ -464,8 +470,33 @@ void getRotMatFromQuaternion(float quaternion[4], arm_matrix_instance_f32 *rotat
     temp = (2*q2*q3 - 2*q0*q1);
     arm_mat_set_element(rotationMatrix, 2, 1, temp);
 
-    temp = (- 2*powf(q1,2) - 2*powf(q2,2) + 1);
+    //temp = (- 2*powf(q1,2) - 2*powf(q2,2) + 1);
+    temp = pow(q0,2) - powf(q1,2) - powf(q2,2) + powf(q3,2);
     arm_mat_set_element(rotationMatrix, 2, 2, temp);
+
+//    float quatMod = powf(q0,2) + powf(q1,2) + powf(q2,2) + powf(q3,2);
+//    quatMod = sqrtf(quatMod);
+
+//    float rotationMatrixVector[9] = {
+//        powf(q0,2) + powf(q1,2) - powf(q2,2) - powf(q3,2),
+//        2*q0*q3 + 2*q1*q2,
+//        2*q1*q3 - 2*q0*q2,
+
+//        2*q1*q2 - 2*q0*q3,
+//        powf(q0,2) - powf(q1,2) + powf(q2,2) - powf(q3,2),
+//        2*q0*q1 + 2*q2*q3,
+
+//        2*q0*q2 + 2*q1*q3,
+//        2*q2*q3 - 2*q0*q1,
+//        powf(q0,2) - powf(q1,2) - powf(q2,2) + powf(q3,2)
+//    };
+
+//    uint8_t i;
+//    for(i = 0; i < 9; i++) {
+//        rotationMatrixVector[i] = rotationMatrixVector[i]/quatMod;
+//    }
+
+//    arm_copy_f32(rotationMatrixVector, rotationMatrix->pData, 9);
 }
 
 void arm_mat_set_element(arm_matrix_instance_f32 *entrada, uint16_t row, uint16_t column, float newValue) {

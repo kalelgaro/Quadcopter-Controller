@@ -141,12 +141,12 @@ int main(void)
 	//teste_filtro_de_kalman();
 
     //setar_parametros_PID(1500, 1000, 60, 126, 2500, 0, 0, 126);                      //Ajusta as constantes do PID para Roll e Pitch.
-    setar_parametros_PID(1400, 25, 50, 188, 10, 0, 0, 188);                      //Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(2800, 50, 40, 127, 2800, 50, 40, 127);                      //Ajusta as constantes do PID para Roll e Pitch.
     //setar_parametros_PID(900, 1200, 20, 188, 10, 0, 0, 188);                      //Ajusta as constantes do PID para Roll e Pitch.
 
     //Melhores parametros obtidos até o momento (05/01/2015) 5e-10 1e-45 1e-45 0.005 0.35 1e-6
     //Qang, QbiasAcel, Qbiasmag, Racel, Rmag, Rorth
-    setar_parametros_Kalman(2.8e-14, 1e-150, 1e-150, 1e-1, 5e3, 5e4);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-10
+    setar_parametros_Kalman(5e-2, 2.5e1, 0.01, 0.1);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-100
 
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -172,8 +172,6 @@ int main(void)
     iniciarMPU6050Imu();
 
     configurar_bussola();														//Inicia o magnetômetro.
-	
-    iniciar_timer_controle();													//Timer responsável por checar se houve recepção de controel nos últimos 2 segundos.
 
 	escrita_dados(SPI2, (uint8_t *)"Iniciado.", 32);							//Mensagem que informa que o procimento de inicialização foi concluído.
 
@@ -184,6 +182,8 @@ int main(void)
     iniciar_estado_Kalman();
 
     iniciar_timer_processamento();												//Iniciar o timer responsável pelo controle do PID -> TIM6.
+
+    iniciar_timer_controle();													//Timer responsável por checar se houve recepção de controel nos últimos 2 segundos.
 
 	while (1)																	//Processo contínuo de checagem do transmissor RF.
 	{
@@ -623,9 +623,9 @@ void iniciarMPU6050Imu() {
     initialConfig.interruptsConfig = 0x01;              //Ativa a interrupção de Data Ready;
     initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
 
-    initialConfig.digitalLowPassConfig = 0x01;            //Sem filtro passa baixa
+    //initialConfig.digitalLowPassConfig = 0x00;            //Sem filtro passa baixa
     //initialConfig.digitalLowPassConfig = 0x02;            //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
-    //initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
     //initialConfig.digitalLowPassConfig = 0x04;            //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 8,5ms)
     //initialConfig.digitalLowPassConfig = 0x00;            //Frequências de corte em 260Hz e Aquisição em 8Khz. (Delay de aprox 0.98ms)
 
@@ -675,7 +675,7 @@ void configurar_bussola()
 {	
 	HMC5883L_InitTypeDef configuracao_inicial;
 
-    //HMC5883L_getMagScale(I2C3);
+    HMC5883L_getMagScale(I2C3);
 
     configuracao_inicial.Samples = _8_samples;
     configuracao_inicial.Output_DataRate = _75_0_HZ;
@@ -693,6 +693,7 @@ void configurar_bussola()
     while(HMC5883L_checkDataReadyIntPin() == Bit_SET);
 
     //float *offset = HMC5883L_getMagOffset(I2C3); //Valores encontrados dinamicamente
+    //Original.
     float offset[] = {0.1233, -0.4267, -0.21};
 
     setar_offset_mag(offset);

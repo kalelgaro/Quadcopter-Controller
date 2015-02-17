@@ -153,21 +153,21 @@ float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
 
 kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0},
 
-                                          {1e-15,   0,		0,		0,		0,		0,      0,
-                                           0,		1e-15,  0,		0,		0,		0,      0,
-                                           0,		0,		1e-15,	0,		0,		0,      0,
-                                           0,		0,		0,		1e-15, 	0,		0,      0,
-                                           0,		0,		0,		0,		1e-15, 	0,      0,
-                                           0,		0,		0,		0,		0,		1e-15,  0,
-                                           0,       0,      0,      0,      0,      0,      1e-15},
+                                          {1e-6,    1e-6,	1e-6,	1e-6,	0,		0,      0,
+                                           1e-6,	1e-6,   1e-6,	1e-6,	0,		0,      0,
+                                           1e-6,	1e-6,	1e-6,   1e-6,   0,		0,      0,
+                                           1e-6,	1e-6,	1e-6,	1e-6,   0,		0,      0,
+                                           0,		0,		0,		0,		1e-6,   0,      0,
+                                           0,		0,		0,		0,		0,		1e-6,   0,
+                                           0,       0,      0,      0,      0,      0,      1e-6},
 
-                                          {1e-15,   0,		0,		0,		0,		0,      0,
-                                           0,		1e-15,  0,		0,		0,		0,      0,
-                                           0,		0,		1e-15,	0,		0,		0,      0,
-                                           0,		0,		0,		1e-15, 	0,		0,      0,
-                                           0,		0,		0,		0,		1e-15, 	0,      0,
-                                           0,		0,		0,		0,		0,		1e-15,  0,
-                                           0,       0,      0,      0,      0,      0,      1e-15},
+                                          {1e-6,    1e-6,	1e-6,	1e-6,	0,		0,      0,
+                                           1e-6,	1e-6,   1e-6,	1e-6,	0,		0,      0,
+                                           1e-6,	1e-6,	1e-6,   1e-6,   0,		0,      0,
+                                           1e-6,	1e-6,	1e-6,	1e-6,   0,		0,      0,
+                                           0,		0,		0,		0,		1e-6,   0,      0,
+                                           0,		0,		0,		0,		0,		1e-6,   0,
+                                           0,       0,      0,      0,      0,      0,      1e-6},
 
                                        5e-7, 2e-9, 1e-2, 1e-3, dt, {0, 0, 1} ,{0.14, 0.05, -0.0155}};
 
@@ -175,6 +175,8 @@ kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0},
 
 float erro_pitch ,erro_roll ,erro_yaw;
 
+
+float estimatedMag[3];
 //--------------------------------------------------------------------//
 
 //Altera os valores de referência utilizados no controlador PID.
@@ -201,11 +203,9 @@ void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_rate_yaw, float
     else
         ref_rate_yaw = 0;
 
-
     //Checa a posição da alavanca de aceleração ->
         //Entre 0 e 0.15 e o controlador esta desligado -> Mantém o controlador desligado -> Segurança de inicialização.
         //Entre 0.15 e 2.2 - Controlador ligado e insere o valor mulitplicado por 850 no motor
-
 
     if(W_cte < 0.15)
     {
@@ -220,6 +220,8 @@ void setar_referencia(float Ref_pitch, float Ref_roll, float Ref_rate_yaw, float
     }
 }
 
+
+float magRefVectorMod;
 void iniciar_estado_Kalman() {
     float mag_init_buffer[3] = {0.0, 0.0, 0.0};   
     float mag_init[3] = {0.0, 0.0, 0.0};
@@ -240,10 +242,17 @@ void iniciar_estado_Kalman() {
     mag_init_buffer[1] = mag_init_buffer[1]/(float)400;
     mag_init_buffer[2] = mag_init_buffer[2]/(float)400;
 
-    float emptyVector[3] = {0.0, 0.0, 0.0};
-    orientacao_inicial = calcular_orientacao(mag_init_buffer, 0, 0, emptyVector);
+    //magRefVectorMod = getVectorModulus(mag_init_buffer, 3);
 
-    counter = 400;
+    magRefVectorMod = 1;
+
+    mag_init_buffer[0] /= magRefVectorMod;
+    mag_init_buffer[1] /= magRefVectorMod;
+    mag_init_buffer[2] /= magRefVectorMod;
+
+    offsetMag[0] /= magRefVectorMod;
+    offsetMag[1] /= magRefVectorMod;
+    offsetMag[2] /= magRefVectorMod;
 
     //Acelerometro foi iniciado de forma que o offset é subtraido
     EstadoFiltroKalman.AcelInicial[0] = 0;
@@ -255,18 +264,15 @@ void iniciar_estado_Kalman() {
     EstadoFiltroKalman.MagInicial[2] = mag_init_buffer[2];
 
     //Valor inicial do quaternion
-    EstadoFiltroKalman.ultimo_estado[0] = 0;
+    EstadoFiltroKalman.ultimo_estado[0] = 1;
     EstadoFiltroKalman.ultimo_estado[1] = 0;
     EstadoFiltroKalman.ultimo_estado[2] = 0;
+    EstadoFiltroKalman.ultimo_estado[3] = 0;
 
     //Valor inicial do bias do magnetômetro - Valores retirados de testes de offset
-    EstadoFiltroKalman.ultimo_estado[3] = offsetMag[0];
-    EstadoFiltroKalman.ultimo_estado[4] = offsetMag[1];
-    EstadoFiltroKalman.ultimo_estado[5] = offsetMag[2];
-
-    EstadoFiltroKalman.ultimo_estado[6] = 0;
-    EstadoFiltroKalman.ultimo_estado[7] = 0;
-    EstadoFiltroKalman.ultimo_estado[8] = 0;
+    EstadoFiltroKalman.ultimo_estado[4] = offsetMag[0];
+    EstadoFiltroKalman.ultimo_estado[5] = offsetMag[1];
+    EstadoFiltroKalman.ultimo_estado[6] = offsetMag[2];
 
     kalmanFilterInitialized = 1;
 }
@@ -281,15 +287,13 @@ void setar_parametros_PID(float Kp, float Ki, float Kd, float N, float Kp_yaw, f
 }
 
 //Altera os valores das constantes utilizados no filtro de Kalman.
-void setar_parametros_Kalman(float32_t Q_angles, float32_t Q_biasmag, float32_t Q_biasAngle, float32_t R_acelerometro, float32_t R_magnetometro, float32_t R_angles)
+void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasmag, float32_t R_acelerometro, float32_t R_magnetometro)
 {
-    //EstadoFiltroKalman.Q_angles = Q_angles;
+    EstadoFiltroKalman.Q_quat = Q_quat;
     EstadoFiltroKalman.Q_bias_mag = Q_biasmag;
-    //EstadoFiltroKalman.Q_bias_angle = Q_biasAngle;
 
     EstadoFiltroKalman.R_acel = R_acelerometro;
     EstadoFiltroKalman.R_mag = R_magnetometro;
-    //EstadoFiltroKalman.R_angles = R_angles;
 }
 
 //Retorna o offset que foi obtido para o acelerometro
@@ -372,6 +376,12 @@ void processar_magnetometro()
     if((status & 0x01) == 0x01)
     {
         HMC5883L_Read_Data(I2C3, magnetometro);
+
+        magnetometro[0] /= magRefVectorMod;
+        magnetometro[1] /= magRefVectorMod;
+        magnetometro[2] /= magRefVectorMod;
+
+        GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
     }
 }
 
@@ -383,9 +393,9 @@ void retornar_estado(float estado_KF[], float estado_PID[])
     estado_KF[pitch] = angulos_inclinacao[pitch];
     estado_KF[yaw] =   orientacao;
 
-//    estado_PID[roll] = saida_roll_pid;
-//    estado_PID[pitch] = saida_pitch_pid;
-//    estado_PID[yaw] = saida_yaw_pid;
+    estado_PID[roll] = saida_roll_pid;
+    estado_PID[pitch] = saida_pitch_pid;
+    estado_PID[yaw] = saida_yaw_pid;
 
 //    estado_PID[roll] = pitchRateError;
 //    estado_PID[pitch] = rollRateError;
@@ -395,29 +405,29 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 //    estado_PID[pitch] = erro_roll;
 //    estado_PID[yaw] = erro_yaw;
 
-    estado_PID[roll] = complementaryFilterAngles[0]*RAD_TO_DEG;
-    estado_PID[pitch] = complementaryFilterAngles[1]*RAD_TO_DEG;
-    estado_PID[yaw] = complementaryFilterAngles[2]*RAD_TO_DEG - orientacao_inicial*RAD_TO_DEG;
+//    estado_PID[roll] = EstadoFiltroKalman.ultimo_estado[4];
+//    estado_PID[pitch] = EstadoFiltroKalman.ultimo_estado[5];
+//    estado_PID[yaw] = EstadoFiltroKalman.ultimo_estado[6];
 }
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-    Acelerometro[0] = acelerometro_adxl345[acel_x];
-    Acelerometro[1] = acelerometro_adxl345[acel_y];
-    Acelerometro[2] = acelerometro_adxl345[acel_z];
+    Giroscopio[0] = estimatedMag[0];
+    Giroscopio[1] = estimatedMag[1];
+    Giroscopio[2] = estimatedMag[2];
 
-    Giroscopio[0] = saida_gyro_dps_pf[0];
-    Giroscopio[1] = saida_gyro_dps_pf[1];
-    Giroscopio[2] = saida_gyro_dps_pf[2];
+    Acelerometro[0] = magnetometro[0];// - EstadoFiltroKalman.ultimo_estado[4];
+    Acelerometro[1] = magnetometro[1];// - EstadoFiltroKalman.ultimo_estado[5];
+    Acelerometro[2] = magnetometro[2];// - EstadoFiltroKalman.ultimo_estado[6];
 
 //    Giroscopio[0] =  EstadoFiltroKalman.ultimo_estado[3];
 //    Giroscopio[1] =  EstadoFiltroKalman.ultimo_estado[4];
 //    Giroscopio[2] =  EstadoFiltroKalman.ultimo_estado[5];
 
 
-    Magnetometro[0] = magnetometro[0] - offsetMag[0];
-    Magnetometro[1] = magnetometro[1] - offsetMag[1];
-    Magnetometro[2] = magnetometro[2] - offsetMag[2];
+    Magnetometro[0] = magnetometro[0]; // - offsetMag[0];
+    Magnetometro[1] = magnetometro[1]; // - offsetMag[1];
+    Magnetometro[2] = magnetometro[2]; // - offsetMag[2];
 
 //    Magnetometro[1] = offsetMag[1];
 //    Magnetometro[2] = offsetMag[2];
@@ -435,14 +445,11 @@ void calculate_Yaw_Ref(float yaw_Rate) {
 void processo_controle()
 {
     static uint8_t contador_aquisicao = 0;
-
     static uint16_t contador_ativacao = 0;
-
     static uint8_t flag_inicializacao = 0;
 
     //Lê os dados do giroscópio, acelerômetro e magnetômetro.
-    processar_magnetometro();
-    //GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
+    processar_magnetometro();    
 
     processar_mpu6050();
 
@@ -455,15 +462,8 @@ void processo_controle()
 
         contador_aquisicao = 0;
 
-        //Calcular filtro complementar para comparação.
-        complementaryFilter(complementaryFilterAngles, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro,dt, 0.98, &(EstadoFiltroKalman.ultimo_estado[3]));
-
-        kalmanFilterInputAngles[0] = complementaryFilterAngles[0];
-        kalmanFilterInputAngles[1] = complementaryFilterAngles[1];
-        kalmanFilterInputAngles[2] = constrainAngle(complementaryFilterAngles[2] - orientacao_inicial);
-
         //Insere os valores da leituras dentro do filtro de Kalman.
-        kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro /*, kalmanFilterInputAngles */, rotacao_constante);
+        kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante, estimatedMag);
         EulerAngles angles = getEulerFromQuaternion(EstadoFiltroKalman.ultimo_estado);
 
         angulos_inclinacao[roll] = constrainAngle(57.3*angles.phi);
@@ -484,10 +484,14 @@ void processo_controle()
             erro_roll =  (ref_roll - angulos_inclinacao[roll]);
             erro_yaw =   constrainAngle(ref_yaw - orientacao);
 
+            erro_pitch = constrainAngle(erro_pitch);
+            erro_roll = constrainAngle(erro_roll);
+            erro_yaw = constrainAngle(erro_yaw);
+
             //Converte o erro absoluto de ângulos de graus para graus por segundo
-            float pitchRateRef = erro_pitch*3.0; //"1º de erro -> Velocidade de 4,5º por segundo;
-            float rollRateRef = erro_roll*3.0;
-            float yawRateRef = erro_yaw*3.0;
+            float pitchRateRef = erro_pitch*4.5; //"1º de erro -> Velocidade de 4,5º por segundo;
+            float rollRateRef = erro_roll*4.5;
+            float yawRateRef = erro_yaw*4.5;
 
             //Converte as unidades
             pitchRateRef *= DEG_TO_RAD;
@@ -520,36 +524,14 @@ void processo_controle()
             rollRateError = rollRateRef - rollRateFeedback;
             yawRateError = yawRateRef - yawRateFeedback;
 
-            //adjustPIDConstants(&pitchTransitionController, pitchRateError, 1.5*3.5*DEG_TO_RAD);
-            //adjustPIDConstants(&rollTransitionController, rollRateError, 1.5*3.5*DEG_TO_RAD);
-            /* Cálculo do PID */
-                //Pitch & Roll
-
-//            if(erro_pitch > 1.5) {
-//                saida_pitch_pid = updatePIDController(&pitchTransitionController, pitchRateError);
-//            }else {
-//                saida_pitch_pid = updatePIDController(&pitchSteadyController, pitchRateError);
-//            }
-
-//            if(erro_roll > 1.5) {
-//                saida_roll_pid  = updatePIDController(&rollTransitionController, rollRateError);
-//            }else {
-//                saida_roll_pid  = updatePIDController(&rollSteadyController, rollRateError);
-//            }
-
             saida_pitch_pid = updatePIDController(&pitchRateController, pitchRateError);
             saida_roll_pid  = updatePIDController(&rollRateController, rollRateError);
 
             //Yaw
             saida_yaw_pid 	= updatePIDController(&yawRateController, yawRateError);
 
-            //Realiza média rotativa dos últimos n processos de cálculo do PID.
-            saida_pitch_pid_final = media_rotativa(saida_pitch_pid, buffer_pid_pitch_media, numero_medias_PID);
-            saida_roll_pid_final  = media_rotativa(saida_roll_pid,  buffer_pid_roll_media,  numero_medias_PID);
-            saida_yaw_pid_final	  = media_rotativa(saida_yaw_pid,   buffer_pid_yaw_media,   numero_medias_PID);
-
             //Insere os valores provnientes dos PID's dentro da função que divide a carga para cada um dos motores. -- Arredondamento pois esta só trabalha com inteiro (Duty Cicle é uint16_t)
-            inserir_ajuster_motores(saida_pitch_pid_final, saida_roll_pid_final, saida_yaw_pid_final, round(rotacao_constante));
+            inserir_ajuster_motores(saida_pitch_pid, saida_roll_pid, saida_yaw_pid, round(rotacao_constante));
         }else
         {
             //Saída dos PIDS zeradas.
@@ -573,7 +555,6 @@ void processo_controle()
         //Salva valores de interesse nas estrutura que é enviada para telemetria.
     }
     GPIO_ResetBits(GPIOD, GPIO_Pin_12);
-    GPIO_ResetBits(GPIOD, GPIO_Pin_14);
 }
 
 
