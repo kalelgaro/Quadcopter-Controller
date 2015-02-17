@@ -14,7 +14,7 @@
 
 	void setar_referencia(float Ref_pith, float Ref_roll, float Ref_yaw, float W_cte);
     void setar_parametros_PID(float Kp, float Ki, float Kd, float N, float Kp_yaw, float Ki_yaw, float Kd_yaw, float nYaw);
-    void setar_parametros_Kalman(float32_t Q_angles, float32_t Q_biasmag, float32_t Q_biasAngle, float32_t R_acelerometro, float32_t R_magnetometro, float32_t R_angles);
+    void setar_parametros_Kalman(float32_t Q_quat, float32_t Q_biasmag, float32_t R_acelerometro, float32_t R_magnetometro);
 	void setar_offset_acel(float offset[3]);
     void setar_offset_mag(float offset[3]);
 	void setar_offset_gyro(float offset[3]);
