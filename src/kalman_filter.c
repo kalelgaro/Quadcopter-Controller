@@ -206,15 +206,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     if(arm_mat_mult_f32(&temp_calc_nn_0, &Ft, &temp_calc_nn_1) != ARM_MATH_SUCCESS)
         while(1);
 
-    //Copia a matriz Q da iteração anterior para a atual.
-    float Q_f32[n*n];
-    arm_mat_init_f32(&Q, n, n, Q_f32);
-    arm_copy_f32(buffer_filtro->Qk, Q_f32, n*n);
-
-    //P = temp_calc_nn_1 + Q = F*P*F' + Q
-    if(arm_mat_add_f32(&temp_calc_nn_1, &Q, &P) != ARM_MATH_SUCCESS)
-        while(1);
-
     float q11, q12, q13, q14;
     float q21, q22, q23, q24;
     float q31, q32, q33, q34;
@@ -243,7 +234,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     q44 =  (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4;
 
     //Atualiza a matriz de covariâncias dos processos
-    float newQ_f32[n*n] = {	q11,	q12,  	q13,  	q14,    0,          0,          0,
+    float Q_f32[n*n] = {	q11,	q12,  	q13,  	q14,    0,          0,          0,
                             q21,  	q22,	q23,  	q24,  	0,          0,          0,
                             q31,  	q32,  	q33,	q34,  	0,          0,          0,
                             q41,  	q42,  	q43,  	q44,	0,          0,          0,
@@ -251,7 +242,12 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
                             0,      0,      0,      0,      0,          qBiasMag,   0,
                             0,      0,      0,      0,      0,          0,          qBiasMag};
 
-    arm_copy_f32(newQ_f32, buffer_filtro->Qk, n*n);
+
+    arm_mat_init_f32(&Q, n, n, Q_f32);
+
+    //P = temp_calc_nn_1 + Q = F*P*F' + Q
+    if(arm_mat_add_f32(&temp_calc_nn_1, &Q, &P) != ARM_MATH_SUCCESS)
+        while(1);
 
 	/*Estados iniciais do magnetômetro */
     float magRefVector[3];
@@ -336,12 +332,14 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
         while(1);
 
     //Derivada da matriz de rotação não homogenea
-    float H_f32[a*n] = {    2*gy*q3 - 2*gz*q2,           2*gy*q2 + 2*gz*q3, 2*gy*q1 - 4*gx*q2 - 2*gz*q0, 2*gy*q0 - 4*gx*q3 + 2*gz*q1, 0, 0, 0,
-                            2*gz*q1 - 2*gx*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gz*q2 - 4*gy*q3 - 2*gx*q0, 0, 0, 0,
-                            2*gx*q2 - 2*gy*q1, 2*gx*q3 - 2*gy*q0 - 4*gz*q1, 2*gx*q0 + 2*gy*q3 - 4*gz*q2,           2*gx*q1 + 2*gy*q2, 0, 0, 0,
-                            2*hy*q3 - 2*hz*q2,           2*hy*q2 + 2*hz*q3, 2*hy*q1 - 4*hx*q2 - 2*hz*q0, 2*hy*q0 - 4*hx*q3 + 2*hz*q1, 1, 0, 0,
-                            2*hz*q1 - 2*hx*q3, 2*hx*q2 - 4*hy*q1 + 2*hz*q0,           2*hx*q1 + 2*hz*q3, 2*hz*q2 - 4*hy*q3 - 2*hx*q0, 0, 1, 0,
-                            2*hx*q2 - 2*hy*q1, 2*hx*q3 - 2*hy*q0 - 4*hz*q1, 2*hx*q0 + 2*hy*q3 - 4*hz*q2,           2*hx*q1 + 2*hy*q2, 0, 0, 1};
+    float H_f32[a*n] = {
+        2*gx*q0 + 2*gy*q3 - 2*gz*q2, 2*gx*q1 + 2*gy*q2 + 2*gz*q3, 2*gy*q1 - 2*gx*q2 - 2*gz*q0,   2*gy*q0 - 2*gx*q3 + 2*gz*q1, 0, 0, 0,
+        2*gy*q0 - 2*gx*q3 + 2*gz*q1, 2*gx*q2 - 2*gy*q1 + 2*gz*q0, 2*gx*q1 + 2*gy*q2 + 2*gz*q3,   2*gz*q2 - 2*gy*q3 - 2*gx*q0, 0, 0, 0,
+        2*gx*q2 - 2*gy*q1 + 2*gz*q0, 2*gx*q3 - 2*gy*q0 - 2*gz*q1, 2*gx*q0 + 2*gy*q3 - 2*gz*q2, 3*gz*pow(q3,2) + 2*gx*q1 + 2*gy*q2, 0, 0, 0,
+        2*hx*q0 + 2*hy*q3 - 2*hz*q2, 2*hx*q1 + 2*hy*q2 + 2*hz*q3, 2*hy*q1 - 2*hx*q2 - 2*hz*q0,   2*hy*q0 - 2*hx*q3 + 2*hz*q1, 1, 0, 0,
+        2*hy*q0 - 2*hx*q3 + 2*hz*q1, 2*hx*q2 - 2*hy*q1 + 2*hz*q0, 2*hx*q1 + 2*hy*q2 + 2*hz*q3,   2*hz*q2 - 2*hy*q3 - 2*hx*q0, 0, 1, 0,
+        2*hx*q2 - 2*hy*q1 + 2*hz*q0, 2*hx*q3 - 2*hy*q0 - 2*hz*q1, 2*hx*q0 + 2*hy*q3 - 2*hz*q2, 3*hz*pow(q3,2) + 2*hx*q1 + 2*hy*q2, 0, 0, 1,
+    };
 
     arm_mat_init_f32(&H, a, n, H_f32);
 

@@ -149,17 +149,10 @@ float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
 */
 
 
+EulerAngles angles;
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
 kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0},
-
-                                          {1e-6,    1e-6,	1e-6,	1e-6,	0,		0,      0,
-                                           1e-6,	1e-6,   1e-6,	1e-6,	0,		0,      0,
-                                           1e-6,	1e-6,	1e-6,   1e-6,   0,		0,      0,
-                                           1e-6,	1e-6,	1e-6,	1e-6,   0,		0,      0,
-                                           0,		0,		0,		0,		1e-6,   0,      0,
-                                           0,		0,		0,		0,		0,		1e-6,   0,
-                                           0,       0,      0,      0,      0,      0,      1e-6},
 
                                           {1e-6,    1e-6,	1e-6,	1e-6,	0,		0,      0,
                                            1e-6,	1e-6,   1e-6,	1e-6,	0,		0,      0,
@@ -233,9 +226,20 @@ void iniciar_estado_Kalman() {
         while(HMC5883L_checkDataReadyIntPin() == Bit_SET)
         HMC5883L_Read_Data(I2C3, mag_init);
 
-        mag_init_buffer[0] += (mag_init[0]-offsetMag[0]);
-        mag_init_buffer[1] += (mag_init[1]-offsetMag[1]);
-        mag_init_buffer[2] += (mag_init[2]-offsetMag[2]);
+        mag_init[0] -= offsetMag[0];
+        mag_init[1] -= offsetMag[1];
+        mag_init[2] -= offsetMag[2];
+
+        float scaledMag[3];
+
+        scaledMag[0] = mag_init[0]*0.7402 + mag_init[1]*0.0621 + mag_init[2]*-0.0230;
+        scaledMag[1] = mag_init[0]*0.0621 + mag_init[1]*0.7824 + mag_init[2]*0.0858;
+        scaledMag[2] = mag_init[0]*-0.0230 + mag_init[1]*0.0858 + mag_init[2]*0.9079;
+
+        mag_init_buffer[0] += scaledMag[0];
+        mag_init_buffer[1] += scaledMag[1];
+        mag_init_buffer[2] += scaledMag[2];
+
     }
 
     mag_init_buffer[0] = mag_init_buffer[0]/(float)400;
@@ -270,9 +274,9 @@ void iniciar_estado_Kalman() {
     EstadoFiltroKalman.ultimo_estado[3] = 0;
 
     //Valor inicial do bias do magnetômetro - Valores retirados de testes de offset
-    EstadoFiltroKalman.ultimo_estado[4] = offsetMag[0];
-    EstadoFiltroKalman.ultimo_estado[5] = offsetMag[1];
-    EstadoFiltroKalman.ultimo_estado[6] = offsetMag[2];
+    EstadoFiltroKalman.ultimo_estado[4] = 0;
+    EstadoFiltroKalman.ultimo_estado[5] = 0;
+    EstadoFiltroKalman.ultimo_estado[6] = 0;
 
     kalmanFilterInitialized = 1;
 }
@@ -358,11 +362,39 @@ void processar_mpu6050() {
         acelerometro_adxl345[0] -= offset_accel[0];
         acelerometro_adxl345[1] -= offset_accel[1];
         acelerometro_adxl345[2] -= offset_accel[2];
+
+        float scaledAccel[3];
+
+        scaledAccel[0] = acelerometro_adxl345[0]*0.9707 + acelerometro_adxl345[1]*0.0028 + acelerometro_adxl345[2]*0.0052;
+        scaledAccel[1] = acelerometro_adxl345[0]*0.0028 + acelerometro_adxl345[1]*0.9895 + acelerometro_adxl345[2]*-0.0052;
+        scaledAccel[2] = acelerometro_adxl345[0]*0.0052 + acelerometro_adxl345[1]*-0.0052 + acelerometro_adxl345[2]*0.9699;
+
+        acelerometro_adxl345[0] = scaledAccel[0];
+        acelerometro_adxl345[1] = scaledAccel[1];
+        acelerometro_adxl345[2] = scaledAccel[2];
+
         //
         //Converte as medidas de Graus/Segundo para Radianos/Segundo
         saida_gyro_dps_pf[0] *= DEG_TO_RAD;
         saida_gyro_dps_pf[1] *= DEG_TO_RAD;
         saida_gyro_dps_pf[2] *= DEG_TO_RAD;
+
+//        //Roda as medidas do gyro
+//        EulerAngles inclination = angles;
+//        inclination.phi /= 57.3;
+//        inclination.theta /= 57.3;
+//        inclination.psi /= 57.3;
+
+//        EulerAngles rates;
+//        rates.phi = saida_gyro_dps_pf[0];
+//        rates.theta = saida_gyro_dps_pf[1];
+//        rates.psi = saida_gyro_dps_pf[2];
+
+//        EulerAngles earthFrameRates = getEarthFrameRates(rates, inclination);
+
+//        saida_gyro_dps_pf[0] = earthFrameRates.phi;
+//        saida_gyro_dps_pf[1] = earthFrameRates.theta;
+//        saida_gyro_dps_pf[2] = earthFrameRates.psi;
     }
 }
 
@@ -377,9 +409,19 @@ void processar_magnetometro()
     {
         HMC5883L_Read_Data(I2C3, magnetometro);
 
-        magnetometro[0] /= magRefVectorMod;
-        magnetometro[1] /= magRefVectorMod;
-        magnetometro[2] /= magRefVectorMod;
+        magnetometro[0] -= offsetMag[0];
+        magnetometro[1] -= offsetMag[1];
+        magnetometro[2] -= offsetMag[2];
+
+        float scaledMag[3];
+
+        scaledMag[0] = magnetometro[0]*0.7402 + magnetometro[1]*0.0621 + magnetometro[2]*-0.0230;
+        scaledMag[1] = magnetometro[0]*0.0621 + magnetometro[1]*0.7824 + magnetometro[2]*0.0858;
+        scaledMag[2] = magnetometro[0]*-0.0230 + magnetometro[1]*0.0858 + magnetometro[2]*0.9079;
+
+        magnetometro[0] = scaledMag[0];
+        magnetometro[1] = scaledMag[1];
+        magnetometro[2] = scaledMag[2];
 
         GPIO_SetBits(GPIOD, GPIO_Pin_12);   			//Led ajuda na hora de debbugar - ACende no início do processo e apaga ao seu final, permitindo obtenção do tempo com um osc. ou analizador lógico.
     }
@@ -412,13 +454,23 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-    Giroscopio[0] = estimatedMag[0];
-    Giroscopio[1] = estimatedMag[1];
-    Giroscopio[2] = estimatedMag[2];
+    Giroscopio[0] = acelerometro_adxl345[0];// + offset_accel[0];
+    Giroscopio[1] = acelerometro_adxl345[1];// + offset_accel[1];
+    Giroscopio[2] = acelerometro_adxl345[2];// + offset_accel[2];
 
-    Acelerometro[0] = magnetometro[0];// - EstadoFiltroKalman.ultimo_estado[4];
-    Acelerometro[1] = magnetometro[1];// - EstadoFiltroKalman.ultimo_estado[5];
-    Acelerometro[2] = magnetometro[2];// - EstadoFiltroKalman.ultimo_estado[6];
+//    Giroscopio[0] = saida_gyro_dps_pf[0];// + offset_accel[0];
+//    Giroscopio[1] = saida_gyro_dps_pf[1];// + offset_accel[1];
+//    Giroscopio[2] = saida_gyro_dps_pf[2];// + offset_accel[2];
+
+
+//    Acelerometro[0] = magnetometro[0];// - EstadoFiltroKalman.ultimo_estado[4];
+//    Acelerometro[1] = magnetometro[1];// - EstadoFiltroKalman.ultimo_estado[5];
+//    Acelerometro[2] = magnetometro[2];// - EstadoFiltroKalman.ultimo_estado[6];
+
+    Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[4];// - EstadoFiltroKalman.ultimo_estado[4];
+    Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[5];// - EstadoFiltroKalman.ultimo_estado[5];
+    Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[6];// - EstadoFiltroKalman.ultimo_estado[6];
+
 
 //    Giroscopio[0] =  EstadoFiltroKalman.ultimo_estado[3];
 //    Giroscopio[1] =  EstadoFiltroKalman.ultimo_estado[4];
@@ -464,7 +516,7 @@ void processo_controle()
 
         //Insere os valores da leituras dentro do filtro de Kalman.
         kalman_filter(&EstadoFiltroKalman, saida_gyro_dps_pf, acelerometro_adxl345, magnetometro, rotacao_constante, estimatedMag);
-        EulerAngles angles = getEulerFromQuaternion(EstadoFiltroKalman.ultimo_estado);
+        angles = getEulerFromQuaternion(EstadoFiltroKalman.ultimo_estado);
 
         angulos_inclinacao[roll] = constrainAngle(57.3*angles.phi);
         angulos_inclinacao[pitch] = constrainAngle(57.3*angles.theta);
@@ -489,9 +541,9 @@ void processo_controle()
             erro_yaw = constrainAngle(erro_yaw);
 
             //Converte o erro absoluto de ângulos de graus para graus por segundo
-            float pitchRateRef = erro_pitch*4.5; //"1º de erro -> Velocidade de 4,5º por segundo;
-            float rollRateRef = erro_roll*4.5;
-            float yawRateRef = erro_yaw*4.5;
+            float pitchRateRef = erro_pitch*3.5; //"1º de erro -> Velocidade de 4,5º por segundo;
+            float rollRateRef = erro_roll*3.5;
+            float yawRateRef = erro_yaw*3.5;
 
             //Converte as unidades
             pitchRateRef *= DEG_TO_RAD;
@@ -564,3 +616,4 @@ void setar_offset_mag(float offset[])
     offsetMag[1] = offset[1];
     offsetMag[2] = offset[2];
 }
+
