@@ -152,15 +152,12 @@ float buffer_media_gyroZ[NRO_MEDIA_AQUISICAO];
 EulerAngles angles;
 //Estruturas de buffer utilizadas para cálculo das estimativas do Filtro de Kalman.
 
-kalman_filter_state EstadoFiltroKalman = {{1,0,0,0,0,0,0},
+kalman_filter_state EstadoFiltroKalman = {{1,0,0,0},
 
-                                          {1e-6,    1e-6,	1e-6,	1e-6,	0,		0,      0,
-                                           1e-6,	1e-6,   1e-6,	1e-6,	0,		0,      0,
-                                           1e-6,	1e-6,	1e-6,   1e-6,   0,		0,      0,
-                                           1e-6,	1e-6,	1e-6,	1e-6,   0,		0,      0,
-                                           0,		0,		0,		0,		1e-6,   0,      0,
-                                           0,		0,		0,		0,		0,		1e-6,   0,
-                                           0,       0,      0,      0,      0,      0,      1e-6},
+                                          {1e-6,    1e-6,	1e-6,	1e-6,
+                                           1e-6,	1e-6,   1e-6,	1e-6,
+                                           1e-6,	1e-6,	1e-6,   1e-6,
+                                           1e-6,	1e-6,	1e-6,	1e-6},
 
                                        5e-7, 2e-9, 1e-2, 1e-3, dt, {0, 0, 1} ,{0.14, 0.05, -0.0155}};
 
@@ -254,10 +251,6 @@ void iniciar_estado_Kalman() {
     mag_init_buffer[1] /= magRefVectorMod;
     mag_init_buffer[2] /= magRefVectorMod;
 
-    offsetMag[0] /= magRefVectorMod;
-    offsetMag[1] /= magRefVectorMod;
-    offsetMag[2] /= magRefVectorMod;
-
     //Acelerometro foi iniciado de forma que o offset é subtraido
     EstadoFiltroKalman.AcelInicial[0] = 0;
     EstadoFiltroKalman.AcelInicial[1] = 0;
@@ -268,15 +261,15 @@ void iniciar_estado_Kalman() {
     EstadoFiltroKalman.MagInicial[2] = mag_init_buffer[2];
 
     //Valor inicial do quaternion
-    EstadoFiltroKalman.ultimo_estado[0] = 1;
+
     EstadoFiltroKalman.ultimo_estado[1] = 0;
     EstadoFiltroKalman.ultimo_estado[2] = 0;
     EstadoFiltroKalman.ultimo_estado[3] = 0;
 
-    //Valor inicial do bias do magnetômetro - Valores retirados de testes de offset
-    EstadoFiltroKalman.ultimo_estado[4] = 0;
-    EstadoFiltroKalman.ultimo_estado[5] = 0;
-    EstadoFiltroKalman.ultimo_estado[6] = 0;
+//    //Valor inicial do bias do magnetômetro - Valores retirados de testes de offset
+//    EstadoFiltroKalman.ultimo_estado[4] = 0;
+//    EstadoFiltroKalman.ultimo_estado[5] = 0;
+//    EstadoFiltroKalman.ultimo_estado[6] = 0;
 
     kalmanFilterInitialized = 1;
 }
@@ -363,6 +356,8 @@ void processar_mpu6050() {
         acelerometro_adxl345[1] -= offset_accel[1];
         acelerometro_adxl345[2] -= offset_accel[2];
 
+        //saida_gyro_dps_pf[2] = - saida_gyro_dps_pf[2];
+
         float scaledAccel[3];
 
         scaledAccel[0] = acelerometro_adxl345[0]*0.9707 + acelerometro_adxl345[1]*0.0028 + acelerometro_adxl345[2]*0.0052;
@@ -378,23 +373,6 @@ void processar_mpu6050() {
         saida_gyro_dps_pf[0] *= DEG_TO_RAD;
         saida_gyro_dps_pf[1] *= DEG_TO_RAD;
         saida_gyro_dps_pf[2] *= DEG_TO_RAD;
-
-//        //Roda as medidas do gyro
-//        EulerAngles inclination = angles;
-//        inclination.phi /= 57.3;
-//        inclination.theta /= 57.3;
-//        inclination.psi /= 57.3;
-
-//        EulerAngles rates;
-//        rates.phi = saida_gyro_dps_pf[0];
-//        rates.theta = saida_gyro_dps_pf[1];
-//        rates.psi = saida_gyro_dps_pf[2];
-
-//        EulerAngles earthFrameRates = getEarthFrameRates(rates, inclination);
-
-//        saida_gyro_dps_pf[0] = earthFrameRates.phi;
-//        saida_gyro_dps_pf[1] = earthFrameRates.theta;
-//        saida_gyro_dps_pf[2] = earthFrameRates.psi;
     }
 }
 
@@ -454,22 +432,22 @@ void retornar_estado(float estado_KF[], float estado_PID[])
 
 void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[])
 {
-    Giroscopio[0] = acelerometro_adxl345[0];// + offset_accel[0];
-    Giroscopio[1] = acelerometro_adxl345[1];// + offset_accel[1];
-    Giroscopio[2] = acelerometro_adxl345[2];// + offset_accel[2];
+//    Giroscopio[0] = acelerometro_adxl345[0];// + offset_accel[0];
+//    Giroscopio[1] = acelerometro_adxl345[1];// + offset_accel[1];
+//    Giroscopio[2] = acelerometro_adxl345[2];// + offset_accel[2];
 
-//    Giroscopio[0] = saida_gyro_dps_pf[0];// + offset_accel[0];
-//    Giroscopio[1] = saida_gyro_dps_pf[1];// + offset_accel[1];
-//    Giroscopio[2] = saida_gyro_dps_pf[2];// + offset_accel[2];
+    Giroscopio[0] = saida_gyro_dps_pf[0];// + offset_accel[0];
+    Giroscopio[1] = saida_gyro_dps_pf[1];// + offset_accel[1];
+    Giroscopio[2] = saida_gyro_dps_pf[2];// + offset_accel[2];
 
 
-//    Acelerometro[0] = magnetometro[0];// - EstadoFiltroKalman.ultimo_estado[4];
-//    Acelerometro[1] = magnetometro[1];// - EstadoFiltroKalman.ultimo_estado[5];
-//    Acelerometro[2] = magnetometro[2];// - EstadoFiltroKalman.ultimo_estado[6];
+    Acelerometro[0] = acelerometro_adxl345[0];// - EstadoFiltroKalman.ultimo_estado[4];
+    Acelerometro[1] = acelerometro_adxl345[1];// - EstadoFiltroKalman.ultimo_estado[5];
+    Acelerometro[2] = acelerometro_adxl345[2];// - EstadoFiltroKalman.ultimo_estado[6];
 
-    Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[4];// - EstadoFiltroKalman.ultimo_estado[4];
-    Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[5];// - EstadoFiltroKalman.ultimo_estado[5];
-    Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[6];// - EstadoFiltroKalman.ultimo_estado[6];
+//    Acelerometro[0] = EstadoFiltroKalman.ultimo_estado[4];// - EstadoFiltroKalman.ultimo_estado[4];
+//    Acelerometro[1] = EstadoFiltroKalman.ultimo_estado[5];// - EstadoFiltroKalman.ultimo_estado[5];
+//    Acelerometro[2] = EstadoFiltroKalman.ultimo_estado[6];// - EstadoFiltroKalman.ultimo_estado[6];
 
 
 //    Giroscopio[0] =  EstadoFiltroKalman.ultimo_estado[3];

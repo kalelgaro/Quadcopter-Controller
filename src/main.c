@@ -138,15 +138,15 @@ int main(void)
 {
 	iniciar_leds_debug();
 
-	//teste_filtro_de_kalman();
+    //teste_filtro_de_kalman();
 
     //setar_parametros_PID(1500, 1000, 60, 126, 2500, 0, 0, 126);                      //Ajusta as constantes do PID para Roll e Pitch.
-    setar_parametros_PID(2800, 50, 40, 127, 2800, 50, 40, 127);                      //Ajusta as constantes do PID para Roll e Pitch.
+    setar_parametros_PID(2800, 150, 40, 127, 2800, 150, 40, 127);                      //Ajusta as constantes do PID para Roll e Pitch.
     //setar_parametros_PID(900, 1200, 20, 188, 10, 0, 0, 188);                      //Ajusta as constantes do PID para Roll e Pitch.
 
     //Melhores parametros obtidos até o momento (05/01/2015) 5e-10 1e-45 1e-45 0.005 0.35 1e-6
     //Qang, QbiasAcel, Qbiasmag, Racel, Rmag, Rorth
-    setar_parametros_Kalman(5e-2, 2.5e1, 0.01, 0.1);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-100
+    setar_parametros_Kalman(1e-7, 2.5e-100, 1e-7, 1e2);             //Ajusta as covariâncias do filtro de Kalman.	//Melhores parametreos testados até o momento - 2e-9, 5e-8, 5e-12, 2.e-2, 2e-1, 1e-10, 1e-100
 
 	uint16_t counter_recebidos = 0;												//Variável para contagem do número de mensagens recebidas.
 
@@ -198,7 +198,7 @@ int main(void)
 
 				TIM_SetCounter(TIM7,0);											//Reseta o contador do timer -> Inicia nova contagem de 2 segundos.
 
-				/*Recupera as msgs enquanto houverem dados à serem recuperados*/
+				/*Recupera as msgs enquanto houverem dados �  serem recuperados*/
 
 				while((status_RF & 0x0E) != 0x0E)								//Bits 1,2 e 3 -> Número do duto que recebeu mensagem no RF.
 				{																//0b1110 -> Sem dados do duto. Repete o processo enquanto tiver dados.
@@ -217,7 +217,7 @@ int main(void)
 
 					status_RF = retornar_status(SPI2);							//Checagem se há mais dados nos disponíveis para serem tratados na próxima iteração.
 
-					switch(buffer_dados_rx[0])									//Primeiro caractér do vetor recebido determina a operação à ser realizada.
+					switch(buffer_dados_rx[0])									//Primeiro caractér do vetor recebido determina a operação �  ser realizada.
 					{
                         case 't':
 							GPIO_ToggleBits(GPIOD, GPIO_Pin_15);
@@ -615,17 +615,17 @@ void iniciarMPU6050Imu() {
 
     //Configurações dos sensores.
     initialConfig.accelFullScale = AFS_8G;              //Fundo de escala de 8G.
-    initialConfig.gyroFullScale = FS_2000DPS;             //Fundo de escala de 500 graus por segundo.
+    initialConfig.gyroFullScale = FS_2000DPS;             //Fundo de escala de 2000 graus por segundo.
     initialConfig.clockSource = MPU6050_CLK_GYRO_X_PLL; //Fonte de clock no oscilador do eixo X do giroscópio.
     initialConfig.fifoEnabled = 0;                      //Fifo desligada;
-    initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual à do Gyro //Taxa de saída de 500 Hz
+    initialConfig.sampleRateDivider = 0;                //Frequência do Accel é igual �  do Gyro //Taxa de saída de 500 Hz
     initialConfig.temperatureSensorDisabled = 0;        //Sensor de temperatura ligado.
     initialConfig.interruptsConfig = 0x01;              //Ativa a interrupção de Data Ready;
     initialConfig.intPinConfig = 0x20;                  //Ativa o pino de interrupção com o modo que o "liga" quando há uma interrupção.
 
     //initialConfig.digitalLowPassConfig = 0x00;            //Sem filtro passa baixa
-    //initialConfig.digitalLowPassConfig = 0x02;            //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
-    initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
+    initialConfig.digitalLowPassConfig = 0x02;            //Frequências de corte em 90Hz e Aquisição em 1Khz. (Delay de aprox 10ms)
+    //initialConfig.digitalLowPassConfig = 0x03;            //Frequências de corte em 40Hz e Aquisição em 1Khz. (Delay de aprox 5ms)
     //initialConfig.digitalLowPassConfig = 0x04;            //Frequências de corte em 20Hz e Aquisição em 1Khz. (Delay de aprox 8,5ms)
     //initialConfig.digitalLowPassConfig = 0x00;            //Frequências de corte em 260Hz e Aquisição em 8Khz. (Delay de aprox 0.98ms)
 
@@ -658,13 +658,17 @@ void iniciarMPU6050Imu() {
         offset_gyro[2] += temp_gyro[2];
     }
 
-    offset_accel[0] = offset_accel[0]/((float)(10000));
-    offset_accel[1] = offset_accel[1]/((float)(10000));
-    offset_accel[2] = offset_accel[2]/((float)(10000));
+//    offset_accel[0] = offset_accel[0]/((float)(10000));
+//    offset_accel[1] = offset_accel[1]/((float)(10000));
+//    offset_accel[2] = offset_accel[2]/((float)(10000));
 
     offset_gyro[0] = offset_gyro[0]/((float)(10000));
     offset_gyro[1] = offset_gyro[1]/((float)(10000));
     offset_gyro[2] = offset_gyro[2]/((float)(10000));
+
+    offset_accel[0] = -0.0181;
+    offset_accel[1] = -0.0108;
+    offset_accel[2] = -0.0482;
 
     setar_offset_acel(offset_accel);
     setar_offset_gyro(offset_gyro);
@@ -694,7 +698,7 @@ void configurar_bussola()
 
     //float *offset = HMC5883L_getMagOffset(I2C3); //Valores encontrados dinamicamente
     //Original.
-    float offset[] = {0.1233, -0.4267, -0.21};
+    float offset[] = {0.0580, -0.3413, -0.0545};
 
     setar_offset_mag(offset);
 }
@@ -784,26 +788,29 @@ void iniciar_leds_debug(void)
   GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
 }
 
- // void teste_filtro_de_kalman(void)
- // {
- // 	kalman_filter_state estado_teste = {  {0,0,0,0,0,0},
+//  void teste_filtro_de_kalman(void)
+//  {
+//    kalman_filter_state estado_teste = {  {1,0,0,0,-0.1, 0.1,0.1},
 
- // 										  {100,0,0,0,0,0,
- // 										   0,100,0,0,0,0,
- // 										   0,0,100,0,0,0,
- // 										   0,0,0,100,0,0,
- // 										   0,0,0,0,100,0,
- // 										   0,0,0,0,0,100},
+//                                          {1,0,0,0,0,0,0,
+//                                           0,1,0,0,0,0,0,
+//                                           0,0,1,0,0,0,0,
+//                                           0,0,0,1,0,0,0,
+//                                           0,0,0,0,1,0,0,
+//                                           0,0,0,0,0,1,0,
+//                                           0,0,0,0,0,0,1},
 
- // 								           1e-7, 1e-4, 1e-5, 2e1, 4e1, 1e-10, 1e-10, 0.0025, {1, 0, 0}};
+//                                           1e-2, 1e-1, 0.01, 0.1, 0.0025, {0, 0, 1}, {-0.14, 0.1, 0.145}};
 
- // 	float teste_medida_gyro[3] = {20, 10, 45};
- // 	float teste_medida_acel[3] = {0.3, 0.45, 0.85};
- // 	float teste_medida_mag[3] = {1.3, 1, -0.3};
+//    float teste_medida_gyro[3] = {0.1, -0.5, 0.75};
+//    float teste_medida_acel[3] = {1, 1.4, 0.4};
+//    float teste_medida_mag[3] = {0.14, 0.1, -0.3};
 
- // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
+//    float blag[3] = {0.1, 0.3, 0.3};
 
- // 	kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1);
+//    kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1, blag);
 
- // 	float teste = 4.5;
- // }
+//    kalman_filter(&(estado_teste), teste_medida_gyro, teste_medida_acel, teste_medida_mag, 1, blag);
+
+//    float teste = 4.5;
+//  }

@@ -100,7 +100,7 @@ void acel_2_angulos(float acel_x, float acel_y, float acel_z, float angulos[2])
 //}
 
 /*Função para cálculo do controlador PID discreto utilizado */
-//Utilizado para controle de ângulos -> Adequa o erro inserido no intervalo de -180º à 180º para evitar a descontinuidade.
+//Utilizado para controle de ângulos -> Adequa o erro inserido no intervalo de -180º �  180º para evitar a descontinuidade.
 
 float constrainAngle(float deegreesAngles)
 {
@@ -376,9 +376,9 @@ EulerAngles getEulerFromQuaternion(float quaternion[]) {
     float q3 = quaternion[3];
 
     EulerAngles tempAngles;
-    tempAngles.theta = -asin(2*q1*q3 - 2*q0*q2);
-    tempAngles.phi = atanf((2*q2*q3+2*q0*q1)/(2*powf(q0,2) + 2*powf(q3,2) - 1));
-    tempAngles.psi = atanf((2*q1*q2+2*q0*q3)/(2*powf(q0,2) + 2*powf(q1,2) - 1));
+    tempAngles.phi = atan2(2*(q0*q1 + q2*q3), (1- 2*(powf(q1,2)+ powf(q2,2))));
+    tempAngles.theta = asin(2*(q0*q2 - q3*q1));
+    tempAngles.psi = atan2(2*(q0*q3+q1*q2), (1 - 2*(powf(q2,2)+powf(q3,2))));
 
     return tempAngles;
 }
@@ -432,9 +432,9 @@ EulerAngles getEarthFrameRates(EulerAngles bodyFrameAngles, EulerAngles angles)
 
     EulerAngles earthFrameAngles;
 
-    earthFrameAngles.phi = p + q*f_sin(angles.phi)*f_tan(angles.theta) + r*f_cos(angles.phi)*f_tan(angles.theta);
+    earthFrameAngles.phi =   p + q*f_sin(angles.phi)*f_tan(angles.theta) + r*f_cos(angles.phi)*f_tan(angles.theta);
     earthFrameAngles.theta = q*f_cos(angles.phi) - r*f_sin(angles.phi);
-    earthFrameAngles.psi = q*f_sin(angles.phi)*f_cos(angles.theta) + r*f_cos(angles.phi)*f_cos(angles.theta);
+    earthFrameAngles.psi =   q*f_sin(angles.phi)*f_cos(angles.theta) + r*f_cos(angles.phi)*f_cos(angles.theta);
 
     return earthFrameAngles;
 }

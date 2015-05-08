@@ -122,18 +122,18 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     float q2 = X_f32[2];
     float q3 = X_f32[3];
 
-    float bmx = X_f32[4];
-    float bmy = X_f32[5];
-    float bmz = X_f32[6];
+//    float bmx = X_f32[4];
+//    float bmy = X_f32[5];
+//    float bmz = X_f32[6];
 
     //Atualizar o estado anterior
     X_f32[0] = q0 - dt*q1*(wx/2) - dt*q2*(wy/2) - dt*q3*(wz/2);
-    X_f32[1] = q1 + dt*q0*(wx/2) + dt*q3*(wy/2) - dt*q2*(wz/2);
-    X_f32[2] = q2 - dt*q3*(wx/2) + dt*q0*(wy/2) + dt*q1*(wz/2);
-    X_f32[3] = q3 + dt*q2*(wx/2) - dt*q1*(wy/2) + dt*q0*(wz/2);
-    X_f32[4] = bmx;
-    X_f32[5] = bmy;
-    X_f32[6] = bmz;
+    X_f32[1] = q1 + dt*q0*(wx/2) - dt*q3*(wy/2) + dt*q2*(wz/2);
+    X_f32[2] = q2 + dt*q3*(wx/2) + dt*q0*(wy/2) - dt*q1*(wz/2);
+    X_f32[3] = q3 - dt*q2*(wx/2) + dt*q1*(wy/2) + dt*q0*(wz/2);
+//    X_f32[4] = bmx;
+//    X_f32[5] = bmy;
+//    X_f32[6] = bmz;
 
 //    //Normaliza o quaternion gerado
 //    normalizeVector(X_f32, 4);
@@ -144,6 +144,8 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     q2 = X_f32[2];
     q3 = X_f32[3];
 
+    normalizeVector(X_f32, 4);
+
     float a11 = 1;
     float a12 = -dt*(wx/2);
     float a13 = -dt*(wy/2);
@@ -151,38 +153,32 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     float a21 = +dt*(wx/2);
     float a22 = 1;
-    float a23 = -dt*(wz/2);
-    float a24 = +dt*(wy/2);
+    float a23 = +dt*(wz/2);
+    float a24 = -dt*(wy/2);
 
     float a31 = +dt*(wy/2);
-    float a32 = +dt*(wz/2);
+    float a32 = -dt*(wz/2);
     float a33 = 1;
-    float a34 = -dt*(wx/2);
+    float a34 = +dt*(wx/2);
 
     float a41 = +dt*(wz/2);
-    float a42 = -dt*(wy/2);
-    float a43 = +dt*(wx/2);
+    float a42 = +dt*(wy/2);
+    float a43 = -dt*(wx/2);
     float a44 = 1;
 
     //Elementos da matriz para atualização dos estados (F).
-    float F_f32[n*n] = {	a11,	a12,	a13,	a14,    0,      0,      0,
-                            a21,	a22,	a23,	a24,    0,      0,      0,
-                            a31,	a32,	a33,	a34,    0,      0,      0,
-                            a41,	a42,	a43,	a44,    0,      0,      0,
-                            0,      0,      0,      0,      1,      0,      0,
-                            0,      0,      0,      0,      0,      1,      0,
-                            0,      0,      0,      0,      0,      0,      1};
+    float F_f32[n*n] = {	a11,	a12,	a13,	a14,
+                            a21,	a22,	a23,	a24,
+                            a31,	a32,	a33,	a34,
+                            a41,	a42,	a43,	a44};
 
     arm_mat_init_f32(&F, n, n, F_f32);
 
 	//Matriz Jacobiana transposta para atualização de P.
-    float Ft_f32[n*n] =	{	a11,	a21,	a31,	a41,    0,      0,      0,
-                            a12,	a22,	a32,	a42,    0,      0,      0,
-                            a13,	a23,	a33,	a43,    0,      0,      0,
-                            a14,	a24,	a34,	a44,    0,      0,      0,
-                            0,      0,      0,      0,      1,      0,      0,
-                            0,      0,      0,      0,      0,      1,      0,
-                            0,      0,      0,      0,      0,      0,      1};
+    float Ft_f32[n*n] =	{	a11,	a21,	a31,	a41,
+                            a12,	a22,	a32,	a42,
+                            a13,	a23,	a33,	a43,
+                            a14,	a24,	a34,	a44};
 
     arm_mat_init_f32(&Ft, n, n, Ft_f32);
 
@@ -234,14 +230,10 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     q44 =  (Qquat*sqrDt*powf(q0,2))/4 + (Qquat*sqrDt*powf(q1,2))/4 + (Qquat*sqrDt*powf(q2,2))/4;
 
     //Atualiza a matriz de covariâncias dos processos
-    float Q_f32[n*n] = {	q11,	q12,  	q13,  	q14,    0,          0,          0,
-                            q21,  	q22,	q23,  	q24,  	0,          0,          0,
-                            q31,  	q32,  	q33,	q34,  	0,          0,          0,
-                            q41,  	q42,  	q43,  	q44,	0,          0,          0,
-                            0,      0,      0,      0,      qBiasMag,   0,          0,
-                            0,      0,      0,      0,      0,          qBiasMag,   0,
-                            0,      0,      0,      0,      0,          0,          qBiasMag};
-
+    float Q_f32[n*n] = {	q11,	q12,  	q13,  	q14,
+                            q21,  	q22,	q23,  	q24,
+                            q31,  	q32,  	q33,	q34,
+                            q41,  	q42,  	q43,  	q44};
 
     arm_mat_init_f32(&Q, n, n, Q_f32);
 
@@ -319,10 +311,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     arm_matrix_instance_f32 ykMatrix;
     arm_mat_init_f32(&ykMatrix, a, 1, ykVector);
 
-    observatedStateVector[3] += X_f32[4];
-    observatedStateVector[4] += X_f32[5];
-    observatedStateVector[5] += X_f32[6];
-
     estimatedMag[0] = observatedStateVector[3];
     estimatedMag[1] = observatedStateVector[4];
     estimatedMag[2] = observatedStateVector[5];
@@ -333,12 +321,12 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 
     //Derivada da matriz de rotação não homogenea
     float H_f32[a*n] = {
-        2*gx*q0 + 2*gy*q3 - 2*gz*q2, 2*gx*q1 + 2*gy*q2 + 2*gz*q3, 2*gy*q1 - 2*gx*q2 - 2*gz*q0,   2*gy*q0 - 2*gx*q3 + 2*gz*q1, 0, 0, 0,
-        2*gy*q0 - 2*gx*q3 + 2*gz*q1, 2*gx*q2 - 2*gy*q1 + 2*gz*q0, 2*gx*q1 + 2*gy*q2 + 2*gz*q3,   2*gz*q2 - 2*gy*q3 - 2*gx*q0, 0, 0, 0,
-        2*gx*q2 - 2*gy*q1 + 2*gz*q0, 2*gx*q3 - 2*gy*q0 - 2*gz*q1, 2*gx*q0 + 2*gy*q3 - 2*gz*q2, 3*gz*pow(q3,2) + 2*gx*q1 + 2*gy*q2, 0, 0, 0,
-        2*hx*q0 + 2*hy*q3 - 2*hz*q2, 2*hx*q1 + 2*hy*q2 + 2*hz*q3, 2*hy*q1 - 2*hx*q2 - 2*hz*q0,   2*hy*q0 - 2*hx*q3 + 2*hz*q1, 1, 0, 0,
-        2*hy*q0 - 2*hx*q3 + 2*hz*q1, 2*hx*q2 - 2*hy*q1 + 2*hz*q0, 2*hx*q1 + 2*hy*q2 + 2*hz*q3,   2*hz*q2 - 2*hy*q3 - 2*hx*q0, 0, 1, 0,
-        2*hx*q2 - 2*hy*q1 + 2*hz*q0, 2*hx*q3 - 2*hy*q0 - 2*hz*q1, 2*hx*q0 + 2*hy*q3 - 2*hz*q2, 3*hz*pow(q3,2) + 2*hx*q1 + 2*hy*q2, 0, 0, 1,
+        2*gy*q3 - 2*gz*q2,           2*gy*q2 + 2*gz*q3, 2*gy*q1 - 4*gx*q2 - 2*gz*q0, 2*gy*q0 - 4*gx*q3 + 2*gz*q1,
+        2*gz*q1 - 2*gx*q3, 2*gx*q2 - 4*gy*q1 + 2*gz*q0,           2*gx*q1 + 2*gz*q3, 2*gz*q2 - 4*gy*q3 - 2*gx*q0,
+        2*gx*q2 - 2*gy*q1, 2*gx*q3 - 2*gy*q0 - 4*gz*q1, 2*gx*q0 + 2*gy*q3 - 4*gz*q2,           2*gx*q1 + 2*gy*q2,
+        2*hy*q3 - 2*hz*q2,           2*hy*q2 + 2*hz*q3, 2*hy*q1 - 4*hx*q2 - 2*hz*q0, 2*hy*q0 - 4*hx*q3 + 2*hz*q1,
+        2*hz*q1 - 2*hx*q3, 2*hx*q2 - 4*hy*q1 + 2*hz*q0,           2*hx*q1 + 2*hz*q3, 2*hz*q2 - 4*hy*q3 - 2*hx*q0,
+        2*hx*q2 - 2*hy*q1, 2*hx*q3 - 2*hy*q0 - 4*hz*q1, 2*hx*q0 + 2*hy*q3 - 4*hz*q2,           2*hx*q1 + 2*hy*q2,
     };
 
     arm_mat_init_f32(&H, a, n, H_f32);
@@ -354,20 +342,24 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	float Racel = buffer_filtro->R_acel;
 	float Rmag = buffer_filtro->R_mag;	 //Variância inicial do magnetômetro.
 
-//    float acelModulus = getVectorModulus(medida_accel, 3);
+    float acelModulus = getVectorModulus(medida_accel, 3);
 //    float magModulus = getVectorModulus(medida_mag, 3);
 //    float magInitialModulus = getVectorModulus(buffer_filtro->MagInicial, 3);
 
-    //Racel += 1e-1*fabsf(1 - acelModulus);
+    if(acelModulus > 1.1) {
+        Racel *= 1000;
+    }
     //Rmag += 1*fabs(magInitialModulus - magModulus);
 
 
-    float R_f32[a*a] = {(Racel), 0, 0, 0, 0, 0,
-                        0, (Racel), 0, 0, 0, 0,
-                        0, 0, (Racel), 0, 0, 0,
-                        0, 0, 0, (Rmag),  0, 0,
-                        0, 0, 0, 0, (Rmag),	 0,
-                        0, 0, 0, 0, 0, (Rmag)};
+    float R_f32[a*a] = {
+        (Racel), 0, 0, 0, 0, 0,
+        0, (Racel), 0, 0, 0, 0,
+        0, 0, (Racel), 0, 0, 0,
+        0, 0, 0, (Rmag),  0, 0,
+        0, 0, 0, 0, (Rmag),	 0,
+        0, 0, 0, 0, 0, (Rmag)
+    };
 
     arm_mat_init_f32(&R, a, a, R_f32);
 
@@ -408,13 +400,10 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
 	//P = (I-K*H)*P
 	
 	//Matriz identidade para atualização da matriz P à posteriori.
-    float I_f32[n*n] = {	1,0,0,0,0,0,0,
-                            0,1,0,0,0,0,0,
-                            0,0,1,0,0,0,0,
-                            0,0,0,1,0,0,0,
-                            0,0,0,0,1,0,0,
-                            0,0,0,0,0,1,0,
-                            0,0,0,0,0,0,1};
+    float I_f32[n*n] = {	1,0,0,0,
+                            0,1,0,0,
+                            0,0,1,0,
+                            0,0,0,1};
 
     arm_mat_init_f32(&I, n, n, I_f32);
 
@@ -428,8 +417,6 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
     if(arm_mat_mult_f32(&temp_calc_nn_1, &P, &temp_calc_nn_0) != ARM_MATH_SUCCESS)
         while(1);
 
-    normalizeVector(X_f32, 4);
-
     arm_copy_f32(X_f32, buffer_filtro->ultimo_estado, n);
     arm_copy_f32(temp_calc_nn_0_f32, buffer_filtro->P, n*n);
 }
@@ -442,59 +429,36 @@ void getRotMatFromQuaternion(float quaternion[4], arm_matrix_instance_f32 *rotat
     q2 = quaternion[2];
     q3 = quaternion[3];
 
-    //temp = (- 2*powf(q2,2) - 2*powf(q3,2) + 1);
-    temp = powf(q0,2) + powf(q1,2) - powf(q2,2) - powf(q3,2);
+    temp = -2*q2*q2 - 2*q3*q3 + 1;
     arm_mat_set_element(rotationMatrix, 0, 0, temp);
 
-    temp = (2*q0*q3 + 2*q1*q2);
+    temp = (2*q1*q2 + 2*q0*q3);
     arm_mat_set_element(rotationMatrix, 0, 1, temp);
 
     temp = (2*q1*q3 - 2*q0*q2);
     arm_mat_set_element(rotationMatrix, 0, 2, temp);
 
+
+
     temp = (2*q1*q2 - 2*q0*q3);
     arm_mat_set_element(rotationMatrix, 1, 0, temp);
 
-    //temp = (- 2*powf(q1,2) - 2*powf(q3,2) + 1);
-    temp = powf(q0,2) - powf(q1,2) + powf(q2,2) - powf(q3,2);
+    temp = 2*q1*q1 - 2*q3*q3 + 1;
     arm_mat_set_element(rotationMatrix, 1, 1, temp);
 
-    temp = (2*q0*q1 + 2*q2*q3);
+    temp = (2*q2*q3 + 2*q0*q1);
     arm_mat_set_element(rotationMatrix, 1, 2, temp);
 
-    temp = (2*q0*q2 + 2*q1*q3);
+
+
+    temp = (2*q1*q3 + 2*q0*q2);
     arm_mat_set_element(rotationMatrix, 2, 0, temp);
 
     temp = (2*q2*q3 - 2*q0*q1);
     arm_mat_set_element(rotationMatrix, 2, 1, temp);
 
-    //temp = (- 2*powf(q1,2) - 2*powf(q2,2) + 1);
-    temp = pow(q0,2) - powf(q1,2) - powf(q2,2) + powf(q3,2);
+    temp = -2*q1*q1 - 2*q2*q2 + 1;
     arm_mat_set_element(rotationMatrix, 2, 2, temp);
-
-//    float quatMod = powf(q0,2) + powf(q1,2) + powf(q2,2) + powf(q3,2);
-//    quatMod = sqrtf(quatMod);
-
-//    float rotationMatrixVector[9] = {
-//        powf(q0,2) + powf(q1,2) - powf(q2,2) - powf(q3,2),
-//        2*q0*q3 + 2*q1*q2,
-//        2*q1*q3 - 2*q0*q2,
-
-//        2*q1*q2 - 2*q0*q3,
-//        powf(q0,2) - powf(q1,2) + powf(q2,2) - powf(q3,2),
-//        2*q0*q1 + 2*q2*q3,
-
-//        2*q0*q2 + 2*q1*q3,
-//        2*q2*q3 - 2*q0*q1,
-//        powf(q0,2) - powf(q1,2) - powf(q2,2) + powf(q3,2)
-//    };
-
-//    uint8_t i;
-//    for(i = 0; i < 9; i++) {
-//        rotationMatrixVector[i] = rotationMatrixVector[i]/quatMod;
-//    }
-
-//    arm_copy_f32(rotationMatrixVector, rotationMatrix->pData, 9);
 }
 
 void arm_mat_set_element(arm_matrix_instance_f32 *entrada, uint16_t row, uint16_t column, float newValue) {
