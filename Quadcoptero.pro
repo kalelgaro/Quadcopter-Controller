@@ -50,14 +50,14 @@ SOURCES += \
     src/HMC5883L.c \
     src/kalman_filter.c \
     src/L3G4200D.c \
-    src/main.c \
+    src/main.cpp \
     src/MPU6050.c \
     src/nRF24l01.c \
     src/processamento_entrada.c \
     src/processo_controle.c \
     src/stm32f4_discovery.c \
     src/stm32f4_discovery_lis302dl.c \
-    src/stm32f4xx_it.c \
+	src/stm32f4xx_it.cpp \
     src/system_stm32f4xx.c \
     src/tratamento_sinal.c \
     lib/src/peripherals/misc.c \
@@ -99,17 +99,22 @@ SOURCES += \
     src/funcoes_spi.c \
     src/HMC5883L.c \
     src/kalman_filter.c \
-    src/main.c \
+    src/main.cpp \
     src/MPU6050.c \
     src/nRF24l01.c \
     src/processamento_entrada.c \
     src/processo_controle.c \
     src/stm32f4_discovery.c \
     src/stm32f4_discovery_lis302dl.c \
-    src/stm32f4xx_it.c \
     src/system_stm32f4xx.c \
     src/tratamento_sinal.c \
-    src/tm_stm32f4_i2c.c
+    src/tm_stm32f4_i2c.c \
+    hal/src/stm32f4gpiohal.cpp \
+    hal/src/stm32f4leds.cpp \
+    hal/src/stm32f4spihal.cpp \
+    hal/src/stm32f4i2chal.cpp \
+	hal/src/NRF24L01P.cpp \
+    src/BaseTimeControl.cpp
 
 HEADERS += \
     inc/aquisicao_IMU.h \
@@ -169,7 +174,20 @@ HEADERS += \
     lib/inc/stm32f4_discovery.h \
     lib/inc/stm32f4xx.h \
     lib/inc/system_stm32f4xx.h \
+    hal/include/stm32f4gpiohal.h \
+    hal/include/stm32f4leds.h \
+    hal/include/stm32f4spihal.h \
+    hal/include/stm32f4i2chal.h \
+    hal/include/spidevice.h \
+	hal/include/NRF24L01P.h \
+    inc/main.h \
+    inc/BaseTimeControl.h
+
+TARGET = quad.elf
 
 OTHER_FILES += \
     Makefile
+
+DISTFILES += \
+    lib/startup_stm32f4xx.s
 

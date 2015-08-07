@@ -1,0 +1,1 @@
+START "OpenOCD" openocd-x64-0.7.0 -f stm32f4discovery.cfg

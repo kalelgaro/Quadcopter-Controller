@@ -35,11 +35,14 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
+#include "../inc/BaseTimeControl.h"
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
+
+extern void systickInterrupt();
 
 void NMI_Handler(void);
 void HardFault_Handler(void);

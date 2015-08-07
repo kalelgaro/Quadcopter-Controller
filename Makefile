@@ -1,81 +1,127 @@
-# put your *.o targets here, make should handle the rest!
+# ELF target name
+TARGET=quad.elf
 
-SRCS =  main.c 			stm32f4xx_it.c 		system_stm32f4xx.c          MPU6050.c
-SRCS += controle_motores.c 	nRF24l01.c              processamento_entrada.c
-SRCS += funcoes_spi.c 		array_functions.c 	tratamento_sinal.c
-SRCS += kalman_filter.c 	processo_controle.c     HMC5883L.c
-SRCS += tm_stm32f4_i2c.c
+# C source files
+SRC=src/system_stm32f4xx.c
 
-# all the files will be generated with this name (main.elf, main.bin, main.hex, etc)
+# C++ source files
+CXXSRC=src/main.cpp
+CXXSRC+=src/BaseTimeControl.cpp
+CXXSRC+=hal/src/stm32f4gpiohal.cpp
+CXXSRC+=hal/src/stm32f4leds.cpp
+CXXSRC+=hal/src/stm32f4spihal.cpp
+CXXSRC+=hal/src/stm32f4i2chal.cpp
+CXXSRC+=hal/src/NRF24L01P.cpp
+CXXSRC+=src/stm32f4xx_it.cpp
 
-PROJ_NAME=main
+# ASM source files
+ASRC=lib/startup_stm32f4xx.s
 
-#DiretÃ³rio do ST-Link
+# include directories
+INCDIRS=inc lib lib/inc lib/inc/core lib/inc/peripherals hal/include
 
-STLINK_WIN = "C:\Program Files (x86)\STMicroelectronics\STM32 ST-LINK Utility\ST-LINK Utility"
+# search path for .so and .a
+LIBDIRS=lib
 
-# that's it, no need to change anything below this line!
+# libraries to link
+LIBS=stm32f4 c g m arm_cortexM4lf_math
 
-###################################################
+# Linker script
+LDSCRIPT=stm32_flash.ld
 
-CC=arm-none-eabi-gcc
-OBJCOPY=arm-none-eabi-objcopy
+# Tool configuration
+CROSS=arm-none-eabi-
+CC=$(CROSS)gcc
+CXX=$(CROSS)g++
+AS=$(CROSS)gcc
+LD=$(CROSS)gcc
+OBJCOPY=$(CROSS)objcopy
 
-CFLAGS = 	-DHSE_VALUE=8000000
-CFLAGS += 	-DARM_MATH_CM4=1 -DARM_MATH_MATRIX_CHECK=1 -D__FPU_USED=1 -DUSE_STDPERIPH_DRIVER=1
+# Architecture configuration
+ARCH_FLAGS=  -mlittle-endian
+ARCH_FLAGS+= -mcpu=cortex-m4
+ARCH_FLAGS+= -mthumb
+ARCH_FLAGS+= -mfloat-abi=hard
+ARCH_FLAGS+= -mfpu=fpv4-sp-d16
 
-CFLAGS += -g -Wall -Tstm32_flash.ld 
-CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
-CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
-CFLAGS += -ffunction-sections -fdata-sections -O0  #Retirada do compilador TrueStudio
-CFLAGS += -Wl,-Map,a.map #mapa de memÃ³ria
+# Configurações para as bibliotecas (Defines globais)
+LIB_DEFINES+= -DHSE_VALUE=8000000
+LIB_DEFINES+= -DARM_MATH_CM4=1
+LIB_DEFINES+= -DARM_MATH_MATRIX_CHECK=1
+LIB_DEFINES+= -D__FPU_USED=1
+LIB_DEFINES+= -DUSE_STDPERIPH_DRIVER=1
+
+# Flags for gcc
+CFLAGS+= -ggdb		#Ativa as opções para debug
+CFLAGS+= -O0
+CFLAGS+=$(ARCH_FLAGS)
+CFLAGS+=$(LIB_DEFINES)
+#CFLAGS+=-flto
+CFLAGS+= -ffunction-sections
+CFLAGS+= -fdata-sections
+CFLAGS+= -Wall
+CFLAGS+=$(foreach i, $(INCDIRS), -I$(i))
+
+# Flags for g++
+CXXFLAGS=$(CFLAGS)
+CXXFLAGS+=-fno-rtti
+CXXFLAGS+=-fno-exceptions
+CXXFLAGS+=-std=c++11
 
 
-###################################################
+# Flags for gcc as linker
+LDFLAGS=$(ARCH_FLAGS)
+LDFLAGS+=-Wl,--gc-sections
+LDFLAGS+=$(foreach i, $(LIBDIRS), -L$(i))
+LDFLAGS+=-specs=nosys.specs
+LDFLAGS+=-T $(LDSCRIPT)
 
-vpath %.c src
-vpath %.a lib
+# Librarys to Link
+LDLIB=$(foreach i, $(LIBS), -l$(i))
 
-ROOT=$(shell pwd)
+# No man land! Enter at your risk
 
-CFLAGS += -Iinc		-Ilib		-Ilib/inc 		-Ilib/inc/peripherals 	-Ilib/inc/core 	 
+OBJS=$(SRC:.c=.o) $(ASRC:.s=.o) $(CXXSRC:.cpp=.o)
+DEPS=$(OBJS:.o=.d)
 
-SRCS += lib/startup_stm32f4xx.s # add startup file to build
+# Default make target (first target)
+all: $(TARGET) bins
 
-OBJS = $(SRCS:.c=.o)
+# include dependency files (*.d)
+-include $(DEPS)
 
-###################################################
+# Rules to build c/cpp/s files
+%.o: %.c
+	@echo " CC $<"
+	@$(CC) -MMD $(CFLAGS) -o $@ -c $<
 
-.PHONY: lib proj
+%.o: %.cpp
+	@echo " CXX $<"
+	@$(CXX) -MMD $(CXXFLAGS) -o $@ -c $<
 
-all: lib proj
+%.o: %.s
+	@echo " AS $<"
+	@$(AS) $(CFLAGS) -o $@ -c $<
 
-lib:
-	$(MAKE) -C lib
+# Linker rule
+$(TARGET): libs $(OBJS)
+	@echo " LINK $@"
+	@$(CXX) -o $@ $(OBJS) $(LDFLAGS) $(LDLIB)
 
-proj: 	$(PROJ_NAME).elf
+# Phony rules (not file-asociated)
+.PHONY: clean all libs clean_lib bins
 
-$(PROJ_NAME).elf: $(SRCS)
-	$(CC) $(CFLAGS) $^ -o $@ -Llib -lstm32f4 -larm_cortexM4lf_math -lm
-	$(OBJCOPY) -O ihex $(PROJ_NAME).elf $(PROJ_NAME).hex
-	$(OBJCOPY) -O binary $(PROJ_NAME).elf $(PROJ_NAME).bin
+libs:
+	@$(MAKE) -C lib
+
+clean_lib:
+	@$(MAKE) -C lib clean
 
 clean:
-	rm -f *.o
-	rm -f $(PROJ_NAME).elf
-	rm -f $(PROJ_NAME).hex
-	rm -f $(PROJ_NAME).bin
+	@echo " CLEAN"
+	@rm -fR $(OBJS) $(DEPS) $(TARGET) $(TARGET:.elf=hex) $(TARGET:.elf=.bin)
 
-again: clean all
-
-resetl:
-
-burnl:
-	st-flash write main.bin 0x08000000
-
-resetw:
-	$(STLINK_WIN)/ST-LINK_CLI.exe -Rst -Run
-
-burnw:
-	$(STLINK_WIN)/ST-LINK_CLI.exe -P main.hex 0x08000000 -Rst -Run
-	
+bins: $(TARGET)
+	@echo " BUILD HEX & BIN"
+	@$(OBJCOPY) -O ihex $(TARGET) $(TARGET:.elf=.hex)
+	@$(OBJCOPY) -O binary $(TARGET) $(TARGET:.elf=.bin)
