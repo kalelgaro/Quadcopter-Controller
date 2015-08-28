@@ -1,10 +1,14 @@
 #ifndef MPU6050_H_
 #define MPU6050_H_
 
-#include "stm32f4xx.h"
-#include "stm32f4xx_rcc.h"
-#include "tm_stm32f4_i2c.h"
-#include "stm32f4xx_gpio.h"
+#include "gpiodevice.h"
+#include "i2cdevice.h"
+
+#include "accelerometerdevice.h"
+#include "gyroscopedevice.h"
+#include "magnetometerdevice.h"
+
+#include "ThreeAxisSensors.h"
 
     #define MPU6050_ADDRESS 0xD0
 
@@ -577,4 +581,30 @@
     uint8_t MPU6050_checkDataReadyIntPin();
 
     uint8_t MPU6050_checkConectivity(I2C_TypeDef *I2Cx);
+
+namespace Sensors {
+
+class MPU6050 : public Gyroscope<float, unsigned int>, public Accelerometer<float, unsigned int> {
+public:
+    MPU6050(I2CDevice<uint8_t, uint8_t, uint8_t> &i2c) :
+        Gyroscope()
+      , Accelerometer()
+      , m_i2c(i2c)
+    {}
+
+    void updateData( void ) {
+        int j;
+
+        for(int i = 10; i > 0; --i) {
+            j = i;
+        }
+    }
+
+private:
+    I2CDevice<uint8_t, uint8_t, uint8_t> &m_i2c;
+
+
+};
+
+}
 #endif /* MPU6050_H_ */

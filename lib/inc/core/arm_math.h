@@ -5563,7 +5563,7 @@ extern "C"
     index = ((x & 0xFFF00000) >> 20u);
 
 
-    if(index >= (nValues - 1))
+  if(index >= (nValues - 1))
   {
     return(pYData[nValues - 1]);
   }

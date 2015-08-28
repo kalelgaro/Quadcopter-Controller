@@ -10,22 +10,6 @@ STM32F4I2CHal::STM32F4I2CHal(I2C_TypeDef *i2c, const I2CConfig & initialConfig, 
     m_buffer(new uint8_t(bufferSize)),
     m_i2c()
 {
-    GPIO_InitTypeDef initialGPIOConfig;
-
-    initialGPIOConfig.GPIO_Mode = GPIO_Mode_AF;
-    initialGPIOConfig.GPIO_OType = GPIO_OType_OD;
-    initialGPIOConfig.GPIO_PuPd = GPIO_PuPd_UP;
-    initialGPIOConfig.GPIO_Speed = GPIO_Speed_100MHz;
-
-    initialGPIOConfig.GPIO_Pin = initialConfig.sclPin;
-    m_scl = new STM32F4GPIOHal(initialConfig.sclGPIO, initialGPIOConfig);
-
-    initialGPIOConfig.GPIO_Pin = initialConfig.sdaPin;
-    m_sda = new STM32F4GPIOHal(initialConfig.sdaGPIO, initialGPIOConfig);
-
-    if(!m_sda->isValid() || !m_scl->isValid())
-        return;
-
     uint8_t gpioAf;
     if(i2c == I2C1 ) {
         gpioAf = GPIO_AF_I2C1;
@@ -61,14 +45,13 @@ STM32F4I2CHal::STM32F4I2CHal(I2C_TypeDef *i2c, const I2CConfig & initialConfig, 
         return;
     }
 
-    uint16_t pinSource = uint16_t(log2(initialConfig.sclPin));
-    GPIO_PinAFConfig(initialConfig.sclGPIO,  pinSource, gpioAf);
 
-    pinSource = uint16_t(log2(initialConfig.sdaPin));
-    GPIO_PinAFConfig(initialConfig.sdaGPIO, pinSource, gpioAf);
+    initPins(initialConfig, gpioAf);
+
+    if(!m_sda->isValid() || !m_scl->isValid())
+        return;
 
     //-------- Configuração do I2C
-
     I2C_InitTypeDef config;
     config = initialConfig.basicConfig;
     config.I2C_ClockSpeed = initialConfig.clockSpeed;
@@ -90,6 +73,45 @@ STM32F4I2CHal::~STM32F4I2CHal()
         sm_I2CInitializated &= ~I2C3InitCode;
 
     I2C_Cmd(m_i2c, DISABLE);
+}
+
+void STM32F4I2CHal::initPins(const I2CConfig & initialConfig, uint8_t gpioAf)
+{
+    GPIO_InitTypeDef initialGPIOConfig;
+
+//    initialGPIOConfig.GPIO_Mode = GPIO_Mode_OUT;
+    initialGPIOConfig.GPIO_OType = GPIO_OType_OD;
+    initialGPIOConfig.GPIO_PuPd = GPIO_PuPd_UP;
+    initialGPIOConfig.GPIO_Speed = GPIO_Speed_100MHz;
+
+//    initialGPIOConfig.GPIO_Pin = initialConfig.sclPin;
+//    m_scl = new STM32F4GPIOHal(initialConfig.sclGPIO, initialGPIOConfig);
+
+//    initialGPIOConfig.GPIO_Pin = initialConfig.sdaPin;
+//    m_sda = new STM32F4GPIOHal(initialConfig.sdaGPIO, initialGPIOConfig);
+
+//    /*--- Reinicia para o estado padrão. ---*/
+//    m_scl->clearOutputBit(initialConfig.sclPin);
+//    m_sda->clearOutputBit(initialConfig.sdaPin);
+
+//    delete m_scl;
+//    delete m_sda;
+
+    /*--- Inicia como a função necessária. ---*/
+    initialGPIOConfig.GPIO_Mode = GPIO_Mode_AF;
+
+    initialGPIOConfig.GPIO_Pin = initialConfig.sclPin;
+    m_scl = new STM32F4GPIOHal(initialConfig.sclGPIO, initialGPIOConfig);
+
+    initialGPIOConfig.GPIO_Pin = initialConfig.sdaPin;
+    m_sda = new STM32F4GPIOHal(initialConfig.sdaGPIO, initialGPIOConfig);
+
+    uint16_t pinSource = uint16_t(log2(initialConfig.sclPin));
+    GPIO_PinAFConfig(initialConfig.sclGPIO,  pinSource, gpioAf);
+
+    pinSource = uint16_t(log2(initialConfig.sdaPin));
+    GPIO_PinAFConfig(initialConfig.sdaGPIO, pinSource, gpioAf);
+
 }
 
 void STM32F4I2CHal::writeRegister(uint8_t slaveAddress, uint8_t regAddress, uint8_t data)
@@ -115,6 +137,16 @@ uint8_t const * STM32F4I2CHal::readData(uint8_t deviceAddress, uint8_t registerA
     m_buffer[size] = readAndNAck();
 
     return m_buffer;
+}
+
+uint8_t STM32F4I2CHal::readData(uint8_t deviceAddress, uint8_t registerAddress)
+{
+    generateStart(deviceAddress, I2C_Direction_Transmitter, false);
+    sendByte(registerAddress);
+    generateStop();
+    generateStart(deviceAddress, I2C_Direction_Receiver, false);
+    uint8_t received_data = readAndNAck();
+    return received_data;
 }
 
 void STM32F4I2CHal::sendData(uint8_t slaveAddress, uint8_t regAddress, uint8_t const * data, size_t size)

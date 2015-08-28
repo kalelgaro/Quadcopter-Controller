@@ -1,14 +1,16 @@
 #ifndef HMC5883L_H_
 #define HMC5883L_H_
 
-#include "stm32f4xx.h"
-#include "stm32f4xx_gpio.h"
-#include "stm32f4xx_rcc.h"
 
-#include "tratamento_sinal.h"
-#include "tm_stm32f4_i2c.h"
-#include "funcoes_spi.h"
-#include "arm_math.h"
+#include "gpiodevice.h"
+#include "spidevice.h"
+
+#include "accelerometerdevice.h"
+#include "gyroscopedevice.h"
+#include "magnetometerdevice.h"
+
+#include "ThreeAxisSensors.h"
+
 
     #define DEFAULT_SELF_TEXT_XY_FIELD  1160 //Valores em mGauss
     #define DEFAULT_SELF_TEXT_Z_FIELD   1080 //Valores em mGauss
@@ -101,5 +103,17 @@
     uint8_t HMC5883L_checkDataReadyIntPin();
 
     void HMC5883L_configIntPin(uint32_t RCC_AHB1Periph, GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+
+namespace Sensors {
+
+class HMC5883L : public Sensors::Magnetometer<float, unsigned int> {
+public:
+    void updateData( void ) {
+
+    }
+
+};
+
+}
 
 #endif 

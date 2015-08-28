@@ -30,7 +30,7 @@
 #define __STM32F4xx_IT_H
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif 
 
 /* Includes ------------------------------------------------------------------*/
@@ -41,8 +41,6 @@
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-
-extern void systickInterrupt();
 
 void NMI_Handler(void);
 void HardFault_Handler(void);

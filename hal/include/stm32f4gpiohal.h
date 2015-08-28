@@ -1,10 +1,12 @@
 #ifndef STM32F4GPIOHAL_H
 #define STM32F4GPIOHAL_H
 
+#include "../hal/include/gpiodevice.h"
+
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
 
-class STM32F4GPIOHal
+class STM32F4GPIOHal : public GPIODevice<u16>
 {
 private:
    GPIO_TypeDef *m_currentGPIO;
@@ -45,8 +47,27 @@ public:
 
     inline void setOutputBit(u16 gpioPin) const;
     inline void clearOutputBit(u16 gpioPin) const;
-    inline bool readInputBit(u16 gpioPin) const;
     inline void toggleOutputBit(u16 gpioPin) const;
+
+    inline bool readInputBit(u16 gpioPin) const;
+
+    /**
+     * @brief setAll
+     * Liga todos os pinos inicializados por este objeto.
+     */
+    inline void setAll( void ) const;
+
+    /**
+     * @brief clearAll
+     * Desliga todos os pino inicializados por este objeto.
+     */
+    inline void clearAll( void ) const;
+
+    /**
+     * @brief toggleAll
+     * Alterana o estado de todos o pinos inicializados por este objeto.
+     */
+    inline void toggleAll( void ) const;
 
     inline bool isValid() const { return m_isValid; }
 
@@ -62,11 +83,26 @@ bool STM32F4GPIOHal::readInputBit(u16 gpioPin) const
         return false;
 }
 
+void STM32F4GPIOHal::setAll() const
+{
+    m_currentGPIO->BSRRL = m_ioPinsInitialized;
+}
+
+void STM32F4GPIOHal::clearAll() const
+{
+    m_currentGPIO->BSRRH = m_ioPinsInitialized;
+}
+
+void STM32F4GPIOHal::toggleAll() const
+{
+    m_currentGPIO->ODR ^= m_ioPinsInitialized;
+}
+
 void STM32F4GPIOHal::toggleOutputBit(u16 gpioPin) const
 {
     //FIXME: Problema, da toggle EM TODOS os bits... Realizar correçao para um unico bit.
     //if((m_ioPinsInitialized & gpioPin) != 0)
-        GPIO_ToggleBits(m_currentGPIO, gpioPin);
+        m_currentGPIO->ODR ^= gpioPin;
 }
 
 void STM32F4GPIOHal::setOutputBit(u16 gpioPin) const

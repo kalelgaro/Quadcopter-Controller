@@ -453,7 +453,7 @@ void GPIO_Write(GPIO_TypeDef* GPIOx, uint16_t PortVal)
   * @param  GPIO_Pin: Specifies the pins to be toggled.
   * @retval None
   */
-void GPIO_ToggleBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
+void  GPIO_ToggleBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
   /* Check the parameters */
   assert_param(IS_GPIO_ALL_PERIPH(GPIOx));

@@ -42,7 +42,6 @@
 
 	#define Checar_IRQ() GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_11)
 
-
 	//---------------------------------
 
 		uint8_t retornar_status(SPI_TypeDef*);

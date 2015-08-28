@@ -1,9 +1,10 @@
 #include "../../hal/include/NRF24L01P.h"
 
-Telemetry::NRF24L01p::NRF24L01p(SPIDevice<uint8_t> &spi,
-                                STM32F4GPIOHal &ceGPIO, uint16_t cePin,
-                                STM32F4GPIOHal &csGPIO, uint16_t csPin,
-                                const NRF24L01pConfig &config) :
+template <typename SPIDataType, typename GPIOPintype>
+Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::NRF24L01p(SPIDevice<SPIDataType> &spi,
+                                                            GPIODevice<GPIOPintype> &ceGPIO, GPIOPintype cePin,
+                                                            GPIODevice<GPIOPintype> &csGPIO, GPIOPintype csPin,
+                                                            const NRF24L01pConfig &config) :
         m_ceGPIO(ceGPIO)
       , m_csGPIO(csGPIO)
       , m_cePin(cePin)
@@ -20,9 +21,6 @@ Telemetry::NRF24L01p::NRF24L01p(SPIDevice<uint8_t> &spi,
     clearCEPin();
     writeRegister(CONFIG, command);
 
-    //delayMs(10);
-    //setCEPin();
-
     command = PWR_UP | m_config.crcEnabled | m_config.crcConfig | m_config.irqConfig;
     writeRegister(CONFIG, command);
 
@@ -31,12 +29,14 @@ Telemetry::NRF24L01p::NRF24L01p(SPIDevice<uint8_t> &spi,
     configureRXPipesAddress(config);
 }
 
-Telemetry::NRF24L01p::~NRF24L01p()
+template <typename SPIDataType, typename GPIOPintype>
+Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::~NRF24L01p()
 {
 
 }
 
-void Telemetry::NRF24L01p::configureNRF24L01p(const Telemetry::NRF24L01pConfig &newConfig)
+template <typename SPIDataType, typename GPIOPintype>
+void Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::configureNRF24L01p(const Telemetry::NRF24L01pConfig &newConfig)
 {
     clearCEPin();
 
@@ -105,7 +105,8 @@ void Telemetry::NRF24L01p::configureNRF24L01p(const Telemetry::NRF24L01pConfig &
     configureRXPipesAddress();
 }
 
-void Telemetry::NRF24L01p::configureTXPipesAddress(const uint64_t &txAddress, const uint8_t & txAddressWidth)
+template <typename SPIDataType, typename GPIOPintype>
+void Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::configureTXPipesAddress(const uint64_t &txAddress, const uint8_t & txAddressWidth)
 {
     if(m_lastTxAddress != txAddress) {
         m_lastTxAddress = txAddress;
@@ -120,7 +121,8 @@ void Telemetry::NRF24L01p::configureTXPipesAddress(const uint64_t &txAddress, co
     }
 }
 
-void Telemetry::NRF24L01p::sendData(const uint64_t &address, uint8_t *payload, size_t payloadLenght, uint8_t  txAddressWidht, bool waitAck)
+template <typename SPIDataType, typename GPIOPintype>
+void Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::sendData(const uint64_t &address, uint8_t *payload, size_t payloadLenght, uint8_t  txAddressWidht, bool waitAck)
 {
     //----- Reconfigura o endereço de envio, se necessário.
     if(address != m_lastTxAddress) {
@@ -136,7 +138,8 @@ void Telemetry::NRF24L01p::sendData(const uint64_t &address, uint8_t *payload, s
     setCEPin();
 }
 
-uint8_t Telemetry::NRF24L01p::readData(uint8_t *payload, size_t payloadLenght)
+template <typename SPIDataType, typename GPIOPintype>
+uint8_t Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::readData(uint8_t *payload, size_t payloadLenght)
 {
     m_ceGPIO.clearOutputBit(m_cePin);
 
@@ -154,7 +157,8 @@ uint8_t Telemetry::NRF24L01p::readData(uint8_t *payload, size_t payloadLenght)
     return m_status.dataPipeAvailablePld();
 }
 
-uint8_t Telemetry::NRF24L01p::readData(uint8_t *payload, size_t *payloadLenght)
+template <typename SPIDataType, typename GPIOPintype>
+uint8_t Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::readData(uint8_t *payload, size_t *payloadLenght)
 {
     m_ceGPIO.clearOutputBit(m_cePin);
 
@@ -171,7 +175,8 @@ uint8_t Telemetry::NRF24L01p::readData(uint8_t *payload, size_t *payloadLenght)
     return readData(payload, *payloadLenght);
 }
 
-void Telemetry::NRF24L01p::configureRXPipesAddress(const Telemetry::NRF24L01pConfig &addressConfig)
+template <typename SPIDataType, typename GPIOPintype>
+void Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::configureRXPipesAddress(const Telemetry::NRF24L01pConfig &addressConfig)
 {
     /*Configuração de endereço dependendo dos dutos de recepção que estão ligados. */
     if(addressConfig.enableRXPipes & EN_RX_P0) {
@@ -196,7 +201,8 @@ void Telemetry::NRF24L01p::configureRXPipesAddress(const Telemetry::NRF24L01pCon
     }
 }
 
-void Telemetry::NRF24L01p::configureRXPipesAddress()
+template <typename SPIDataType, typename GPIOPintype>
+void Telemetry::NRF24L01p<SPIDataType, GPIOPintype>::configureRXPipesAddress()
 {
     /*Configuração de endereço dependendo dos dutos de recepção que estão ligados. */
     if(m_config.enableRXPipes & EN_RX_P0) {
@@ -221,3 +227,9 @@ void Telemetry::NRF24L01p::configureRXPipesAddress()
     }
 }
 
+
+/*--- Pequena "engenharia alternativa" para permitir que templates sejam declarados
+ * fora do arquivo de cabeçalhos.                                       ---*/
+template class Telemetry::NRF24L01p<uint8_t,        uint16_t>;
+//template class Telemetry::NRF24L01p<uint16_t,           uint16_t>;
+//template class Telemetry::NRF24L01p<unsigned char, uint32_t>;

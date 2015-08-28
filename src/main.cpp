@@ -20,18 +20,7 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx.h"
-#include "stm32f4_discovery.h"
-#include "arm_math.h"
-
-#include "stm32f4xx_rcc.h"
-
-#include "../inc/BaseTimeControl.h"
-
-#include "../../hal/include/stm32f4gpiohal.h"
-#include "../../hal/include/stm32f4leds.h"
-#include "../../hal/include/stm32f4spihal.h"
-#include "../../hal/include/NRF24L01P.h"
+#include "main.h"
 
 STM32F4Leds led(STM32F4Leds::GREEN | STM32F4Leds::BLUE | STM32F4Leds::RED);
 
@@ -41,14 +30,10 @@ int main(void)
     NVIC_SetPriorityGrouping(5);
     SysTick_Config(168e6/10000);		 										//Frequência 100uS
 
-    led.setLed(STM32F4Leds::GREEN);
-    delayMs(1000);
-    led.clearLed(STM32F4Leds::GREEN);
-
-    STM32F4GPIOHal *m_cs =     new STM32F4GPIOHal(GPIOB, GPIO_Pin_10, GPIO_Mode_OUT, GPIO_Speed_25MHz, GPIO_OType_PP, GPIO_PuPd_UP);
-    STM32F4GPIOHal *m_ce =     new STM32F4GPIOHal(GPIOB, GPIO_Pin_12, GPIO_Mode_OUT, GPIO_Speed_25MHz, GPIO_OType_PP, GPIO_PuPd_UP);
-    STM32F4GPIOHal *m_nrfIRQ = new STM32F4GPIOHal(GPIOB, GPIO_Pin_11, GPIO_Mode_IN,  GPIO_Speed_25MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL);
-
+    /*--- Inicialização dos dispositivos de HARDWARE utilizados pela telemetria. ---*/
+    STM32F4GPIOHal *m_cs = new STM32F4GPIOHal(GPIOB, GPIO_Pin_10, GPIO_Mode_OUT, GPIO_Speed_25MHz, GPIO_OType_PP, GPIO_PuPd_UP);
+    STM32F4GPIOHal *m_ce = new STM32F4GPIOHal(GPIOB, GPIO_Pin_12, GPIO_Mode_OUT, GPIO_Speed_25MHz, GPIO_OType_PP, GPIO_PuPd_UP);
+    STM32F4GPIOHal *m_irq = new STM32F4GPIOHal(GPIOB, GPIO_Pin_11, GPIO_Mode_IN,  GPIO_Speed_25MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL);
 
     SPIConfig nrfSPIConfig;
     nrfSPIConfig.sckGPIO = GPIOB;
@@ -59,6 +44,7 @@ int main(void)
     nrfSPIConfig.misoPin = GPIO_Pin_14;
     nrfSPIConfig.mosiPin = GPIO_Pin_15;
 
+    /*--- Configurações básicas iguais ao do driver da ST. ---*/
     nrfSPIConfig.basicConfig.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
     nrfSPIConfig.basicConfig.SPI_Mode = SPI_Mode_Master;
     nrfSPIConfig.basicConfig.SPI_DataSize = SPI_DataSize_8b;
@@ -68,78 +54,50 @@ int main(void)
     nrfSPIConfig.basicConfig.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4;
     nrfSPIConfig.basicConfig.SPI_FirstBit = SPI_FirstBit_MSB;
 
-    STM32F4SPIHal<uint8_t, 10> m_nrfSPIDriver(SPI2, nrfSPIConfig);
+    /*--- Recupera a instancia do DMA que sera utilizado para os dispositivos Assincronos. ---*/
 
-    m_cs->setOutputBit(GPIO_Pin_10);
-    m_ce->setOutputBit(GPIO_Pin_12);
 
-    using namespace Telemetry;
-    NRF24L01pConfig nrfConfig;
+    DMA::STM32F4DMA *m_dma0 = DMA::STM32F4DMA::createInstance(DMA::DMA1Device);
+            /* - O dispositivo DMA sera configurado pelo controlador de DMA. -*/
 
-    RXPipesAddress rxAddress;
-    rxAddress.RX_ADDR_P0 = 0x0E0D0C0B0A;
-    rxAddress.RX_ADDR_P1 = 0x131211100F;
+    STM32F4AsyncSPIHal<uint8_t, 30> *m_nrfAsyncSPIDriver = STM32F4AsyncSPIHal<uint8_t, 30>::createInstance(SPI2Device, nrfSPIConfig, *m_dma0);
 
-    nrfConfig.enableRXPipes = EN_RX_P0 | EN_RX_P1;
-    nrfConfig.enableAAPipes = EN_AA_P0 | EN_AA_P1;
-    nrfConfig.enablePipes = 2;
-    nrfConfig.addressWidth = ADD_WDTH_5_BYTES;
-    nrfConfig.resendAttempts = DO_15_RETRANSMIT;
-    nrfConfig.resendDelay = DELAY_1000_US;
-    nrfConfig.bitrate = BR_250KBPS;
-    nrfConfig.txPower = MINUS_00_dBm;
-    nrfConfig.rxAddress = rxAddress;
-    nrfConfig.enableEnhancedShockBurst = true;
-    nrfConfig.dynPayloadConfig = NO_DPL;
-    nrfConfig.pipesPayloadLenght.P0_PLD_LENGHT = 32;
-    nrfConfig.pipesPayloadLenght.P1_PLD_LENGHT = 32;
-    nrfConfig.irqConfig = MASK_RX_DR & MASK_TX_DS & MASK_MAX_RT;
-    nrfConfig.crcEnabled = CRC_EN;
-    nrfConfig.crcConfig = CRC_2_BYTE;
-    nrfConfig.enableACKPayload = false;
-    nrfConfig.enableDynAck = false;
+    BaseTimeControl::getInstance()->delayMs(10);
+    //TelemetryController m_controller(*m_cs, *m_ce, *m_irq, *m_nrfAsyncSPIDriver);
+    /********************************************************************************/
 
-    //nrfConfig.delay = delayMs;
-    Telemetry::NRF24L01p teste(m_nrfSPIDriver, *m_ce, GPIO_Pin_12, *m_cs, GPIO_Pin_10, nrfConfig);
+    /*--- Inicialização dos dispositivos de HARDWARE utilizados pelo sistema AHRS. -*/
+    I2CConfig i2cConfig = i2cConfiguration();
+    STM32F4I2CHal m_i2c(I2C3, i2cConfig);
 
-    teste.clearStatusFlags();
+    /* Pinos dos sensores "inerciais". IRQS - Inicialização "temporária" para usar a placa do drone.*/
+    STM32F4GPIOHal mpu6050IRQ(GPIOD, GPIO_Pin_0, GPIO_Mode_IN,  GPIO_Speed_25MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL);
+    STM32F4GPIOHal hmc5883lIRQ(GPIOC, GPIO_Pin_7, GPIO_Mode_IN,  GPIO_Speed_25MHz, GPIO_OType_PP, GPIO_PuPd_NOPULL);
 
-    uint8_t receivedPayload[32];
-    size_t receivedPayloadSize;
-    uint8_t payload[32] = {'B', 'r', 'u', 'n', 'o', ' ', 'F', 'e', 'r', 'n', 'a', 'n', 'd', 'o' };
+    Sensors::MPU6050 mpu6050(m_i2c);
+    Sensors::HMC5883L hmc5883l;
 
-    teste.sendData(0x0E0D0C0B0A, payload, 32, 5, true);
-    while(m_nrfIRQ->readInputBit(GPIO_Pin_11));
+    //FIXME: A ultima é um magnetometro
+    //AHRS::AHRSSystem m_AHRSSystem(mpu6050, mpu6050, hmc5883l);
+    /********************************************************************************/
 
-    led.setLed(STM32F4Leds::BLUE);
+    /*--- Inicialização da classe principal do Quadcoptero - Recebe referência dos sistemas. */
+    //QuadcopterController mainSystem(m_AHRSSystem, m_controller);
+    /********************************************************************************/
 
-    Telemetry::StatusReg status = teste.updateStatus();
-    teste.clearStatusFlags();
+    uint8_t toSendTestBuffer[] = {'B', 'r', 'u', 'n', 'o', ' ', 'F', 'e', 'r', 'n', 'a', 'n', 'd', 'o'};
+    uint8_t teste[13];
 
-    status = status;
+    led.clearOutputBit(STM32F4Leds::BLUE);
+    m_nrfAsyncSPIDriver->sendAsyncData(toSendTestBuffer, 13);
+    led.setOutputBit(STM32F4Leds::BLUE);
 
-    teste.rxMode();
+    //while(DMA_GetFlagStatus(DMA1_Stream4, DMA_FLAG_TCIF4)== RESET);
 
-    led.clearLed(STM32F4Leds::BLUE);
     while(true) {
-        if(!m_nrfIRQ->readInputBit(GPIO_Pin_11)) {
-            status = teste.updateStatus();
-
-            if(status.isDataReceived()) {
-                led.setLed(STM32F4Leds::GREEN);
-
-                uint8_t pipe = teste.readData(receivedPayload, &receivedPayloadSize);
-
-                if(receivedPayload[0] == 'T' && receivedPayloadSize == 32) {
-                     led.setLed(STM32F4Leds::BLUE);
-                }
-
-                teste.clearStatusFlags(RX_DR);
-
-                teste.rxMode();
-            }
-        }
-//        delayMs(10);
+        //mainSystem.telemetryUpdate();
+        BaseTimeControl::getInstance()->delayMs(1);
+        led.toggleOutputBit(STM32F4Leds::GREEN);
 //        teste.sendData(0x0E0D0C0B0A, payload, 32, 5, true);     //Envia dados.
 //        while(m_nrfIRQ->readInputBit(GPIO_Pin_11));             //Aguarda o envio.
 //        status = teste.updateStatus();                          //Pèga o status.
@@ -148,4 +106,27 @@ int main(void)
 //        status = teste.updateStatus();                          //Pega o status (DEBUG).
 //        led.toggleOutputBit(STM32F4Leds::BLUE);                 //Toogle o led.
     }
+}
+
+I2CConfig i2cConfiguration()
+{
+    //I2C3: SCL: PA8, SDA: PC9
+
+    I2CConfig i2cConfig;
+
+    i2cConfig.sclGPIO = GPIOA;
+    i2cConfig.sclPin = GPIO_Pin_8;
+
+    i2cConfig.sdaGPIO = GPIOC;
+    i2cConfig.sdaPin = GPIO_Pin_9;
+
+    i2cConfig.basicConfig.I2C_Ack = I2C_Ack_Disable;
+    i2cConfig.basicConfig.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+    i2cConfig.basicConfig.I2C_ClockSpeed = 400000;
+    i2cConfig.basicConfig.I2C_DutyCycle = I2C_DutyCycle_2;
+    i2cConfig.basicConfig.I2C_Mode = I2C_Mode_I2C;
+    i2cConfig.basicConfig.I2C_OwnAddress1 = 0x00;
+    i2cConfig.clockSpeed = 400000;
+
+    return i2cConfig;
 }

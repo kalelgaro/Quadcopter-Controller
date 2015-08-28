@@ -25,7 +25,6 @@
 	void retornar_estado_sensores(float Acelerometro[], float Giroscopio[], float Magnetometro[]);
 	void retornar_offset_acel(float *offsetX, float *offsetY, float *offsetZ);
 	void calculate_Yaw_Ref(float yaw_Rate);
-	float calcular_orientacao(float leituras_mag[], float Pitch, float Roll);
 	void iniciar_estado_Kalman();
     void processar_mpu6050();
 

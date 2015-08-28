@@ -8,6 +8,9 @@
 #ifndef FUNCOES_SPI_H_
 #define FUNCOES_SPI_H_
 
+#include "stm32f4xx_spi.h"
+#include "stm32f4xx_gpio.h"
+
 #define PINO_CSN GPIO_Pin_10
 #define Selecionar_RF GPIOB->BSRRH|=GPIO_Pin_10
 #define Desselecionar_RF GPIOB->BSRRL|=GPIO_Pin_10

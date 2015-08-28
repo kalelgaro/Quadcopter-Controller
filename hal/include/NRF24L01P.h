@@ -2,9 +2,8 @@
 #define NRF24L01P_H
 
 //---- Includes com as classes de HAL utilizadas. ----//
-#include "../../hal/include/stm32f4gpiohal.h"
+#include "../../hal/include/gpiodevice.h"
 #include "../../hal/include/spidevice.h"
-#include "../../hal/include/stm32f4leds.h"
 #include "BaseTimeControl.h"
 #include "string.h"
 
@@ -343,19 +342,21 @@ struct NRF24L01pConfig{
     void (*delay)(float delayMs);
 };
 
+template <typename SPIDataType, typename GPIOPintype>
 class NRF24L01p
 {
 public:
-    NRF24L01p(SPIDevice<uint8_t> &spi,
-              STM32F4GPIOHal &ceGPIO, uint16_t cePin,
-              STM32F4GPIOHal &csGPIO, uint16_t csPin,
+    NRF24L01p(SPIDevice<SPIDataType> &spi,
+              GPIODevice<GPIOPintype> &ceGPIO, GPIOPintype cePin,
+              GPIODevice<GPIOPintype> &csGPIO, GPIOPintype csPin,
               const NRF24L01pConfig &config);
     ~NRF24L01p();
 
-    void configureNRF24L01p(const NRF24L01pConfig &newConfig);
-    void configureRXPipesAddress(const NRF24L01pConfig &addressConfig);
+    void configureNRF24L01p(const       NRF24L01pConfig &newConfig);
+    void configureRXPipesAddress(const  NRF24L01pConfig &addressConfig);
     void configureRXPipesAddress();
     void configureTXPipesAddress(const uint64_t &txAddress, const uint8_t &txAddressWidth);
+
     inline void configureDelayFunc(void (*delayMethod)(float));
     inline void clearStatusFlags();
     inline void clearStatusFlags(const StatusFlags &toCleanFlags);
@@ -365,7 +366,33 @@ public:
     inline const StatusReg & updateStatus();
     inline const StatusReg & getStatus() const;
 
+    /**
+     * @brief sendData
+     * This functions send a block of data with size specified by payload lenght
+     * to the destination addressed by address. The tx Address Widht is specifically
+     * used by the NRF24L01P because this address can change depending on its
+     * configuration. The wait ACK flag determines weither the NRF24L01 will
+     * need an ACK by the destination to mark the data as sent (Reception confirm)
+     * or not (Just send the data), like a sort of TCP and UDP data flow.
+     * @param address
+     * @param payload
+     * @param payloadLenght
+     * @param txAddressWidht
+     * @param waitAck
+     */
     void sendData(const uint64_t &address, uint8_t *payload, size_t payloadLenght, uint8_t txAddressWidht, bool waitAck = false);
+
+    /**
+     * @brief sendData
+     * An overload of the above function, this method assumes that the
+     * address is already setup, either using the above overload or using
+     * the configureTXPipesAddress method. If either of those methods aren't used
+     * before this it can send a data wrongly.
+     * @param payload
+     * @param payloadLenght
+     * @param waitAck
+     */
+    void sendData( uint8_t *payload, size_t payloadLenght, bool waitAck = false);
 
     /**
      * @brief readData
@@ -401,8 +428,8 @@ public:
 
 private:
     //---- Estruturas de abstração de Hardware utilizadas ----/
-    STM32F4GPIOHal &m_ceGPIO;
-    STM32F4GPIOHal &m_csGPIO;
+    GPIODevice<u16> &m_ceGPIO;
+    GPIODevice<u16> &m_csGPIO;
 
     u16 m_cePin;
     u16 m_csPin;
@@ -509,26 +536,29 @@ private:
 
 
 /*---### Funções Inline implenentadas no *.h ---###*/
-void NRF24L01p::setCEPin() const
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::setCEPin() const
 {
     m_ceGPIO.setOutputBit(m_cePin);
 }
 
-void NRF24L01p::clearCEPin() const
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::clearCEPin() const
 {
     m_ceGPIO.clearOutputBit(m_cePin);
 }
 
-void NRF24L01p::rxMode()
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::rxMode()
 {
     uint8_t cfg = (PWR_UP | PRIM_RX | m_config.crcConfig | m_config.crcEnabled | m_config.irqConfig);
     writeRegister(CONFIG, cfg);
     delayMs(0.2);    //Delay de 0.02mS = 20uS
     m_ceGPIO.setOutputBit(m_cePin);
-    delayMs(2);
 }
 
-void NRF24L01p::writeTxPayload(uint8_t *data, size_t payloadLenght)
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::writeTxPayload(uint8_t *data, size_t payloadLenght)
 {
     uint8_t command = W_TX_PAYLOAD;
     m_csGPIO.clearOutputBit(m_csPin);
@@ -541,7 +571,8 @@ void NRF24L01p::writeTxPayload(uint8_t *data, size_t payloadLenght)
     m_csGPIO.setOutputBit(m_csPin);
 }
 
-void NRF24L01p::writeTxPayloadNoACK(uint8_t *data, size_t payloadLenght)
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::writeTxPayloadNoACK(uint8_t *data, size_t payloadLenght)
 {
     uint8_t command = W_TX_PAYLOAD_NO_ACK;
     m_csGPIO.clearOutputBit(m_csPin);
@@ -554,20 +585,22 @@ void NRF24L01p::writeTxPayloadNoACK(uint8_t *data, size_t payloadLenght)
     m_csGPIO.setOutputBit(m_csPin);
 }
 
-void NRF24L01p::txMode()
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::txMode()
 {
     clearCEPin();
     uint8_t cfg = (PWR_UP | m_config.crcConfig | m_config.crcEnabled | m_config.irqConfig);
     writeRegister(CONFIG, cfg);
-    //delayMs(0.2);    //Delay de 0.02mS = 20uS
 }
 
-void NRF24L01p::configureDelayFunc(void (*delayMethod)(float))
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::configureDelayFunc(void (*delayMethod)(float))
 {
     delay = delayMethod;
 }
 
-void NRF24L01p::clearStatusFlags()
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::clearStatusFlags()
 {
     m_ceGPIO.clearOutputBit(m_cePin);
 
@@ -579,7 +612,8 @@ void NRF24L01p::clearStatusFlags()
     m_csGPIO.setOutputBit(m_csPin);
 }
 
-void NRF24L01p::clearStatusFlags(const StatusFlags &toCleanFlags)
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::clearStatusFlags(const StatusFlags &toCleanFlags)
 {
     uint8_t clean = toCleanFlags;
 
@@ -588,7 +622,8 @@ void NRF24L01p::clearStatusFlags(const StatusFlags &toCleanFlags)
     m_csGPIO.setOutputBit(m_csPin);
 }
 
-void NRF24L01p::clearTXBuffers()
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::clearTXBuffers()
 {
     clearCEPin();
 
@@ -603,7 +638,8 @@ void NRF24L01p::clearTXBuffers()
     m_csGPIO.setOutputBit(m_csPin);
 }
 
-void NRF24L01p::clearRXBuffers()
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::clearRXBuffers()
 {
     clearCEPin();
 
@@ -619,7 +655,8 @@ void NRF24L01p::clearRXBuffers()
     m_csGPIO.setOutputBit(m_csPin);
 }
 
-const StatusReg &NRF24L01p::updateStatus()
+template <typename SPIDataType, typename GPIOPintype>
+const StatusReg &NRF24L01p<SPIDataType, GPIOPintype>::updateStatus()
 {
     m_txBuffer[0] = NOP;
 
@@ -631,12 +668,14 @@ const StatusReg &NRF24L01p::updateStatus()
     return m_status;
 }
 
-const StatusReg &NRF24L01p::getStatus() const
+template <typename SPIDataType, typename GPIOPintype>
+const StatusReg &NRF24L01p<SPIDataType, GPIOPintype>::getStatus() const
 {
     return m_status;
 }
 
-void NRF24L01p::writeRegister(uint8_t initialAddress, const uint8_t *data, size_t size)
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::writeRegister(uint8_t initialAddress, const uint8_t *data, size_t size)
 {
     clearCEPin();
 
@@ -653,7 +692,8 @@ void NRF24L01p::writeRegister(uint8_t initialAddress, const uint8_t *data, size_
 
 }
 
-void NRF24L01p::writeRegister(uint8_t address, const uint8_t &data) {
+template <typename SPIDataType, typename GPIOPintype>
+void NRF24L01p<SPIDataType, GPIOPintype>::writeRegister(uint8_t address, const uint8_t &data) {
     clearCEPin();
     uint8_t writeAddress = address+W_REG_MASK;
 
@@ -667,7 +707,8 @@ void NRF24L01p::writeRegister(uint8_t address, const uint8_t &data) {
     m_csGPIO.setOutputBit(m_csPin);
 }
 
-uint8_t NRF24L01p::readRegister(uint8_t initialAddress, uint8_t *data, size_t size)
+template <typename SPIDataType, typename GPIOPintype>
+uint8_t NRF24L01p<SPIDataType, GPIOPintype>::readRegister(uint8_t initialAddress, uint8_t *data, size_t size)
 {
     uint8_t readAddress = initialAddress+R_REG_MASK;
 

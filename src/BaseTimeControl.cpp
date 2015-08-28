@@ -1,23 +1,11 @@
-#include "../inc/BaseTimeControl.h"
+#include "BaseTimeControl.h"
 
-void systickInterrupt(void) {
-    if(delayUs != 0) {
-        --delayUs;
-    }
-}
+BaseTimeControl * BaseTimeControl::m_instance = 0;
 
-void delayMs(float ms) {
+uint64_t BaseTimeControl::m_time = 0;
 
-    if(ms <= 0.1)
-        ms = 0.1;
-
-    delayUs = (ms*10);
-
-    while(delayUs > 0);
-}
-
-
-BaseTimeControl::BaseTimeControl()
+BaseTimeControl::BaseTimeControl() :
+    m_delayUs(0)
 {
 
 }
@@ -26,4 +14,3 @@ BaseTimeControl::~BaseTimeControl()
 {
 
 }
-

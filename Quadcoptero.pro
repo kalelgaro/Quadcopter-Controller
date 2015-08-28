@@ -6,61 +6,11 @@ CONFIG -= qt
 INCLUDEPATH +=      inc \
                     lib/inc \
                     lib/inc/core \
-                    lib/inc/peripherals
+					lib/inc/peripherals \
+					hal/include
 
 SOURCES += \
-        lib/src/peripherals/misc.c \
-    lib/src/peripherals/stm32f4xx_adc.c \
-    lib/src/peripherals/stm32f4xx_can.c \
-    lib/src/peripherals/stm32f4xx_crc.c \
-    lib/src/peripherals/stm32f4xx_cryp.c \
-    lib/src/peripherals/stm32f4xx_cryp_aes.c \
-    lib/src/peripherals/stm32f4xx_cryp_des.c \
-    lib/src/peripherals/stm32f4xx_cryp_tdes.c \
-    lib/src/peripherals/stm32f4xx_dac.c \
-    lib/src/peripherals/stm32f4xx_dbgmcu.c \
-    lib/src/peripherals/stm32f4xx_dcmi.c \
-    lib/src/peripherals/stm32f4xx_dma.c \
-    lib/src/peripherals/stm32f4xx_exti.c \
-    lib/src/peripherals/stm32f4xx_flash.c \
-    lib/src/peripherals/stm32f4xx_fsmc.c \
-    lib/src/peripherals/stm32f4xx_gpio.c \
-    lib/src/peripherals/stm32f4xx_hash.c \
-    lib/src/peripherals/stm32f4xx_hash_md5.c \
-    lib/src/peripherals/stm32f4xx_hash_sha1.c \
-    lib/src/peripherals/stm32f4xx_i2c.c \
-    lib/src/peripherals/stm32f4xx_iwdg.c \
-    lib/src/peripherals/stm32f4xx_pwr.c \
-    lib/src/peripherals/stm32f4xx_rcc.c \
-    lib/src/peripherals/stm32f4xx_rng.c \
-    lib/src/peripherals/stm32f4xx_rtc.c \
-    lib/src/peripherals/stm32f4xx_sdio.c \
-    lib/src/peripherals/stm32f4xx_spi.c \
-    lib/src/peripherals/stm32f4xx_syscfg.c \
-    lib/src/peripherals/stm32f4xx_tim.c \
-    lib/src/peripherals/stm32f4xx_usart.c \
-    lib/src/peripherals/stm32f4xx_wwdg.c \
-    lib/src/stm32f4_discovery.c \
-    lib/src/system_stm32f4xx.c \
-    src/ADXL345.c \
-    src/aquisicao_IMU.c \
-    src/array_functions.c \
-    src/controle_motores.c \
-    src/funcoes_spi.c \
-    src/HMC5883L.c \
-    src/kalman_filter.c \
-    src/L3G4200D.c \
-    src/main.cpp \
-    src/MPU6050.c \
-    src/nRF24l01.c \
-    src/processamento_entrada.c \
-    src/processo_controle.c \
-    src/stm32f4_discovery.c \
-    src/stm32f4_discovery_lis302dl.c \
-	src/stm32f4xx_it.cpp \
-    src/system_stm32f4xx.c \
-    src/tratamento_sinal.c \
-    lib/src/peripherals/misc.c \
+	lib/src/peripherals/misc.c \
     lib/src/peripherals/stm32f4xx_adc.c \
     lib/src/peripherals/stm32f4xx_can.c \
     lib/src/peripherals/stm32f4xx_crc.c \
@@ -114,7 +64,13 @@ SOURCES += \
     hal/src/stm32f4spihal.cpp \
     hal/src/stm32f4i2chal.cpp \
 	hal/src/NRF24L01P.cpp \
-    src/BaseTimeControl.cpp
+	hal/src/STM32F4AsyncSPIHal.cpp \
+	src/BaseTimeControl.cpp \
+    hal/src/STM32F4DMA.cpp \
+    src/QuadcopterController.cpp \
+    src/TelemetryController.cpp \
+    src/AHRSSystem.cpp \
+    src/ThreeAxisSensors.cpp
 
 HEADERS += \
     inc/aquisicao_IMU.h \
@@ -180,8 +136,21 @@ HEADERS += \
     hal/include/stm32f4i2chal.h \
     hal/include/spidevice.h \
 	hal/include/NRF24L01P.h \
-    inc/main.h \
-    inc/BaseTimeControl.h
+	hal/include/gpiodevice.h \
+	hal/include/STM32F4AsyncSPIHal.h \
+	inc/BaseTimeControl.h \
+	inc/main.h \
+    hal/include/STM32F4DMA.h \
+    inc/QuadcopterController.h \
+    inc/TelemetryController.h \
+    inc/AHRSBaseSystem.h \
+    inc/AHRSSystem.h \
+    inc/ThreeAxisSensors.h \
+    inc/gyroscopedevice.h \
+    inc/accelerometerdevice.h \
+    inc/magnetometerdevice.h \
+    inc/i2cdevice.h \
+    inc/callbackstruct.h
 
 TARGET = quad.elf
 

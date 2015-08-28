@@ -344,7 +344,7 @@ void kalman_filter(kalman_filter_state *buffer_filtro, float medida_gyro[], floa
                         0, 0, 0, 0, 0, (Rmag), 0, 0, 0,
                         0, 0, 0, 0, 0, 0, (Rangles), 0, 0,
                         0, 0, 0, 0, 0, 0, 0, (Rangles), 0,
-                        0, 0, 0, 0, 0, 0, 0, 0, (1e5)};
+                        0, 0, 0, 0, 0, 0, 0, 0, (Rangles)};
 
     arm_mat_init_f32(&R, a, a, R_f32);
 

@@ -178,12 +178,12 @@ void HardFault_Handler(void)
   * @retval None
   */
 
-
 //Interrupção de overflow do timer de tempo real
     //Overflow �  cada 100uS
 void SysTick_Handler(void)
 {
-    systickInterrupt();
+	//systickInterrupt();
+	BaseTimeControl::systickCallback();
 }
 
 /******************************************************************************/

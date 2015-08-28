@@ -3,12 +3,16 @@
 /*-########## Implementaçao da classe para transmissoes Sincronas ##########-*/
 
 //Inicialização dos membros static const;
-template <typename Targ, size_t bufferSize>
-u16 STM32F4SPIHal<Targ, bufferSize>::sm_SPIInitializated = 0x0000;
+template <typename Targ>
+u16 STM32F4SPIHal<Targ>::sm_SPIInitializated = 0x0000;
 
-template <typename Targ, size_t bufferSize>
-STM32F4SPIHal<Targ, bufferSize>::STM32F4SPIHal(SPI_TypeDef *spi, const SPIConfig & config) :
-    SPIDevice<Targ>(bufferSize),
+template <typename Targ>
+STM32F4SPIHal<Targ>*  STM32F4SPIHal<Targ>::sm_spiInstance[3] = { NULL, NULL, NULL };
+
+
+template <typename Targ>
+STM32F4SPIHal<Targ>::STM32F4SPIHal(SPI_TypeDef *spi, const SPIConfig & config) :
+    SPIDevice<Targ>(),
     m_sck(),
     m_mosi(),
     m_miso(),
@@ -104,8 +108,8 @@ STM32F4SPIHal<Targ, bufferSize>::STM32F4SPIHal(SPI_TypeDef *spi, const SPIConfig
     m_spi = spi;
 }
 
-template <typename Targ, size_t bufferSize>
-STM32F4SPIHal<Targ, bufferSize>::~STM32F4SPIHal()
+template <typename Targ>
+STM32F4SPIHal<Targ>::~STM32F4SPIHal()
 {
     delete m_sck;
     delete m_mosi;
@@ -125,6 +129,6 @@ STM32F4SPIHal<Targ, bufferSize>::~STM32F4SPIHal()
 }
 
 //---Adiçao das implementações de template com previsão de uso. ---//
-template class STM32F4SPIHal<uint8_t,  10>;
-template class STM32F4SPIHal<uint16_t, 10>;
-template class STM32F4SPIHal<char,     10>;
+template class STM32F4SPIHal<uint8_t>;
+template class STM32F4SPIHal<uint16_t>;
+template class STM32F4SPIHal<char>;

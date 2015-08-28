@@ -27,7 +27,7 @@
 	float tratar_intervalo_Angulo(float angles);
     float getVectorModulus(const float vector[], u8 numberOfElements);
     void normalizeVector(float vector[], u8 numberOfElements);
-    void complementaryFilter(float angles[], float gyro[], float accel[], float dt, float gain, float accelOffset[]);
+    void complementaryFilter(float angles[], float gyro[], float accel[], float mag[], float dt, float gain, float accelOffset[], float magOffset[]);
 
     //void getBodyFrameRates(EulerAngles earthFrameAngles, EulerAngles *bodyFrameAngles);
 
@@ -58,6 +58,7 @@
     float max(float previousMax, float newMeasure);
     float min(float previousMin, float newMeasure);
     float constrainAngle(float deegreesAngles);
+    float calcular_orientacao(float leituras_mag[], float Pitch, float Roll, float offsetMag[]);
 
 
 #endif /* TRATAMENTO_SINAL_H_ */

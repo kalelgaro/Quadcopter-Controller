@@ -11,7 +11,13 @@ CXXSRC+=hal/src/stm32f4gpiohal.cpp
 CXXSRC+=hal/src/stm32f4leds.cpp
 CXXSRC+=hal/src/stm32f4spihal.cpp
 CXXSRC+=hal/src/stm32f4i2chal.cpp
+CXXSRC+=hal/src/STM32F4DMA.cpp
+CXXSRC+=hal/src/STM32F4AsyncSPIHal.cpp
 CXXSRC+=hal/src/NRF24L01P.cpp
+CXXSRC+=src/ThreeAxisSensors.cpp
+CXXSRC+=src/AHRSSystem.cpp
+CXXSRC+=src/TelemetryController.cpp
+CXXSRC+=src/QuadcopterController.cpp
 CXXSRC+=src/stm32f4xx_it.cpp
 
 # ASM source files

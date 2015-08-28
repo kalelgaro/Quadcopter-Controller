@@ -1,7 +1,9 @@
 #ifndef STM32F4I2CHAL_H
 #define STM32F4I2CHAL_H
 
-#include "../../hal/include/stm32f4gpiohal.h"
+#include "i2cdevice.h"
+
+#include "stm32f4gpiohal.h"
 #include "stm32f4xx_i2c.h"
 #include "arm_math.h"
 
@@ -17,7 +19,7 @@ typedef struct {
     I2C_InitTypeDef basicConfig;
 } I2CConfig;
 
-class STM32F4I2CHal
+class STM32F4I2CHal : public I2CDevice<uint8_t, uint8_t, uint8_t>
 {
 private:
     static u16 sm_I2CInitializated;
@@ -51,6 +53,8 @@ private:
      */
     inline uint8_t readAndNAck();
 
+    void initPins(const I2CConfig &initialConfig, uint8_t gpioAf);
+
 public:
     STM32F4I2CHal(I2C_TypeDef *i2c, const I2CConfig & initialConfig, size_t bufferSize = DEFAULT_SIZE);
     virtual ~STM32F4I2CHal();
@@ -60,6 +64,8 @@ public:
     void writeRegister(uint8_t slaveAddress, uint8_t regAddress, uint8_t data);
 
     uint8_t const * readData(uint8_t deviceAddress, uint8_t registerAddress, size_t size);
+    uint8_t readData(uint8_t deviceAddress, uint8_t registerAddress);
+
     uint8_t readRegister(uint8_t deviceAddress, uint8_t registerAddress);
 
     static const u16 I2C1InitCode = 0x01;
@@ -79,7 +85,7 @@ bool STM32F4I2CHal::generateStart(uint8_t address, uint8_t direction, bool ack) 
     //Gera o start.
     I2C_GenerateSTART(m_i2c, ENABLE);
 
-    while(!I2C_GetFlagStatus(m_i2c, I2C_FLAG_SB));
+    while(I2C_GetFlagStatus(m_i2c, I2C_FLAG_SB) == RESET);
 
     if(ack){
         I2C_AcknowledgeConfig(m_i2c, ENABLE);
@@ -100,7 +106,7 @@ bool STM32F4I2CHal::generateStart(uint8_t address, uint8_t direction, bool ack) 
 void STM32F4I2CHal::generateStop()
 {
     //FIXME::ERA BOOL
-    while (((!I2C_GetFlagStatus(m_i2c, I2C_FLAG_TXE) == RESET) || (I2C_GetFlagStatus(m_i2c, I2C_FLAG_BTF) == RESET)));
+    while (((!I2C_GetFlagStatus(m_i2c, I2C_FLAG_TXE)) || (!I2C_GetFlagStatus(m_i2c, I2C_FLAG_BTF))));
 
     I2C_GenerateSTOP(m_i2c, ENABLE);
 }
@@ -108,7 +114,7 @@ void STM32F4I2CHal::generateStop()
 void STM32F4I2CHal::sendByte(uint8_t toSendByte) const
 {
     while(I2C_GetFlagStatus(m_i2c, I2C_FLAG_TXE) == RESET);
-    I2C_SendData(m_i2c, toSendByte);
+    m_i2c->DR = toSendByte;
 }
 
 uint8_t STM32F4I2CHal::readAndAck()
@@ -117,16 +123,19 @@ uint8_t STM32F4I2CHal::readAndAck()
 
     while (I2C_CheckEvent(m_i2c, I2C_EVENT_MASTER_BYTE_RECEIVED) == ERROR);
 
-    uint8_t data = I2C_ReceiveData(m_i2c);
+    uint8_t data = (uint8_t)m_i2c->DR;
 
     return data;
 }
 
 uint8_t STM32F4I2CHal::readAndNAck()
 {
+    I2C_AcknowledgeConfig(m_i2c, DISABLE);
+
     I2C_GenerateSTOP(m_i2c, ENABLE);
 
-    while (I2C_CheckEvent(m_i2c, I2C_EVENT_MASTER_BYTE_RECEIVED) == ERROR);
+    int timeout = 100000;
+    while (!I2C_CheckEvent(m_i2c, I2C_EVENT_MASTER_BYTE_RECEIVED) && (--timeout));
 
     uint8_t data = I2C_ReceiveData(m_i2c);
 

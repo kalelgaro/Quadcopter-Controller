@@ -7,15 +7,13 @@
 template<typename Targ>
 class SPIDevice {
 public:
-    SPIDevice(size_t bufferSize) :
-        m_buffer(new Targ(bufferSize)) {  }
+    SPIDevice(){  }
 
     virtual void sendData(const Targ *toSendDataBuffer, Targ *receivedDataBuffer, size_t maxSize) = 0;
     virtual void sendData(const Targ &toSendData, Targ &receiveData) = 0;
     virtual void receiveData(Targ *receivedDataBuffer, size_t maxSize) = 0;
 
 private:
-    Targ *m_buffer;
 
 };
 
